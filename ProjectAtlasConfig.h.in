@@ -1,0 +1,3 @@
+// the configured options and settings for ProjectAtlas
+#define ProjectAtlas_VERSION_MAJOR @ProjectAtlas_VERSION_MAJOR@
+#define ProjectAtlas_VERSION_MINOR @ProjectAtlas_VERSION_MINOR@
