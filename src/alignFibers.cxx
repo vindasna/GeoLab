@@ -22,7 +22,8 @@
 #include <omp.h>
 #include <experimental/filesystem>
 
-#include "ProjectAtlas.h"
+#include "alignFibers.h"
+#include "ioWrapper.h"
 
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -55,8 +56,8 @@ int getFlagPosition( int argc, char* argv[], const std::string& flag )
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-void computeFiberWithVectors( BundlesDataFormat& inputFiber,
-                              BundlesFormat& inputFiberInfo,
+void computeFiberWithVectors( BundlesData& inputFiber,
+                              BundlesMinf& inputFiberInfo,
                               std::vector<float> vector1,
                               std::vector<float> vector2,
                               std::vector<float> vector3,
@@ -69,7 +70,7 @@ void computeFiberWithVectors( BundlesDataFormat& inputFiber,
 
   std::vector<float> medialPointFiber( 3, 0 ) ;
   inputFiber.computeMedialPointFiberWithDistance(
-                                               fiberIndex, medialPointFiber ) ;
+                                                fiberIndex, medialPointFiber ) ;
 
   std::vector<float> matrixTracksfiber( 3 * nbPoints + 3 * 2 + 3 * 3, 0 ) ;
   for ( int point = 0 ; point < nbPoints ; point++ )
@@ -87,45 +88,53 @@ void computeFiberWithVectors( BundlesDataFormat& inputFiber,
   matrixTracksfiber[ 3 * nbPoints + 3 * 0 + 0 ] = medialPointFiber[ 0 ] ;
   matrixTracksfiber[ 3 * nbPoints + 3 * 0 + 1 ] = medialPointFiber[ 1 ] ;
   matrixTracksfiber[ 3 * nbPoints + 3 * 0 + 2 ] = medialPointFiber[ 2 ] ;
-  matrixTracksfiber[ 3 * nbPoints + 3 * 1 + 0 ] = vector1[ 0 ] + medialPointFiber[ 0 ] ;
-  matrixTracksfiber[ 3 * nbPoints + 3 * 1 + 1 ] = vector1[ 1 ] + medialPointFiber[ 1 ] ;
-  matrixTracksfiber[ 3 * nbPoints + 3 * 1 + 2 ] = vector1[ 2 ] + medialPointFiber[ 2 ] ;
+  matrixTracksfiber[ 3 * nbPoints + 3 * 1 + 0 ] = vector1[ 0 ]
+                                                       + medialPointFiber[ 0 ] ;
+  matrixTracksfiber[ 3 * nbPoints + 3 * 1 + 1 ] = vector1[ 1 ]
+                                                       + medialPointFiber[ 1 ] ;
+  matrixTracksfiber[ 3 * nbPoints + 3 * 1 + 2 ] = vector1[ 2 ]
+                                                       + medialPointFiber[ 2 ] ;
 
   matrixTracksfiber[ 3 * nbPoints + 3 * 2 + 0 ] = medialPointFiber[ 0 ] ;
   matrixTracksfiber[ 3 * nbPoints + 3 * 2 + 1 ] = medialPointFiber[ 1 ] ;
   matrixTracksfiber[ 3 * nbPoints + 3 * 2 + 2 ] = medialPointFiber[ 2 ] ;
-  matrixTracksfiber[ 3 * nbPoints + 3 * 3 + 0 ] = vector2[ 0 ] + medialPointFiber[ 0 ] ;
-  matrixTracksfiber[ 3 * nbPoints + 3 * 3 + 1 ] = vector2[ 1 ] + medialPointFiber[ 1 ] ;
-  matrixTracksfiber[ 3 * nbPoints + 3 * 3 + 2 ] = vector2[ 2 ] + medialPointFiber[ 2 ] ;
+  matrixTracksfiber[ 3 * nbPoints + 3 * 3 + 0 ] = vector2[ 0 ]
+                                                       + medialPointFiber[ 0 ] ;
+  matrixTracksfiber[ 3 * nbPoints + 3 * 3 + 1 ] = vector2[ 1 ]
+                                                       + medialPointFiber[ 1 ] ;
+  matrixTracksfiber[ 3 * nbPoints + 3 * 3 + 2 ] = vector2[ 2 ]
+                                                       + medialPointFiber[ 2 ] ;
 
   matrixTracksfiber[ 3 * nbPoints + 3 * 2 + 0 ] = medialPointFiber[ 0 ] ;
   matrixTracksfiber[ 3 * nbPoints + 3 * 2 + 1 ] = medialPointFiber[ 1 ] ;
   matrixTracksfiber[ 3 * nbPoints + 3 * 2 + 2 ] = medialPointFiber[ 2 ] ;
-  matrixTracksfiber[ 3 * nbPoints + 3 * 3 + 0 ] = vector3[ 0 ] + medialPointFiber[ 0 ] ;
-  matrixTracksfiber[ 3 * nbPoints + 3 * 3 + 1 ] = vector3[ 1 ] + medialPointFiber[ 1 ] ;
-  matrixTracksfiber[ 3 * nbPoints + 3 * 3 + 2 ] = vector3[ 2 ] + medialPointFiber[ 2 ] ;
+  matrixTracksfiber[ 3 * nbPoints + 3 * 3 + 0 ] = vector3[ 0 ]
+                                                       + medialPointFiber[ 0 ] ;
+  matrixTracksfiber[ 3 * nbPoints + 3 * 3 + 1 ] = vector3[ 1 ]
+                                                       + medialPointFiber[ 1 ] ;
+  matrixTracksfiber[ 3 * nbPoints + 3 * 3 + 2 ] = vector3[ 2 ]
+                                                       + medialPointFiber[ 2 ] ;
 
   std::vector<int> pointsPerTrackFiber = { nbPoints, 2, 2, 2 } ;
   int curves_countFiber = 4 ;
 
-  BundlesDataFormat referenceFiber( matrixTracksfiber, pointsPerTrackFiber,
-                                                          curves_countFiber ) ;
+  BundlesData referenceFiber = inputFiber ;
+  referenceFiber.matrixTracks = matrixTracksfiber ;
+  referenceFiber.pointsPerTrack = pointsPerTrackFiber ;
+  referenceFiber.curves_count = curves_countFiber ;
+
   inputFiberInfo.curves_count = curves_countFiber ;
-  BundlesFormat referenceFiberInfo( inputFiberInfo ) ;
-  std::string referenceFiberFilename = outputDirectory + fiberName +
-                                                                ".bundlesdata" ;
-  std::string referenceFiberInfoFilename = outputDirectory + fiberName +
-                                                                    ".bundles" ;
-  referenceFiber.bundlesdataWriting( referenceFiberFilename.c_str(), verbose ) ;
-  referenceFiberInfo.bundlesWriting( referenceFiberInfoFilename.c_str(), verbose ) ;
+  BundlesMinf referenceFiberInfo( inputFiberInfo ) ;
+  std::string referenceFiberFilename = outputDirectory + fiberName + format ;
+  referenceFiber.write( referenceFiberFilename.c_str(), referenceFiberInfo ) ;
 
 
 }
 
 // -------------------------------------------------------------------------- //
 
-void computeFiberWithVectors( BundlesDataFormat& inputFiber,
-                              BundlesFormat& inputFiberInfo,
+void computeFiberWithVectors( BundlesData& inputFiber,
+                              BundlesMinf& inputFiberInfo,
                               std::vector<float>& vector1,
                               std::vector<float>& vector2,
                               int nbPoints,
@@ -156,38 +165,45 @@ void computeFiberWithVectors( BundlesDataFormat& inputFiber,
   matrixTracksfiber[ 3 * nbPoints + 3 * 0 + 0 ] = medialPointFiber[ 0 ] ;
   matrixTracksfiber[ 3 * nbPoints + 3 * 0 + 1 ] = medialPointFiber[ 1 ] ;
   matrixTracksfiber[ 3 * nbPoints + 3 * 0 + 2 ] = medialPointFiber[ 2 ] ;
-  matrixTracksfiber[ 3 * nbPoints + 3 * 1 + 0 ] = vector1[ 0 ] + medialPointFiber[ 0 ] ;
-  matrixTracksfiber[ 3 * nbPoints + 3 * 1 + 1 ] = vector1[ 1 ] + medialPointFiber[ 1 ] ;
-  matrixTracksfiber[ 3 * nbPoints + 3 * 1 + 2 ] = vector1[ 2 ] + medialPointFiber[ 2 ] ;
+  matrixTracksfiber[ 3 * nbPoints + 3 * 1 + 0 ] = vector1[ 0 ] +
+                                                         medialPointFiber[ 0 ] ;
+  matrixTracksfiber[ 3 * nbPoints + 3 * 1 + 1 ] = vector1[ 1 ] +
+                                                         medialPointFiber[ 1 ] ;
+  matrixTracksfiber[ 3 * nbPoints + 3 * 1 + 2 ] = vector1[ 2 ] +
+                                                         medialPointFiber[ 2 ] ;
 
   matrixTracksfiber[ 3 * nbPoints + 3 * 2 + 0 ] = medialPointFiber[ 0 ] ;
   matrixTracksfiber[ 3 * nbPoints + 3 * 2 + 1 ] = medialPointFiber[ 1 ] ;
   matrixTracksfiber[ 3 * nbPoints + 3 * 2 + 2 ] = medialPointFiber[ 2 ] ;
-  matrixTracksfiber[ 3 * nbPoints + 3 * 3 + 0 ] = vector2[ 0 ] + medialPointFiber[ 0 ] ;
-  matrixTracksfiber[ 3 * nbPoints + 3 * 3 + 1 ] = vector2[ 1 ] + medialPointFiber[ 1 ] ;
-  matrixTracksfiber[ 3 * nbPoints + 3 * 3 + 2 ] = vector2[ 2 ] + medialPointFiber[ 2 ] ;
+  matrixTracksfiber[ 3 * nbPoints + 3 * 3 + 0 ] = vector2[ 0 ] +
+                                                         medialPointFiber[ 0 ] ;
+  matrixTracksfiber[ 3 * nbPoints + 3 * 3 + 1 ] = vector2[ 1 ] +
+                                                         medialPointFiber[ 1 ] ;
+  matrixTracksfiber[ 3 * nbPoints + 3 * 3 + 2 ] = vector2[ 2 ] +
+                                                         medialPointFiber[ 2 ] ;
 
   std::vector<int> pointsPerTrackFiber = { nbPoints, 2, 2 } ;
   int curves_countFiber = 3 ;
 
-  BundlesDataFormat referenceFiber( matrixTracksfiber, pointsPerTrackFiber,
-                                                          curves_countFiber ) ;
+  BundlesData referenceFiber = inputFiber ;
+  referenceFiber.matrixTracks = matrixTracksfiber ;
+  referenceFiber.pointsPerTrack = pointsPerTrackFiber ;
+  referenceFiber.curves_count = curves_countFiber ;
+
+
   inputFiberInfo.curves_count = curves_countFiber ;
-  BundlesFormat referenceFiberInfo( inputFiberInfo ) ;
-  std::string referenceFiberFilename = outputDirectory + fiberName +
-                                                                ".bundlesdata" ;
-  std::string referenceFiberInfoFilename = outputDirectory + fiberName +
-                                                                    ".bundles" ;
-  referenceFiber.bundlesdataWriting( referenceFiberFilename.c_str(), verbose ) ;
-  referenceFiberInfo.bundlesWriting( referenceFiberInfoFilename.c_str(), verbose ) ;
+  BundlesMinf referenceFiberInfo( inputFiberInfo ) ;
+  std::string referenceFiberFilename = outputDirectory + fiberName + format ;
+
+  referenceFiber.write( referenceFiberFilename.c_str(), referenceFiberInfo ) ;
 
 
 }
 
 // -------------------------------------------------------------------------- //
 
-void computeFiberWithVectors( BundlesDataFormat& inputFiber,
-                              BundlesFormat& inputFiberInfo,
+void computeFiberWithVectors( BundlesData& inputFiber,
+                              BundlesMinf& inputFiberInfo,
                               int nbPoints,
                               std::string outputDirectory,
                               std::string fiberName )
@@ -345,143 +361,184 @@ int main( int argc, char* argv[] )
 
   }
 
+  if ( !( is_dir( outputDirectory ) ) )
+  {
+
+    mkdir( outputDirectory ) ;
+
+  }
+
 
   //   xxxxxxxxxxxxxxxxxxxxxx Reading input fibers 1 xxxxxxxxxxxxxxxxxxxxxx   //
 
   std::string inputBundlesFilename1 ;
   std::string inputBundlesDataFilename1 ;
   bool isBundlesFormat = false ;
+  bool isTrk = false ;
+  bool isTck = false ;
 
-  if ( inputFilename1.find( ".bundlesdata" ) != std::string::npos )
+  if ( endswith( inputFilename1, ".bundlesdata" ) )
   {
 
     inputBundlesDataFilename1 = inputFilename1 ;
 
-    inputBundlesFilename1 = inputFilename1 ;
-    size_t index = inputFilename1.find( ".bundlesdata" ) ;
-    inputBundlesFilename1.replace( index, 12, ".bundles") ;
+    inputBundlesFilename1 = replaceExtension( inputFilename1, ".bundles" ) ;
 
     isBundlesFormat = true ;
+    isTrk = false ;
+    isTck = false ;
+
+    format = ".bundles" ;
 
   }
-  else if ( inputFilename1.find( ".bundles" ) != std::string::npos )
+  else if ( endswith( inputFilename1, ".bundles" ) )
   {
 
     inputBundlesFilename1 = inputFilename1 ;
 
-    inputBundlesDataFilename1 = inputFilename1 ;
-    size_t index = inputFilename1.find( ".bundles" ) ;
-    inputBundlesDataFilename1.replace( index, 8, ".bundlesdata") ;
+    inputBundlesDataFilename1 = replaceExtension( inputFilename1,
+                                                              ".bundlesdata" ) ;
 
     isBundlesFormat = true ;
+    isTrk = false ;
+    isTck = false ;
+
+    format = ".bundles" ;
+
+  }
+  else if ( endswith( inputFilename1, ".trk" ) )
+  {
+
+    inputBundlesDataFilename1 = inputFilename1 ;
+
+    inputBundlesFilename1 = replaceExtension( inputFilename1, ".minf" ) ;
+
+    isBundlesFormat = true ;
+    isTrk = true ;
+    isTck = false ;
+
+    format = ".trk" ;
+
+  }
+  else if ( endswith( inputFilename1, ".tck" ) )
+  {
+
+    inputBundlesDataFilename1 = inputFilename1 ;
+
+    inputBundlesFilename1 = replaceExtension( inputFilename1, ".minf" ) ;
+
+    isBundlesFormat = false ;
+    isTrk = false ;
+    isTck = true ;
+
+    format = ".tck" ;
 
   }
   else
   {
 
-    std::cout << "The only tractogram format supported is .bundles"
+    std::cout << "The only tractogram format supported is .bundles/.trk/.tck"
               << std::endl ;
     exit( 1 ) ;
 
   }
 
 
-  BundlesDataFormat inputFiber1 ;
-  BundlesFormat inputFiberInfo1 ;
-
-  if ( isBundlesFormat )
-  {
-
-    if ( verbose )
-    {
-
-      std::cout << "Reading : " << inputBundlesFilename1 << std::endl ;
-
-    }
-
-    inputFiberInfo1.bundlesReading( inputBundlesFilename1.c_str(),
-                                        verbose ) ;
-
-    if ( verbose )
-    {
-
-      std::cout << "Reading : " << inputBundlesDataFilename1 << std::endl ;
-
-    }
-    inputFiber1.bundlesdataReading( inputBundlesDataFilename1.c_str(),
-                                    inputBundlesFilename1.c_str(),
-                                    verbose ) ;
-
-  }
+  BundlesData inputFiber1( inputBundlesDataFilename1.c_str() ) ;
+  BundlesMinf inputFiberInfo1( inputBundlesFilename1.c_str() ) ;
 
 
   //   xxxxxxxxxxxxxxxxxxxxxx Reading input fibers 2 xxxxxxxxxxxxxxxxxxxxxx   //
 
   std::string inputBundlesFilename2 ;
   std::string inputBundlesDataFilename2 ;
-  isBundlesFormat = false ;
 
-  if ( inputFilename1.find( ".bundlesdata" ) != std::string::npos )
+  if ( endswith( inputFilename2, ".bundlesdata" ) )
   {
 
+    if ( !isBundlesFormat )
+    {
+
+      std::cout << "ERROR : both inputs -i1 and -i2 must have the same format"
+                << std::endl ;
+
+      exit( 1 ) ;
+
+    }
+
     inputBundlesDataFilename2 = inputFilename2 ;
+    inputBundlesFilename2 = replaceExtension( inputFilename2, ".bundles" ) ;
 
-    inputBundlesFilename2 = inputFilename2 ;
-    size_t index = inputFilename1.find( ".bundlesdata" ) ;
-    inputBundlesFilename2.replace( index, 12, ".bundles") ;
-
-    isBundlesFormat = true ;
 
   }
-  else if ( inputFilename2.find( ".bundles" ) != std::string::npos )
+  else if ( endswith( inputFilename2, ".bundles" ) )
   {
+
+    if ( !isBundlesFormat )
+    {
+
+      std::cout << "ERROR : both inputs -i1 and -i2 must have the same format"
+                << std::endl ;
+
+      exit( 1 ) ;
+
+    }
 
     inputBundlesFilename2 = inputFilename2 ;
 
-    inputBundlesDataFilename2 = inputFilename2 ;
-    size_t index = inputFilename2.find( ".bundles" ) ;
-    inputBundlesDataFilename2.replace( index, 8, ".bundlesdata") ;
+    inputBundlesDataFilename2 = replaceExtension( inputFilename2,
+                                                              ".bundlesdata" ) ;
 
-    isBundlesFormat = true ;
+
+  }
+  else if ( endswith( inputFilename2, ".trk" ) )
+  {
+
+    if ( !isTrk )
+    {
+
+      std::cout << "ERROR : both inputs -i1 and -i2 must have the same format"
+                << std::endl ;
+
+      exit( 1 ) ;
+
+    }
+
+    inputBundlesDataFilename2 = inputFilename2 ;
+    inputBundlesFilename2 = replaceExtension( inputFilename2, ".minf" ) ;
+
+  }
+  else if ( endswith( inputFilename2, ".tck" ) )
+  {
+
+    if ( !isTck )
+    {
+
+      std::cout << "ERROR : both inputs -i1 and -i2 must have the same format"
+                << std::endl ;
+
+      exit( 1 ) ;
+
+    }
+
+    inputBundlesDataFilename2 = inputFilename2 ;
+    inputBundlesFilename2 = replaceExtension( inputFilename2, ".minf" ) ;
+
 
   }
   else
   {
 
-    std::cout << "The only tractogram format supported is .bundles"
+    std::cout << "The only tractogram format supported is .bundles/.trk/.tck"
               << std::endl ;
     exit( 1 ) ;
 
   }
 
 
-  BundlesDataFormat inputFiber2 ;
-  BundlesFormat inputFiberInfo2 ;
+  BundlesData inputFiber2( inputBundlesDataFilename2.c_str() ) ;
+  BundlesMinf inputFiberInfo2( inputBundlesFilename2.c_str() ) ;
 
-  if ( isBundlesFormat )
-  {
-
-    if ( verbose )
-    {
-
-      std::cout << "Reading : " << inputBundlesFilename2 << std::endl ;
-
-    }
-
-    inputFiberInfo2.bundlesReading( inputBundlesFilename2.c_str(),
-                                        verbose ) ;
-
-    if ( verbose )
-    {
-
-      std::cout << "Reading : " << inputBundlesDataFilename2 << std::endl ;
-
-    }
-    inputFiber2.bundlesdataReading( inputBundlesDataFilename2.c_str(),
-                                        inputBundlesFilename2.c_str(),
-                                        verbose ) ;
-
-  }
 
 
   // Sanity checks //
@@ -552,10 +609,10 @@ int main( int argc, char* argv[] )
   //                          outputDirectory,
   //                          fiberName1 ) ;
   //
-  // BundlesDataFormat movedFiber( samePlaneAndDirectionTranslatedFiber2,
+  // BundlesData movedFiber( samePlaneAndDirectionTranslatedFiber2,
   //                               inputFiber2.pointsPerTrack,
   //                               inputFiber2.curves_count ) ;
-  // BundlesFormat movedFiberInfo( inputFiberInfo2 ) ;
+  // BundlesMinf movedFiberInfo( inputFiberInfo2 ) ;
   // std::string fiberName2 = "movedFiber" ;
   // computeFiberWithVectors( movedFiber,
   //                          movedFiberInfo,
@@ -596,8 +653,7 @@ int main( int argc, char* argv[] )
                                                    medialPointFiber1,
                                                    nbPoints,
                                                    fiber1XY,
-                                                   newNormalVectorFiber1,
-                                                   verbose ) ;
+                                                   newNormalVectorFiber1 ) ;
 
 
   std::vector<float> normalVectorFiber2( 3, 0 ) ;
@@ -613,13 +669,12 @@ int main( int argc, char* argv[] )
                                                    medialPointFiber2,
                                                    nbPoints,
                                                    fiber2XY,
-                                                   newNormalVectorFiber2,
-                                                   verbose ) ;
+                                                   newNormalVectorFiber2 ) ;
   //----------------------------- Saving results -----------------------------//
-  BundlesDataFormat movedFiber1( fiber1XY,
-                                 inputFiber1.pointsPerTrack,
-                                 inputFiber1.curves_count ) ;
-  BundlesFormat movedFiber1Info( inputFiberInfo1 ) ;
+  BundlesData movedFiber1 = inputFiber1 ;
+  movedFiber1.matrixTracks = fiber1XY ;
+
+  BundlesMinf movedFiber1Info( inputFiberInfo1 ) ;
   std::vector<float> directionVectorFiber1XY( 3, 0 ) ;
   inputFiber1.computeDirectionVectorFiberTractogram( fiber1XY,
                                                      newNormalVectorFiber1,
@@ -634,10 +689,9 @@ int main( int argc, char* argv[] )
                            fiberName1 ) ;
 
 
-  BundlesDataFormat movedFiber2( fiber2XY,
-                                 inputFiber2.pointsPerTrack,
-                                 inputFiber2.curves_count ) ;
-  BundlesFormat movedFiber2Info( inputFiberInfo2 ) ;
+  BundlesData movedFiber2 = inputFiber2 ;
+  movedFiber2.matrixTracks = fiber2XY ;
+  BundlesMinf movedFiber2Info( inputFiberInfo2 ) ;
   std::vector<float> directionVectorFiber2XY( 3, 0 ) ;
   inputFiber1.computeDirectionVectorFiberTractogram( fiber2XY,
                                                      newNormalVectorFiber2,

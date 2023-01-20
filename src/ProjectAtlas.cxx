@@ -23,6 +23,7 @@
 #include <experimental/filesystem>
 
 #include "ProjectAtlas.h"
+#include "ioWrapper.h"
 
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -49,263 +50,10 @@ int getFlagPosition( int argc, char* argv[], const std::string& flag )
 
 }
 
-////////////////////////////////////////////////////////////////////////////////
-//////////////////// Function to check if file exists //////////////////////////
-////////////////////////////////////////////////////////////////////////////////
-
-inline bool is_file( const std::string& path )
-{
-
-  struct stat buffer ;
-  return( stat ( path.c_str(), &buffer ) == 0 ) ;
-
-}
 
 ////////////////////////////////////////////////////////////////////////////////
-////////////////// Function to check if directory exists ///////////////////////
+///////////////////////////////////// Main /////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
-
-inline bool is_dir( const std::string& path )
-{
-
-  return( std::experimental::filesystem::is_directory( path ) ) ;
-
-}
-
-
-////////////////////////////////////////////////////////////////////////////////
-/////////////////////// Function to create directory ///////////////////////////
-////////////////////////////////////////////////////////////////////////////////
-
-inline bool mkdir( const std::string& path )
-{
-
-  return( std::experimental::filesystem::create_directory( path ) ) ;
-
-}
-
-
-////////////////////////////////////////////////////////////////////////////////
-////////////////////////// Function to delete file /////////////////////////////
-////////////////////////////////////////////////////////////////////////////////
-
-inline bool rmfile( const std::string& path )
-{
-
-  if ( is_file( path ) )
-  {
-
-    return( std::experimental::filesystem::remove( path ) ) ;
-
-  }
-
-  return( false ) ;
-
-}
-
-////////////////////////////////////////////////////////////////////////////////
-/////////////////////// Function to delete directory ///////////////////////////
-////////////////////////////////////////////////////////////////////////////////
-inline bool rmdir( const std::string& path )
-{
-
-  if ( is_dir( path ) )
-  {
-
-    if ( std::experimental::filesystem::remove_all( path ) )
-    {
-
-      return( true ) ;
-
-    }
-    else
-    {
-
-      return( false ) ;
-    }
-
-  }
-  else
-  {
-
-    return( false ) ;
-
-  }
-
-}
-
-////////////////////////////////////////////////////////////////////////////////
-////////////////////////// Function to copy file ///////////////////////////////
-////////////////////////////////////////////////////////////////////////////////
-inline bool copy( const std::string& source,
-                  const std::string& destination )
-{
-
-  return( std::experimental::filesystem::copy_file( source, destination ) ) ;
-
-}
-
-////////////////////////////////////////////////////////////////////////////////
-///////////////////////// Function to rename file //////////////////////////////
-////////////////////////////////////////////////////////////////////////////////
-inline bool rename( const std::string& source, const std::string& destination )
-{
-
-  try
-  {
-
-    std::experimental::filesystem::rename( source, destination ) ;
-    if ( !is_file( source ) && is_file( destination ) )
-    {
-
-      return( true ) ;
-
-    }
-    return( false ) ;
-
-  }
-  catch ( ... )
-  {
-
-    return( false ) ;
-
-  }
-
-}
-
-
-////////////////////////////////////////////////////////////////////////////////
-/////////////// Function to check if string ends with sub-string ///////////////
-////////////////////////////////////////////////////////////////////////////////
-inline bool endswith( const std::string& input,
-                      const std::string& substring )
-{
-
-  std::string tmpString ;
-  char lastChar = input[ input.size() - 1 ] ;
-  if ( lastChar == '/' )
-  {
-
-    tmpString = input.substr( 0, input.size() - 1 ) ;
-
-  }
-  else
-  {
-
-    tmpString = input ;
-
-  }
-
-  std::string endSubstring = input.substr( input.size() - substring.size(),
-                                                                input.size() ) ;
-
-  if ( endSubstring == substring )
-  {
-
-    return( true ) ;
-
-  }
-  else
-  {
-
-    return( false ) ;
-
-  }
-
-}
-
-////////////////////////////////////////////////////////////////////////////////
-//////////////////// Function to get parent directory //////////////////////////
-////////////////////////////////////////////////////////////////////////////////
-inline std::string dirname( const std::string& path )
-{
-
-  std::string tmpString = path ;
-  char lastChar = tmpString[ tmpString.size() - 1 ] ;
-  if ( lastChar == '/' )
-  {
-
-    tmpString = tmpString.substr( 0, tmpString.size() - 1 ) ;
-
-  }
-
-  std::experimental::filesystem::path p( tmpString ) ;
-
-  std::string dirname = p.parent_path() ;
-  lastChar = dirname[ dirname.size() - 1 ] ;
-  if ( lastChar == '/' )
-  {
-
-    dirname = dirname.substr( 0, dirname.size() - 1 ) ;
-
-  }
-  dirname += "/" ;
-  return( dirname ) ;
-
-}
-
-////////////////////////////////////////////////////////////////////////////////
-//////////////////// Function to replace extension file ////////////////////////
-////////////////////////////////////////////////////////////////////////////////
-inline std::string replaceExtension( const std::string& path,
-                                     const std::string& newExtension )
-{
-
-  std::string tmpString = path ;
-  char lastChar = tmpString[ tmpString.size() - 1 ] ;
-  if ( lastChar == '/' )
-  {
-
-    tmpString = tmpString.substr( 0, tmpString.size() - 1 ) ;
-
-  }
-
-  std::experimental::filesystem::path p( tmpString ) ;
-  std::string filenameNoExtension = p.stem() ;
-  std::ostringstream _tmpOss ;
-  _tmpOss << dirname( path ) << filenameNoExtension ;
-  std::string newPath = _tmpOss.str() ;
-  newPath += newExtension ;
-
-  return( newPath ) ;
-
-}
-
-
-////////////////////////////////////////////////////////////////////////////////
-//////////////////// Function to check atlas directory /////////////////////////
-////////////////////////////////////////////////////////////////////////////////
-int countFilesDirectory( const std::string& path )
-{
-
-  if ( !is_dir( path ) )
-  {
-
-    return( -1 ) ;
-
-  }
-
-  int nbFilesInDirectory = 0 ;
-
-  for ( const auto & file : std::experimental::filesystem::directory_iterator(
-                                                                        path ) )
-  {
-
-    nbFilesInDirectory += 1 ;
-
-  }
-
-  return( nbFilesInDirectory ) ;
-
-}
-
-
-
-
-///////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////// Main ////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////
-
 int main( int argc, char* argv[] )
 {
 
@@ -317,7 +65,7 @@ int main( int argc, char* argv[] )
     index_tolMaxShapeAngle, index_tolLenght, index_tolDistBetMedPts,
     index_useAvgThr, index_useMDF, index_useSimple, index_useMPAF,
     index_compare, index_saveExtractedBundles, index_save_unlabeled,
-    index_verbose, index_help ;
+    index_nbThreads, index_verbose, index_help ;
 
   std::vector<std::string> possibleFlags{ "-i", "-a", "-o", "-l", "-p", "-thr",
                                           "-minLen", "-maxLen", "-maxAng",
@@ -329,14 +77,15 @@ int main( int argc, char* argv[] )
 					                                "-tolMaxShapeAng", "-tolLenght",
                                           "-tolDBMP", "-useAvgThr", "-useMPAF",
 					                                "-useMDF", "-useSimple", "-cb",
-					                                "-seb", "-su", "-v", "-h" } ;
+					                                "-seb", "-su", "-nbThreads", "-v",
+                                                                        "-h" } ;
 
   std::vector<bool> possibleFlagsNeedArgument{
                               true, true, true, true, true, true, true, true,
                               true, true, true, true, true, true, true, true,
                               true, true, true, true, true, true, true, true,
                               true, true, false, false, false, true,
-			                        false, true, false } ;
+			                        false, true, true, false } ;
 
 
 
@@ -442,6 +191,7 @@ int main( int argc, char* argv[] )
   index_compare = getFlagPosition( argc, argv, "-cb" ) ;
   index_saveExtractedBundles = getFlagPosition( argc, argv, "-seb" ) ;
   index_save_unlabeled = getFlagPosition( argc, argv, "-su" ) ;
+  index_nbThreads = getFlagPosition( argc, argv, "-nbThreads" ) ;
   index_verbose = getFlagPosition( argc, argv, "-v" ) ;
   index_help = getFlagPosition( argc, argv, "-h" ) ;
 
@@ -508,6 +258,8 @@ int main( int argc, char* argv[] )
               << "[-cb] : Compute distance between recognized bundles and "
               << "atlas bundes \n"
               << "[-seb] : Save extracted .bundles (not only the labels file)\n"
+              << "[-nbThreads] : Sets the value of omp_set_num_threads "
+              << "(default : number of cores ) \n"
               << "[-su] : Save bundle containing unlabeled fibers \n"
               << "[-v] : Set verbosity level at 1 \n"
               << "[-h] : Show this message " << std::endl ;
@@ -1055,6 +807,39 @@ int main( int argc, char* argv[] )
 
   }
 
+  if ( index_nbThreads )
+  {
+
+    nbThreads = std::stoi( argv[ index_nbThreads + 1 ] ) ;
+    if ( nbThreads <= 0 )
+    {
+
+      std::cout << "Invalid argument for -nbThreads : you must give a postive "
+                << "integer " << std::endl ;
+      exit( 1 ) ;
+
+    }
+
+  }
+  else
+  {
+
+    // nbThreads = omp_get_num_procs() ;
+    nbThreads = -1 ;
+
+  }
+
+  omp_set_num_threads( nbThreads ) ;
+
+  #pragma omp parallel
+  {
+
+    nbThreadsUsed = omp_get_num_threads() ;
+
+  }
+  std::cout << "Number of threads : " << nbThreadsUsed << std::endl ;
+
+
   if ( index_verbose )
   {
     if ( argv[ index_verbose + 1 ] )
@@ -1074,12 +859,13 @@ int main( int argc, char* argv[] )
 
   /////////////////////////////////////////////////////////////////////////////
 
-  std::string inputFilename( argv[ index_input + 1 ] ) ;
-  char lastChar = inputFilename[ inputFilename.size() - 1 ] ;
+  std::string inputBundlesFilename( argv[ index_input + 1 ] ) ;
+  char lastChar = inputBundlesFilename[ inputBundlesFilename.size() - 1 ] ;
   if ( lastChar == '/' )
   {
 
-    inputFilename = inputFilename.substr( 0, inputFilename.size() - 1 ) ;
+    inputBundlesFilename = inputBundlesFilename.substr( 0,
+                                             inputBundlesFilename.size() - 1 ) ;
 
   }
 
@@ -1105,7 +891,7 @@ int main( int argc, char* argv[] )
   {
 
     mkdir( outputDirectory ) ;
-    
+
   }
 
   std::string labelsName( argv[ index_labels + 1 ] ) ;
@@ -1119,145 +905,30 @@ int main( int argc, char* argv[] )
 
 
   //   xxxxxxxxxxxxxxxxxxxxx Reading Input tractogram xxxxxxxxxxxxxxxxxxxxx   //
-
-  std::string inputBundlesFilename ;
-  std::string inputBundlesDataFilename ;
-  std::string inputTRKFilename ;
-  bool isBundlesFormat = false ;
-  bool isTRKFormat = false ;
-
-  if ( inputFilename.find( ".bundlesdata" ) != std::string::npos )
+  if ( !is_file( inputBundlesFilename ) )
   {
 
-    inputBundlesDataFilename = inputFilename ;
+    std::stringstream outMessageOss ;
+    outMessageOss << "ProjectAtlas : input tractogram " << inputBundlesFilename
+                  << " does not exists" << std::endl ;
+    std::string outMessage = outMessageOss.str() ;
 
-    inputBundlesFilename = inputFilename ;
-    size_t index = inputFilename.find( ".bundlesdata" ) ;
-    inputBundlesFilename.replace( index, 12, ".bundles") ;
-
-    isBundlesFormat = true ;
-
-  }
-  else if ( inputFilename.find( ".bundles" ) != std::string::npos )
-  {
-
-    inputBundlesFilename = inputFilename ;
-
-    inputBundlesDataFilename = inputFilename ;
-    size_t index = inputFilename.find( ".bundles" ) ;
-    inputBundlesDataFilename.replace( index, 8, ".bundlesdata") ;
-
-    isBundlesFormat = true ;
-
-  }
-  else if ( inputFilename.find( ".trk" ) != std::string::npos )
-  {
-
-    inputTRKFilename = inputFilename ;
-
-    isTRKFormat = true ;
-
-    std::cout << "WARNING : Projection with .trk format not suported yet... "
-              << "exiting" << std::endl ;
-    return 1 ;
-
-  }
-  else
-  {
-
-    std::cout << "The only tractogram format supported is .bundles and .trk"
-              << std::endl ;
-    exit( 1 ) ;
+    throw( std::invalid_argument( outMessage ) ) ;
 
   }
 
 
-  BundlesDataFormat inputTractogram ;
-  BundlesFormat inputTractogramInfo ;
-  TrkFormat trkTractogramInfo ;
 
-  if ( isBundlesFormat )
-  {
-
-    if ( verbose )
-    {
-
-      std::cout << "Reading : " << inputBundlesFilename << std::endl ;
-
-    }
-
-    inputTractogramInfo.bundlesReading( inputBundlesFilename.c_str(),
-                                        verbose ) ;
-
-    if ( verbose )
-    {
-
-      std::cout << "Reading : " << inputBundlesDataFilename << std::endl ;
-
-    }
-    inputTractogram.bundlesdataReading( inputBundlesDataFilename.c_str(),
-                                        inputBundlesFilename.c_str(),
-                                        verbose ) ;
-
-  }
-  else if ( isTRKFormat )
-  {
-
-    if ( verbose )
-    {
-
-      std::cout << "Reading : " << inputTRKFilename << std::endl ;
-
-    }
-
-    TrkFormat tmpTractogram( inputTRKFilename.c_str(),
-                             verbose ) ;
-    inputTractogram.matrixTracks = tmpTractogram.matrixTracks ;
-    inputTractogram.pointsPerTrack = tmpTractogram.pointsPerTrack ;
-    inputTractogram.curves_count = tmpTractogram.curves_count ;
-
-    memcpy( trkTractogramInfo.id_string, tmpTractogram.id_string,
-                                         sizeof( tmpTractogram.id_string ) ) ;
-    memcpy( trkTractogramInfo.dim , tmpTractogram.dim,
-                                               sizeof( tmpTractogram.dim ) ) ;
-    memcpy( trkTractogramInfo.voxel_size, tmpTractogram.voxel_size,
-                                        sizeof( tmpTractogram.voxel_size ) ) ;
-    memcpy( trkTractogramInfo.origin, tmpTractogram.origin,
-                                            sizeof( tmpTractogram.origin ) ) ;
-    trkTractogramInfo.n_scalars = 0 ;
-    trkTractogramInfo.n_properties = 0 ;
-    memcpy( trkTractogramInfo.vox_to_ras, tmpTractogram.vox_to_ras,
-                                        sizeof( tmpTractogram.vox_to_ras ) ) ;
-    memcpy( trkTractogramInfo.reserved, tmpTractogram.reserved,
-                                          sizeof( tmpTractogram.reserved ) ) ;
-    memcpy( trkTractogramInfo.voxel_order, tmpTractogram.voxel_order,
-                                       sizeof( tmpTractogram.voxel_order ) ) ;
-    memcpy( trkTractogramInfo.pad2, tmpTractogram.pad2,
-                                               sizeof( tmpTractogram.pad2 ) ) ;
-    memcpy( trkTractogramInfo.image_orientation_patient,
-                         tmpTractogram.image_orientation_patient,
-                         sizeof( tmpTractogram.image_orientation_patient ) ) ;
-    memcpy( trkTractogramInfo.pad1, tmpTractogram.pad1,
-                                              sizeof( tmpTractogram.pad1 ) ) ;
-    trkTractogramInfo.invert_x = tmpTractogram.invert_x ;
-    trkTractogramInfo.invert_y = tmpTractogram.invert_y ;
-    trkTractogramInfo.invert_z = tmpTractogram.invert_z ;
-    trkTractogramInfo.swap_xy = tmpTractogram.swap_xy ;
-    trkTractogramInfo.swap_yz = tmpTractogram.swap_yz ;
-    trkTractogramInfo.swap_zx = tmpTractogram.swap_zx ;
-    trkTractogramInfo.version = tmpTractogram.version ;
-    trkTractogramInfo.hdr_size = tmpTractogram.hdr_size ;
-
-  }
-
+  BundlesData inputTractogram( inputBundlesFilename.c_str() ) ;
+  BundlesMinf inputTractogramInfo( inputBundlesFilename.c_str() ) ;
 
   //   xxxxxxxxxxxxxxxxxxxxxxxxxx Reading Atlas xxxxxxxxxxxxxxxxxxxxxxxxxx   //
 
   AtlasBundles atlasData( atlasDirectory.c_str(),
-                          isBundlesFormat,
-                          isTRKFormat,
+                          inputTractogramInfo.isBundles,
+                          inputTractogramInfo.isTrk,
+                          inputTractogramInfo.isTck,
                           verbose ) ;
-
 
   //////////////////////////////// Sanity cheks ////////////////////////////////
   int nbFibersTractogram = inputTractogram.curves_count ;
@@ -1345,13 +1016,12 @@ int main( int argc, char* argv[] )
                                 useDefaultMaxLen,
                                 saveExtractedBundles,
                                 saveUnlabeled,
-			        useAvgThr ) ;
+			                          useAvgThr,
+                                nbThreads ) ;
 
     recognized.projectAtlas( atlasData,
                              inputTractogram,
                              thresholdAdjacency,
-                             isBundlesFormat,
-                             isTRKFormat,
                              outputDirectory,
                              labelsName ) ;
 

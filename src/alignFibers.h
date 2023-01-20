@@ -30,13 +30,14 @@
 ///////////////////////////////////////////////////////////////////////////////
 
 int verbose = 0 ;
+std::string format ;
 
 
 ////////////////////////////////////////////////////////////////////////////////
 int getFlagPosition( int argc, char* argv[], const std::string& flag ) ;
 
-void computeFiberWithVectors( BundlesDataFormat& inputFiber,
-                              BundlesFormat& inputFiberInfo,
+void computeFiberWithVectors( BundlesData& inputFiber,
+                              BundlesMinf& inputFiberInfo,
                               std::vector<float>& vector1,
                               std::vector<float>& vector2,
                               std::vector<float>& vector3,
@@ -44,8 +45,8 @@ void computeFiberWithVectors( BundlesDataFormat& inputFiber,
                               std::string outputDirectory,
                               std::string fiberName ) ;
 
-void computeFiberWithVectors( BundlesDataFormat& inputFiber,
-                              BundlesFormat& inputFiberInfo,
+void computeFiberWithVectors( BundlesData& inputFiber,
+                              BundlesMinf& inputFiberInfo,
                               std::vector<float>& vector1,
                               std::vector<float>& vector2,
                               int nbPoints,
@@ -53,8 +54,8 @@ void computeFiberWithVectors( BundlesDataFormat& inputFiber,
                               std::string fiberName ) ;
 
 
-void computeFiberWithVectors( BundlesDataFormat& inputFiber,
-                              BundlesFormat& inputFiberInfo,
+void computeFiberWithVectors( BundlesData& inputFiber,
+                              BundlesMinf& inputFiberInfo,
                               int nbPoints,
                               std::string outputDirectory,
                               std::string fiberName ) ;

@@ -22,9 +22,7 @@
 #include <omp.h>
 #include <experimental/filesystem>
 
-//#include "BundlesFormat.h"
-//#include "BundlesDataFormat.h"
-#include "TrkFormat.h"
+#include "bundlesData.h"
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
@@ -35,36 +33,50 @@ class AtlasBundles
 
   public :
   //////////////////////////////// Public Fields ///////////////////////////////
-  std::vector< BundlesFormat > bundles ;
-  std::vector< BundlesDataFormat > bundlesData ;
-  std::vector< std::string > bundlesNames ;
+  std::vector<BundlesMinf> bundlesMinf ;
+  std::vector<BundlesData> bundlesData ;
+  std::vector<std::string> bundlesNames ;
+
+  bool isBundles = false ;
+  bool isTrk = false ;
+  bool isTck = false ;
 
   //////////////////////////////// Constructors ////////////////////////////////
   AtlasBundles() ;
 
   AtlasBundles( const char* atlasDirectory,
                 bool isBundlesFormat,
-                bool isTRKFormat,
+                bool isTrkFormat,
+                bool isTckFormat,
                 int verbose ) ;
 
-  AtlasBundles( std::vector< BundlesFormat > bundles,
-                std::vector< BundlesDataFormat > bundlesData,
-                std::vector< std::string > bundlesNames ) ;
+  AtlasBundles( std::vector<BundlesMinf> bundlesMinf,
+                std::vector<BundlesData> bundlesData,
+                std::vector<std::string> bundlesNames,
+                bool isBundlesFormat,
+                bool isTrkFormat,
+                bool isTckFormat ) ;
 
 
   //////////////////////////////// Destructors /////////////////////////////////
   virtual ~AtlasBundles() ;
 
   ////////////////////////////////// Mehtods ///////////////////////////////////
-  void atlasReading( const char* atlasDirectory,
-                     bool isBundlesFormat,
-                     bool isTRKFormat,
-                     int verbose ) ;
+  void read( const char* atlasDirectory,
+             bool isBundlesFormat,
+             bool isTrkFormat,
+             bool isTckFormat,
+             int verbose ) ;
 
-  void atlasWriting( const char* outDirectory,
-                     bool isBundlesFormat,
-                     bool isTRKFormat,
-                     int verbose ) ;
+  void write( const char* outDirectory,
+              bool isBundlesFormat,
+              bool isTrkFormat,
+              bool isTckFormat,
+              int verbose ) const ;
+
+  std::string getFormat() const ;
+
+
 
   void analysisWriting( const char* analysisFilename,
                         std::vector<float>& distancesToCenterAtlasBundle,
@@ -77,81 +89,83 @@ class AtlasBundles
                         int nbFibersAtlasBundle,
                         int numberDisimilaritiesAtlasBundle,
                         int numberDistancesBetweenMedialPoints,
-                        int verbose ) ;
+                        int verbose ) const ;
 
-  void buildFullAtlas( BundlesFormat& bundles,
-                       BundlesDataFormat& bundlesData ) ;
+  void buildFullAtlas( BundlesMinf& bundles,
+                       BundlesData& bundlesData ) const ;
 
   void computeLengthsAtlasBundleFibers(
-                                BundlesDataFormat& atlasBundleData,
-                                int nbPoints,
-                                std::vector<float>& lengthsAtlasBundleFibers ) ;
+                          const BundlesData& atlasBundleData,
+                          int nbPoints,
+                          std::vector<float>& lengthsAtlasBundleFibers ) const ;
 
 
-  void findCenterBundle( BundlesDataFormat& atlasBundleData,
-                         int nbPoints,
-                         std::vector<float>& medialPointAtlasBundle,
-                         std::vector<float>& medialPointAtlasBundleFibers ) ;
-  void findCenterBundle( int bundleIndex,
-                         std::vector<float>& medialPointAtlasBundle,
-                         std::vector<float>& medialPointAtlasBundleFibers ) ;
+  void findCenterBundle(
+                      const BundlesData& atlasBundleData,
+                      int nbPoints,
+                      std::vector<float>& medialPointAtlasBundle,
+                      std::vector<float>& medialPointAtlasBundleFibers ) const ;
+  void findCenterBundle(
+                      int bundleIndex,
+                      std::vector<float>& medialPointAtlasBundle,
+                      std::vector<float>& medialPointAtlasBundleFibers ) const ;
 
 
   void computeNormalVectorFibersAtlasBundle(
-                         BundlesDataFormat& atlasBundleData,
+                         const BundlesData& atlasBundleData,
                          int nbPoints,
                          const std::vector<float>& medialPointAtlasBundleFibers,
-                         std::vector<float>& normalVectors ) ;
+                         std::vector<float>& normalVectors ) const ;
 
 
   void computeDirectionVectorFibersAtlasBundle(
-                         BundlesDataFormat& atlasBundleData,
+                         const BundlesData& atlasBundleData,
                          const std::vector<float>& normalVectorsAtlasBundle,
                          int nbPoints,
                          const std::vector<float>& medialPointAtlasBundleFibers,
-                         std::vector<float>& directionVectors ) ;
+                         std::vector<float>& directionVectors ) const ;
 
   double compareDisimilarityBundles(
-                         BundlesDataFormat& bundle1,
-                         BundlesDataFormat& bundle2,
+                         const BundlesData& bundle1,
+                         const BundlesData& bundle2,
                          const std::vector<float>& medialPointAtlasBundleFibers,
-                         int nbPoints ) ;
+                         int nbPoints ) const ;
   double compareDisimilarityBundles(
-                         BundlesDataFormat& bundle1,
-                         BundlesDataFormat& bundle2,
-                         int nbPoints ) ;
+                         const BundlesData& bundle1,
+                         const BundlesData& bundle2,
+                         int nbPoints ) const ;
 
 
-  double distanceBetweenBundles( BundlesDataFormat& bundle1,
-                                 BundlesDataFormat& bundle2,
+  double distanceBetweenBundles( const BundlesData& bundle1,
+                                 const BundlesData& bundle2,
                                  int nbFibersBundle1,
                                  int nbFibersBundle2,
-                                 int nbPoints ) ;
+                                 int nbPoints ) const ;
   double distanceBetweenBundles( int bundleIndex,
-                                 BundlesDataFormat& bundle,
+                                 const BundlesData& bundle,
                                  int nbFibersBundle,
-                                 int nbPoints ) ;
+                                 int nbPoints ) const ;
 
   void computeNumberAdjacentFibersBundle1ToBundle2(
-                                    const std::vector<float>& bundle1,
-                                    const std::vector<float>& bundle2,
-                                    int nbFibersBundle1,
-                                    int nbFibersBundle2,
-                                    int nbPoints, // Same for 2 bundles
-                                    float threshold,
-                                    std::vector<int>& nbAdjacentFibersBundle ) ;
+                              const std::vector<float>& bundle1,
+                              const std::vector<float>& bundle2,
+                              int nbFibersBundle1,
+                              int nbFibersBundle2,
+                              int nbPoints, // Same for 2 bundles
+                              float threshold,
+                              std::vector<int>& nbAdjacentFibersBundle ) const ;
 
   void computeNumberAdjacentFibersRecognizedToAtlasBundles(
-                                    BundlesDataFormat& bundle,
-                                    std::string bundleName,
-                                    float threshold,
-                                    std::vector<int>& nbAdjacentFibersBundle ) ;
+                              const BundlesData& bundle,
+                              std::string bundleName,
+                              float threshold,
+                              std::vector<int>& nbAdjacentFibersBundle ) const ;
 
   void computeNumberAdjacentFibersAtlasToRecognizedBundles(
-                                    BundlesDataFormat& bundle,
-                                    std::string bundleName,
-                                    float threshold,
-                                    std::vector<int>& nbAdjacentFibersBundle ) ;
+                              const BundlesData& bundle,
+                              std::string bundleName,
+                              float threshold,
+                              std::vector<int>& nbAdjacentFibersBundle ) const ;
 
   float coverageBundle1ToBundle2( const std::vector<float>& bundle1,
                                   const std::vector<float>& bundle2,
@@ -159,24 +173,24 @@ class AtlasBundles
                                   int nbFibersBundle2,
                                   int nbPoints, // Same for 2 bundles
                                   float threshold,
-                                  int verbose ) ;
+                                  int verbose ) const ;
   float coverageBundle1ToBundle2(
-                    const std::vector<int>& nbAdjacentFibersBundle1ToBundle2 ) ;
+              const std::vector<int>& nbAdjacentFibersBundle1ToBundle2 ) const ;
 
-  float coverageRecognizedToAtlasBundles( BundlesDataFormat& bundle,
+  float coverageRecognizedToAtlasBundles( const BundlesData& bundle,
                                           std::string bundleName,
                                           float threshold,
-                                          int verbose ) ;
+                                          int verbose ) const ;
   float coverageRecognizedToAtlasBundles(
-            const std::vector<int>& nbAdjacentFibersRecognizedToAtlasBundles ) ;
+      const std::vector<int>& nbAdjacentFibersRecognizedToAtlasBundles ) const ;
 
 
-  float coverageAtlasToRecognizedBundles( BundlesDataFormat& bundle,
+  float coverageAtlasToRecognizedBundles( const BundlesData& bundle,
                                           std::string bundleName,
                                           float threshold,
-                                          int verbose ) ;
+                                          int verbose ) const ;
   float coverageAtlasToRecognizedBundles(
-            const std::vector<int>& nbAdjacentFibersAtlasToRecognizedBundles ) ;
+      const std::vector<int>& nbAdjacentFibersAtlasToRecognizedBundles ) const ;
 
   float overlapBundle1ToBundle2( const std::vector<float>& bundle1,
                                  const std::vector<float>& bundle2,
@@ -184,23 +198,23 @@ class AtlasBundles
                                  int nbFibersBundle2,
                                  int nbPoints, // Same for 2 bundles
                                  float threshold,
-                                 int verbose ) ;
+                                 int verbose ) const ;
   float overlapBundle1ToBundle2(
-                    const std::vector<int>& nbAdjacentFibersBundle1ToBundle2 ) ;
+              const std::vector<int>& nbAdjacentFibersBundle1ToBundle2 ) const ;
 
-  float overlapRecognizedToAtlasBundles( BundlesDataFormat& bundle,
+  float overlapRecognizedToAtlasBundles( const BundlesData& bundle,
                                          std::string bundleName,
                                          float threshold,
-                                         int verbose ) ;
+                                         int verbose ) const ;
   float overlapRecognizedToAtlasBundles(
-            const std::vector<int>& nbAdjacentFibersRecognizedToAtlasBundles ) ;
+      const std::vector<int>& nbAdjacentFibersRecognizedToAtlasBundles ) const ;
 
-  float overlapAtlasToRecognizedBundles( BundlesDataFormat& bundle,
+  float overlapAtlasToRecognizedBundles( const BundlesData& bundle,
                                          std::string bundleName,
                                          float threshold,
-                                         int verbose ) ;
+                                         int verbose ) const ;
   float overlapAtlasToRecognizedBundles(
-            const std::vector<int>& nbAdjacentFibersAtlasToRecognizedBundles ) ;
+      const std::vector<int>& nbAdjacentFibersAtlasToRecognizedBundles ) const ;
 
   float bundlesAdjacency(  const std::vector<float>& bundle1,
                            const std::vector<float>& bundle2,
@@ -208,17 +222,15 @@ class AtlasBundles
                            int nbFibersBundle2,
                            int nbPoints, // Same for 2 bundles
                            float threshold,
-                           int verbose ) ;
+                           int verbose ) const ;
 
-  float bundlesAdjacency(  BundlesDataFormat& bundle,
+  float bundlesAdjacency(  const BundlesData& bundle,
                            std::string bundleName,
                            float threshold,
-                           int verbose ) ;
+                           int verbose ) const ;
   float bundlesAdjacency( float coverageRecognizedToAtlasBundlesMeasure,
-                          float coverageAtlasToRecognizedBundlesMeasure ) ;
+                          float coverageAtlasToRecognizedBundlesMeasure ) const;
 
-  int findBundleIndexByName( std::string bundleName ) ;
+  int findBundleIndexByName( std::string bundleName ) const ;
 
 } ;
-
-std::string getFilenameNoExtension( std::string path ) ;

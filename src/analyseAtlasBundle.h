@@ -36,18 +36,18 @@ bool useMDF = false ;
 int getFlagPosition( int argc, char* argv[], const std::string& flag ) ;
 
 void computeCenterAtlasBundleFibers(
-                           BundlesDataFormat& atlasBundleData,
+                           BundlesData& atlasBundleData,
                            std::vector<float>& medialPointsAtlasBundleFibers ) ;
 
 void computeAverageFiberBundle(
-                        BundlesDataFormat& atlasBundleData,
+                        BundlesData& atlasBundleData,
                         const std::vector<float>& medialPointsAtlasBundleFibers,
                         int nbPoints,
                         std::vector<float>& averageFiber,
                         std::vector<float>& medialPointAtlasBundle ) ;
 
 void computeGravityCenterAtlasBundle(
-                                BundlesDataFormat& atlasBundleData,
+                                BundlesData& atlasBundleData,
                                 int nbPoints,
                                 std::vector<float>& gravityCenterAtlasBundle ) ;
 
@@ -58,40 +58,40 @@ void computeDistancesToCenterBundle(
                         std::vector<float>& distancesToCenterAtlasBundle ) ;
 
 void computeNormalVectorFibersAtlasBundle(
-                                     BundlesDataFormat& atlasBundleData,
+                                     BundlesData& atlasBundleData,
                                      std::vector<float>& normalVectorsBundle ) ;
 
 void computeDistancesBetweenMedialPointsBundle(
-                      BundlesDataFormat& atlasBundleData,
+                      BundlesData& atlasBundleData,
                       const std::vector<float>& medialPointsAtlasBundleFibers,
                       std::vector<float>& distancesBetweenMedialPointsBundle ) ;
 
-void computeAnglesBundle( BundlesDataFormat& atlasBundleData,
+void computeAnglesBundle( BundlesData& atlasBundleData,
                           const std::vector<float>& normalVectorsBundle,
                           std::vector<float>& anglesAtlasBundle ) ;
 
 
 void computeDirectionAnglesBundle(
-                               BundlesDataFormat& atlasBundleData,
+                               BundlesData& atlasBundleData,
                                const std::vector<float>& normalVectorsBundle,
                                int nbPoints,
                                std::vector<float>& directionAnglesAtlasBundle ) ;
 
 void computeShapeAnglesBundle(
-                        BundlesDataFormat& atlasBundleData,
+                        BundlesData& atlasBundleData,
                         int nbPoints,
                         const std::vector<float>& medialPointsAtlasBundleFibers,
                         std::vector<float>& shapeAnglesAtlasBundle ) ;
 
 void computeAverageDisimilarity(
-                        BundlesDataFormat& atlasBundleData,
+                        BundlesData& atlasBundleData,
                         const std::vector<float>& normalVectorsBundle,
                         const std::vector<float>& medialPointsAtlasBundleFibers,
                         int nbPoints,
                         std::vector<float>& disimilaritiesAtlasBundle ) ;
 
 void computeAverageDisimilarityMDF(
-                        BundlesDataFormat& atlasBundleData,
+                        BundlesData& atlasBundleData,
                         const std::vector<float>& normalVectorsBundle,
                         const std::vector<float>& medialPointsAtlasBundleFibers,
                         int nbPoints,

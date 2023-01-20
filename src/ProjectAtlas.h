@@ -45,22 +45,6 @@ bool useMedialPointAverageFiber = false ;
 bool useSimpleProjection = false ;
 bool useAvgThr = false ;
 
-// float toleranceP = 0.0 ;
-// float toleranceThr = 0.0 ;
-// float toleranceMaxAngle = -0.5 ;
-// float toleranceMaxDirectionAngle = -0.5 ;
-// float toleranceMinShapeAngle = 0.0 ;
-// float toleranceMaxShapeAngle = 0.0 ;
-// float toleranceLenght = 0.3 ;
-
-// float toleranceP = 0.0 ;
-// float toleranceThr = 0.7 ;
-// float toleranceMaxAngle = 0.7 ;
-// float toleranceMaxDirectionAngle = 0.7 ;
-// float toleranceMinShapeAngle = 0.9 ;
-// float toleranceMaxShapeAngle = 0.9 ;
-// float toleranceLenght = 0.3 ;
-
 float toleranceP = 0.0 ;
 float toleranceThr = 0.0 ;
 float toleranceMaxAngle = 0.0 ;
@@ -69,19 +53,6 @@ float toleranceMinShapeAngle = 0.0 ;
 float toleranceMaxShapeAngle = 0.0 ;
 float toleranceLenght = 0.0 ;
 float toleranceDistanceBetweenMedialPoints = 0.0 ;
-
-/*
-// float toleranceP = 0.0 ;
-// float toleranceP = -0.1 ;
-float toleranceP = -0.1 ;
-// float toleranceThr = 0.2 ;
-float toleranceThr = 0.1 ;
-float toleranceMaxAngle = 0.0 ;
-float toleranceMaxDirectionAngle = 0.1 ;
-float toleranceMinShapeAngle = 0.0 ;
-float toleranceMaxShapeAngle = 0.0 ;
-float toleranceLenght = 0.0 ;
-*/
 
 float thrPercentageSimilarity = 0.05 ;
 float minimumNumberFibers = 20 ;
@@ -99,6 +70,9 @@ bool useDefaultMaxLen = false ;
 bool useDefaultThrDistanceBetweenMedialPoints = false ;
 bool saveExtractedBundles = true ;
 bool saveUnlabeled = false ;
+
+int nbThreads = 0 ;
+int nbThreadsUsed ;
 
 
 ////////////////////////////////////////////////////////////////////////////////

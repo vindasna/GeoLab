@@ -83,7 +83,8 @@ RecognizedBundles::RecognizedBundles(
                                   bool useDefaultMaxLen,
                                   bool saveExtractedBundles,
                                   bool saveUnlabeled,
-				                          bool useAvgThr ) : AtlasBundles()
+				                          bool useAvgThr,
+                                  int nbThreads ) : AtlasBundles()
 {
 
   this->verbose = verbose ;
@@ -126,6 +127,8 @@ RecognizedBundles::RecognizedBundles(
   this->saveUnlabeled = saveUnlabeled ;
   this->useAvgThr = useAvgThr ;
 
+  this->nbThreads = nbThreads ;
+
 }
 
 
@@ -139,8 +142,8 @@ RecognizedBundles::~RecognizedBundles(){}
 /////////////////////////////////// Methods ////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 void RecognizedBundles::MDADLabeling(
-                         BundlesDataFormat& atlasBundleData,
-                         BundlesDataFormat& subjectBundlesData,
+                         BundlesData& atlasBundleData,
+                         BundlesData& subjectBundlesData,
                          int atlasBundleIndex,
                          const std::vector<float>& medialPointAtlasBundle,
                          const std::vector<float>& medialPointAtlasBundleFibers,
@@ -150,6 +153,13 @@ void RecognizedBundles::MDADLabeling(
                          int nbPoints,
                          std::vector<std::vector<int16_t>>& labels )
 {
+
+  if ( this->nbThreads )
+  {
+
+    omp_set_num_threads( this->nbThreads ) ;
+
+  }
 
   float p = this->p ;
   float thrDistance = this->thrDistance ;
@@ -170,7 +180,7 @@ void RecognizedBundles::MDADLabeling(
 
   std::vector<int16_t> tmpLabels( nbFibersTract, -1 ) ;
 
-  #pragma omp parallel for
+  #pragma omp parallel for shared(tmpLabels) schedule(dynamic)
   for ( int fiberIndex = 0 ; fiberIndex < nbFibersTract ; fiberIndex++ )
   {
 
@@ -187,6 +197,7 @@ void RecognizedBundles::MDADLabeling(
 
     }
 
+
     // Searching the medial point of tractogram fiber
     std::vector<float> medialPointTractFiber( 3, 0 ) ;
     subjectBundlesData.computeMedialPointFiberWithDistance(
@@ -202,7 +213,7 @@ void RecognizedBundles::MDADLabeling(
     {
 
       distanceMedialPoints += pow( ( medialPointAtlasBundle[ i ] -
-                                        medialPointTractFiber[ i ] ), 2 ) ;
+                                             medialPointTractFiber[ i ] ), 2 ) ;
 
     }
     distanceMedialPoints = sqrt( distanceMedialPoints ) ;
@@ -220,12 +231,12 @@ void RecognizedBundles::MDADLabeling(
       {
 
         std::vector<float> medialPointAtlasFiber{
-                                           medialPointAtlasBundleFibers[
-                                           3 * atlasBundleFiberIndex + 0 ],
-                                           medialPointAtlasBundleFibers[
-                                           3 * atlasBundleFiberIndex + 1 ],
-                                           medialPointAtlasBundleFibers[
-                                           3 * atlasBundleFiberIndex + 2 ] } ;
+                                             medialPointAtlasBundleFibers[
+                                             3 * atlasBundleFiberIndex + 0 ],
+                                             medialPointAtlasBundleFibers[
+                                             3 * atlasBundleFiberIndex + 1 ],
+                                             medialPointAtlasBundleFibers[
+                                             3 * atlasBundleFiberIndex + 2 ] } ;
 
         //
         float distanceMedialPointsFiberSubjectToAtlas = 0 ;
@@ -241,6 +252,145 @@ void RecognizedBundles::MDADLabeling(
                                      distanceMedialPointsFiberSubjectToAtlas ) ;
         if ( distanceMedialPointsFiberSubjectToAtlas >
                                                 thrDistanceBetweenMedialPoints )
+        {
+
+          continue ;
+
+        }
+
+        ////////////////////////////////////////////////////////////////////////
+        // float lengthAltasFiber = atlasBundleData.computeLengthFiber(
+        //                                                   atlasBundleFibers,
+        //                                                   atlasBundleFiberIndex,
+        //                                                   nbPoints ) ;
+        //
+        // if ( abs( lengthAltasFiber - lengthFiber ) > thrDistance / 2.0 )
+        // {
+        //
+        //   continue ;
+        //
+        //
+        // }
+
+        ///
+        std::vector<float> translation( 3, 0 ) ;
+
+        for ( int i = 0 ; i < 3 ; i++ )
+        {
+
+          translation[ i ] = medialPointAtlasBundleFibers[ i ] -
+                                                    medialPointTractFiber[ i ] ;
+
+        }
+
+        float tmpDirectDistance = 0 ;
+        float tmpFlippedDistance = 0 ;
+
+        for ( int i = 0 ; i < 3 ; i++ )
+        {
+
+          tmpDirectDistance += pow( atlasBundleFibers[
+                            3 * nbPoints * atlasBundleFiberIndex + 3 * 0 + i ] -
+                            ( tractogramFibers[  3 * nbPoints * fiberIndex +
+                                         3 * 0 + i ] + translation[ i ] ), 2 ) ;
+
+          tmpFlippedDistance += pow( atlasBundleFibers[
+                            3 * nbPoints * atlasBundleFiberIndex + 3 * 0 + i ] -
+                            ( tractogramFibers[  3 * nbPoints * fiberIndex +
+                          3 * ( nbPoints - 1 ) + i ] + translation[ i ] ), 2 ) ;
+
+        }
+
+        bool isDirectSens = true ;
+        if ( tmpFlippedDistance < tmpDirectDistance )
+        {
+
+          isDirectSens = false ;
+
+        }
+        ///
+
+        std::vector<float> endPointAtlas1 ;
+        std::vector<float> endPointAtlas2 ;
+        std::vector<float> endPointTract1 ;
+        std::vector<float> endPointTract2 ;
+        for ( int i = 0 ; i < 3 ; i++ )
+        {
+
+          endPointAtlas1.push_back( atlasBundleFibers[
+                          3 * nbPoints * atlasBundleFiberIndex + 3 * 0 + i ] ) ;
+          endPointAtlas2.push_back( atlasBundleFibers[
+                          3 * nbPoints * atlasBundleFiberIndex + 3 * (
+                                                        nbPoints - 1 ) + i ] ) ;
+
+          endPointTract1.push_back( tractogramFibers[
+                                     3 * nbPoints * fiberIndex + 3 * 0 + i ] ) ;
+          endPointTract2.push_back( tractogramFibers[
+                                     3 * nbPoints * fiberIndex + 3 * (
+                                                        nbPoints - 1 ) + i ] ) ;
+        }
+
+        float tmpDist1 = 0 ;
+        float tmpDist2 = 0 ;
+        for ( int i = 0 ; i < 3 ; i++ )
+        {
+
+          if ( isDirectSens )
+          {
+
+            tmpDist1 += pow( endPointAtlas1[ i ] - endPointTract1[ i ], 2 ) ;
+            tmpDist2 += pow( endPointAtlas2[ i ] - endPointTract2[ i ], 2 ) ;
+
+          }
+          else
+          {
+
+            tmpDist1 += pow( endPointAtlas1[ i ] - endPointTract2[ i ], 2 ) ;
+            tmpDist2 += pow( endPointAtlas2[ i ] - endPointTract1[ i ], 2 ) ;
+
+          }
+
+
+
+        }
+        tmpDist1 = sqrt( tmpDist1 ) ;
+        tmpDist2 = sqrt( tmpDist2 ) ;
+
+        if ( tmpDist1 > thrDistance / 2.0 || tmpDist2 > thrDistance / 2.0  )
+        {
+
+          continue ;
+
+        }
+
+
+        ////////////////////////////////////////////////////////////////////////
+
+
+
+        // Computing shape angle
+        std::vector<float> point1( 3, 0 ) ;
+        std::vector<float> point2( 3, 0 ) ;
+
+        std::vector<float> vector1( 3, 0 ) ;
+        std::vector<float> vector2( 3, 0 ) ;
+        int64_t offsetTractogram = 3 * nbPoints * fiberIndex ;
+        for ( int i = 0 ; i < 3 ; i++ )
+        {
+
+          point1[ i ] = tractogramFibers[ 3 * 0 + i + offsetTractogram ] ;
+          point2[ i ] = tractogramFibers[ 3 * ( nbPoints - 1 ) + i
+                                                          + offsetTractogram ] ;
+
+          vector1[ i ] = point1[ i ] - medialPointTractFiber[ i ] ;
+          vector2[ i ] = point2[ i ] - medialPointTractFiber[ i ] ;
+
+        }
+
+        float shapeAngle = subjectBundlesData.computeAngleBetweenVectors(
+                                                        vector1, vector2 ) ;
+
+        if ( shapeAngle > maxShapeAngle || shapeAngle < minShapeAngle )
         {
 
           continue ;
@@ -272,121 +422,63 @@ void RecognizedBundles::MDADLabeling(
                                              normalVectorsAtlasBundleFiber ) ;
 
 
-        // if ( angle < maxAngle || 180 - angle < maxAngle )
-        if ( angle < maxAngle )
+        if ( angle > maxAngle )
         {
 
-          std::vector<float> tractogramFiberToAtlasFiberPlane( 3 * nbPoints,
-                                                                         0 ) ;
-          std::vector<float> newNormalVectorTractogramFiber( 3, 0 ) ;
-          subjectBundlesData.putFibersInSamePlane(
-                                            normalVectorsAtlasBundleFiber,
-                                            normalVectorTractogramFiber,
+          continue ;
+
+        }
+
+        std::vector<float> directionVectorTractogramFiber( 3, 0 ) ;
+        subjectBundlesData.computeDirectionVectorFiberTractogram(
                                             tractogramFibers,
+                                            medialPointTractFiber,
+                                            normalVectorTractogramFiber,
                                             fiberIndex,
                                             nbPoints,
-                                            tractogramFiberToAtlasFiberPlane,
-                                            newNormalVectorTractogramFiber ) ;
-
-          std::vector<float> directionVectorTractogramFiber( 3, 0 ) ;
-          subjectBundlesData.computeDirectionVectorFiberTractogram(
-                                            tractogramFiberToAtlasFiberPlane,
-                                            newNormalVectorTractogramFiber,
                                             directionVectorTractogramFiber ) ;
 
-          std::vector<float> directionVectorsAtlasBundleFiber( 3, 0 ) ;
-          directionVectorsAtlasBundleFiber[ 0 ] = directionVectorsAtlasBundle[
-                                            3 * atlasBundleFiberIndex + 0 ] ;
-          directionVectorsAtlasBundleFiber[ 1 ] = directionVectorsAtlasBundle[
-                                            3 * atlasBundleFiberIndex + 1 ] ;
-          directionVectorsAtlasBundleFiber[ 2 ] = directionVectorsAtlasBundle[
-                                            3 * atlasBundleFiberIndex + 2 ] ;
+        std::vector<float> directionVectorsAtlasBundleFiber( 3, 0 ) ;
+        directionVectorsAtlasBundleFiber[ 0 ] = directionVectorsAtlasBundle[
+                                          3 * atlasBundleFiberIndex + 0 ] ;
+        directionVectorsAtlasBundleFiber[ 1 ] = directionVectorsAtlasBundle[
+                                          3 * atlasBundleFiberIndex + 1 ] ;
+        directionVectorsAtlasBundleFiber[ 2 ] = directionVectorsAtlasBundle[
+                                          3 * atlasBundleFiberIndex + 2 ] ;
 
-          directionAngle = subjectBundlesData.computeAngleBetweenVectors(
+        directionAngle = subjectBundlesData.computeAngleBetweenDirections(
                                           directionVectorTractogramFiber,
                                           directionVectorsAtlasBundleFiber ) ;
 
-          // if ( directionAngle < maxDirectionAngle ||
-          //                       180 - directionAngle < maxDirectionAngle )
-          if ( directionAngle < maxDirectionAngle )
-          {
-
-            std::vector<float> tractogramFiberToAtlasFiber( 3 * nbPoints,
-                                                                         0 ) ;
-            subjectBundlesData.putFibersInSameDirection(
-                                             normalVectorsAtlasBundleFiber,
-                                             newNormalVectorTractogramFiber,
-                                             directionVectorsAtlasBundleFiber,
-                                             tractogramFiberToAtlasFiberPlane,
-                                             nbPoints,
-                                             tractogramFiberToAtlasFiber ) ;
-
-            std::vector<float> point1( 3, 0 ) ;
-            std::vector<float> point2( 3, 0 ) ;
-
-            std::vector<float> vector1( 3, 0 ) ;
-            std::vector<float> vector2( 3, 0 ) ;
-            for ( int i = 0 ; i < 3 ; i++ )
-            {
-
-              point1[ i ] = tractogramFiberToAtlasFiber[ i ] ;
-              point2[ i ] = tractogramFiberToAtlasFiber[ 3 * ( nbPoints - 1 )
-                                                                       + i ] ;
-
-              vector1[ i ] = point1[ i ] - medialPointTractFiber[ i ] ;
-              vector2[ i ] = point2[ i ] - medialPointTractFiber[ i ] ;
-
-            }
-
-            float shapeAngle = subjectBundlesData.computeAngleBetweenVectors(
-                                                          vector1, vector2 ) ;
-
-            if ( shapeAngle < maxShapeAngle && shapeAngle > minShapeAngle )
-            {
-
-              std::vector<float> medialPointFiberAtlasBundle( 3, 0 ) ;
-              for ( int i = 0 ; i < 3 ; i++ )
-              {
-
-                medialPointFiberAtlasBundle[ i ] =
-                                            medialPointAtlasBundleFibers[
-                                            3 * atlasBundleFiberIndex + i ] ;
-
-              }
-
-              // Computing MDA distance
-              dMDA = subjectBundlesData.computeMDADBetweenTwoFibers(
-                                                  tractogramFiberToAtlasFiber,
-                                                  atlasBundleFibers,
-                                                  medialPointFiberAtlasBundle,
-                                                  medialPointFiberAtlasBundle,
-                                                  0,
-                                                  atlasBundleFiberIndex,
-                                                  nbPoints ) ;
-
-            }
-            else
-            {
-
-              dMDA = 50 ;
-
-            }
-
-          }
-          else
-          {
-
-            dMDA = 50 ;
-
-          }
-
-        }
-        else
+        if ( directionAngle > maxDirectionAngle )
         {
 
-          dMDA = 50 ;
+          continue ;
 
         }
+
+
+        std::vector<float> tractogramFiberToAtlasFiber( 3 * nbPoints, 0 ) ;
+        std::vector<float> normalVectorTractogramFiberToAtlasFiber( 3, 0 ) ;
+        subjectBundlesData.registerFiber(
+                                 atlasBundleData.matrixTracks,
+                                 subjectBundlesData.matrixTracks,
+                                 atlasBundleFiberIndex,
+                                 fiberIndex,
+                                 nbPoints,
+                                 tractogramFiberToAtlasFiber,
+                                 normalVectorTractogramFiberToAtlasFiber ) ;
+
+
+        // Computing MDA distance
+        dMDA = subjectBundlesData.computeMDADBetweenTwoFibers(
+                                            tractogramFiberToAtlasFiber,
+                                            atlasBundleFibers,
+                                            medialPointAtlasFiber,
+                                            medialPointAtlasFiber,
+                                            0,
+                                            atlasBundleFiberIndex,
+                                            nbPoints ) ;
 
 
         if ( dMDA < thrDistance )
@@ -394,24 +486,15 @@ void RecognizedBundles::MDADLabeling(
 
           nbAtlasBundleFibersSimilar += 1 ;
           float percentageFibersSimilar = ( float )nbAtlasBundleFibersSimilar
-                                                       / nbFibersAtlasBundle ;
+                                                         / nbFibersAtlasBundle ;
 
 
-          // if ( percentageFibersSimilar > thrPercentageSimilarity ||
-          //                                                          dMDA == 0 )
-          // if ( percentageFibersSimilar > thrPercentageSimilarity )
 	        if ( percentageFibersSimilar > thrPercentageSimilarity || ( dMDA < 1
 	        		      && distanceMedialPoints < thrDistanceBetweenMedialPoints
                     && directionAngle < 5
                     && angle < 5 ) )
           {
 
-            // #pragma omp critical
-            // {
-            //
-            //   labels[ fiberIndex ].push_back( atlasBundleIndex ) ;
-            //
-            // }
             tmpLabels[ fiberIndex ] = atlasBundleIndex ;
             break ; // This break is for the for loop of the atlas bundle
                     // fibers, it does not break the for of openMP
@@ -444,8 +527,8 @@ void RecognizedBundles::MDADLabeling(
 
 ////////////////////////////////////////////////////////////////////////////////
 void RecognizedBundles::MDADLabelingSimple(
-                         BundlesDataFormat& atlasBundleData,
-                         BundlesDataFormat& subjectBundlesData,
+                         BundlesData& atlasBundleData,
+                         BundlesData& subjectBundlesData,
                          int atlasBundleIndex,
                          const std::vector<float>& medialPointAtlasBundle,
                          const std::vector<float>& medialPointAtlasBundleFibers,
@@ -454,6 +537,12 @@ void RecognizedBundles::MDADLabelingSimple(
                          std::vector<std::vector<int16_t>>& labels )
 {
 
+  if ( this->nbThreads )
+  {
+
+    omp_set_num_threads( this->nbThreads ) ;
+
+  }
 
   float p = this->p ;
   float thrDistance = this->thrDistance ;
@@ -617,8 +706,8 @@ void RecognizedBundles::MDADLabelingSimple(
 
 ////////////////////////////////////////////////////////////////////////////////
 void RecognizedBundles::MDFLabeling(
-                         BundlesDataFormat& atlasBundleData,
-                         BundlesDataFormat& subjectBundlesData,
+                         BundlesData& atlasBundleData,
+                         BundlesData& subjectBundlesData,
                          int atlasBundleIndex,
                          const std::vector<float>& medialPointAtlasBundle,
                          const std::vector<float>& medialPointAtlasBundleFibers,
@@ -629,6 +718,12 @@ void RecognizedBundles::MDFLabeling(
                          std::vector<std::vector<int16_t>>& labels )
 {
 
+  if ( this->nbThreads )
+  {
+
+    omp_set_num_threads( this->nbThreads ) ;
+
+  }
 
   float p = this->p ;
   float thrDistance = this->thrDistance ;
@@ -721,6 +816,98 @@ void RecognizedBundles::MDFLabeling(
           continue ;
 
         }
+
+
+        //
+        std::vector<float> translation( 3, 0 ) ;
+
+        for ( int i = 0 ; i < 3 ; i++ )
+        {
+
+          translation[ i ] = medialPointAtlasBundleFibers[ i ] -
+                                                    medialPointTractFiber[ i ] ;
+
+        }
+
+        float tmpDirectDistance = 0 ;
+        float tmpFlippedDistance = 0 ;
+
+        for ( int i = 0 ; i < 3 ; i++ )
+        {
+
+          tmpDirectDistance += pow( atlasBundleFibers[
+                            3 * nbPoints * atlasBundleFiberIndex + 3 * 0 + i ] -
+                            ( tractogramFibers[  3 * nbPoints * fiberIndex +
+                                         3 * 0 + i ] + translation[ i ] ), 2 ) ;
+
+          tmpFlippedDistance += pow( atlasBundleFibers[
+                            3 * nbPoints * atlasBundleFiberIndex + 3 * 0 + i ] -
+                            ( tractogramFibers[  3 * nbPoints * fiberIndex +
+                          3 * ( nbPoints - 1 ) + i ] + translation[ i ] ), 2 ) ;
+
+        }
+
+        bool isDirectSens = true ;
+        if ( tmpFlippedDistance < tmpDirectDistance )
+        {
+
+          isDirectSens = false ;
+
+        }
+        ///
+
+        std::vector<float> endPointAtlas1 ;
+        std::vector<float> endPointAtlas2 ;
+        std::vector<float> endPointTract1 ;
+        std::vector<float> endPointTract2 ;
+        for ( int i = 0 ; i < 3 ; i++ )
+        {
+
+          endPointAtlas1.push_back( atlasBundleFibers[
+                          3 * nbPoints * atlasBundleFiberIndex + 3 * 0 + i ] ) ;
+          endPointAtlas2.push_back( atlasBundleFibers[
+                          3 * nbPoints * atlasBundleFiberIndex + 3 * (
+                                                        nbPoints - 1 ) + i ] ) ;
+
+          endPointTract1.push_back( tractogramFibers[
+                                     3 * nbPoints * fiberIndex + 3 * 0 + i ] ) ;
+          endPointTract2.push_back( tractogramFibers[
+                                     3 * nbPoints * fiberIndex + 3 * (
+                                                        nbPoints - 1 ) + i ] ) ;
+        }
+
+        float tmpDist1 = 0 ;
+        float tmpDist2 = 0 ;
+        for ( int i = 0 ; i < 3 ; i++ )
+        {
+
+          if ( isDirectSens )
+          {
+
+            tmpDist1 += pow( endPointAtlas1[ i ] - endPointTract1[ i ], 2 ) ;
+            tmpDist2 += pow( endPointAtlas2[ i ] - endPointTract2[ i ], 2 ) ;
+
+          }
+          else
+          {
+
+            tmpDist1 += pow( endPointAtlas1[ i ] - endPointTract2[ i ], 2 ) ;
+            tmpDist2 += pow( endPointAtlas2[ i ] - endPointTract1[ i ], 2 ) ;
+
+          }
+
+
+
+        }
+        tmpDist1 = sqrt( tmpDist1 ) ;
+        tmpDist2 = sqrt( tmpDist2 ) ;
+
+        if ( tmpDist1 > thrDistance / 2.0 || tmpDist2 > thrDistance / 2.0  )
+        {
+
+          continue ;
+
+        }
         //
 
         float dMDF = 0 ;
@@ -753,22 +940,29 @@ void RecognizedBundles::MDFLabeling(
         {
 
           std::vector<float> tractogramFiberToAtlasFiberPlane( 3 * nbPoints,
-                                                                         0 ) ;
-          std::vector<float> newNormalVectorTractogramFiber( 3, 0 ) ;
-          subjectBundlesData.putFibersInSamePlane(
-                                            normalVectorsAtlasBundleFiber,
-                                            normalVectorTractogramFiber,
-                                            tractogramFibers,
-                                            fiberIndex,
-                                            nbPoints,
-                                            tractogramFiberToAtlasFiberPlane,
-                                            newNormalVectorTractogramFiber ) ;
+                                                                           0 ) ;
+          // std::vector<float> newNormalVectorTractogramFiber( 3, 0 ) ;
+          // subjectBundlesData.putFibersInSamePlane(
+          //                                   normalVectorsAtlasBundleFiber,
+          //                                   normalVectorTractogramFiber,
+          //                                   tractogramFibers,
+          //                                   fiberIndex,
+          //                                   nbPoints,
+          //                                   tractogramFiberToAtlasFiberPlane,
+          //                                   newNormalVectorTractogramFiber ) ;
 
           std::vector<float> directionVectorTractogramFiber( 3, 0 ) ;
+          // subjectBundlesData.computeDirectionVectorFiberTractogram(
+          //                                   tractogramFiberToAtlasFiberPlane,
+          //                                   newNormalVectorTractogramFiber,
+          //                                   directionVectorTractogramFiber ) ;
           subjectBundlesData.computeDirectionVectorFiberTractogram(
-                                            tractogramFiberToAtlasFiberPlane,
-                                            newNormalVectorTractogramFiber,
-                                            directionVectorTractogramFiber ) ;
+                                              tractogramFibers,
+                                              medialPointTractFiber,
+                                              normalVectorTractogramFiber,
+                                              fiberIndex,
+                                              nbPoints,
+                                              directionVectorTractogramFiber ) ;
 
           std::vector<float> directionVectorsAtlasBundleFiber( 3, 0 ) ;
           directionVectorsAtlasBundleFiber[ 0 ] = directionVectorsAtlasBundle[
@@ -781,22 +975,30 @@ void RecognizedBundles::MDFLabeling(
 
 
           float directionAngle =
-                                subjectBundlesData.computeAngleBetweenVectors(
+                               subjectBundlesData.computeAngleBetweenDirections(
                                           directionVectorTractogramFiber,
                                           directionVectorsAtlasBundleFiber ) ;
 
           if ( directionAngle < maxDirectionAngle )
           {
 
-            std::vector<float> tractogramFiberToAtlasFiber( 3 * nbPoints,
-                                                                         0 ) ;
-            subjectBundlesData.putFibersInSameDirection(
-                                             normalVectorsAtlasBundleFiber,
-                                             newNormalVectorTractogramFiber,
-                                             directionVectorsAtlasBundleFiber,
-                                             tractogramFiberToAtlasFiberPlane,
-                                             nbPoints,
-                                             tractogramFiberToAtlasFiber ) ;
+            std::vector<float> tractogramFiberToAtlasFiber( 3 * nbPoints, 0 ) ;
+            // subjectBundlesData.putFibersInSameDirection(
+            //                                  normalVectorsAtlasBundleFiber,
+            //                                  newNormalVectorTractogramFiber,
+            //                                  directionVectorsAtlasBundleFiber,
+            //                                  tractogramFiberToAtlasFiberPlane,
+            //                                  nbPoints,
+            //                                  tractogramFiberToAtlasFiber ) ;
+            std::vector<float> normalVectorTractogramFiberToAtlasFiber( 3, 0 ) ;
+            subjectBundlesData.registerFiber(
+                                     atlasBundleData.matrixTracks,
+                                     subjectBundlesData.matrixTracks,
+                                     atlasBundleFiberIndex,
+                                     fiberIndex,
+                                     nbPoints,
+                                     tractogramFiberToAtlasFiber,
+                                     normalVectorTractogramFiberToAtlasFiber ) ;
 
             std::vector<float> point1( 3, 0 ) ;
             std::vector<float> point2( 3, 0 ) ;
@@ -826,9 +1028,8 @@ void RecognizedBundles::MDFLabeling(
               for ( int i = 0 ; i < 3 ; i++ )
               {
 
-                medialPointFiberAtlasBundle[ i ] =
-                                                 medialPointAtlasBundleFibers[
-                                             3 * atlasBundleFiberIndex + i ] ;
+                medialPointFiberAtlasBundle[ i ] = medialPointAtlasBundleFibers[
+                                               3 * atlasBundleFiberIndex + i ] ;
 
               }
 
@@ -915,8 +1116,8 @@ void RecognizedBundles::MDFLabeling(
 
 ////////////////////////////////////////////////////////////////////////////////
 void RecognizedBundles::MDFLabelingSimple(
-                         BundlesDataFormat& atlasBundleData,
-                         BundlesDataFormat& subjectBundlesData,
+                         BundlesData& atlasBundleData,
+                         BundlesData& subjectBundlesData,
                          int atlasBundleIndex,
                          const std::vector<float>& medialPointAtlasBundle,
                          const std::vector<float>& medialPointAtlasBundleFibers,
@@ -924,6 +1125,22 @@ void RecognizedBundles::MDFLabelingSimple(
                          int nbPoints,
                          std::vector<std::vector<int16_t>>& labels )
 {
+
+  if ( this->nbThreads )
+  {
+
+    omp_set_num_threads( this->nbThreads ) ;
+
+  }
+
+  // if ( this->nbThreads <= 0 )
+  // {
+  //
+  //   this->nbThreads = omp_get_num_procs() ;
+  //
+  // }
+  //
+  // omp_set_num_threads( this->nbThreads ) ;
 
   float p = this->p ;
   float thrDistance = this->thrDistance ;
@@ -1151,27 +1368,21 @@ void RecognizedBundles::saveLabelsDict(
 
   file.close() ;
 
-
-
-
-
 }
 
 
 
 ////////////////////////////////////////////////////////////////////////////////
 void RecognizedBundles::projectAtlas( AtlasBundles& atlasData,
-                                      BundlesDataFormat& subjectBundlesData,
+                                      BundlesData& subjectBundlesData,
                                       float thresholdAdjacency,
-                                      bool isBundlesFormat,
-                                      bool isTRKFormat,
                                       std::string outputDirectory,
                                       std::string labelsName )
 {
 
   verbose = this->verbose ;
 
-  int nbBundlesAtlas = atlasData.bundles.size() ;
+  int nbBundlesAtlas = atlasData.bundlesMinf.size() ;
 
   int nbFibersTractogram = subjectBundlesData.curves_count ;
   int nbPoints = subjectBundlesData.pointsPerTrack[ 0 ] ;
@@ -1183,7 +1394,7 @@ void RecognizedBundles::projectAtlas( AtlasBundles& atlasData,
 
     std::cout << "Parameters for projection : " << std::endl ;
 
-    if ( isBundlesFormat && !useDefautlP )
+    if ( !useDefautlP )
     {
 
       std::cout << "   p : bundle specific ( based on distribution's variance )"
@@ -1197,7 +1408,7 @@ void RecognizedBundles::projectAtlas( AtlasBundles& atlasData,
 
     }
 
-    if ( isBundlesFormat && !useDefaultThr )
+    if ( !useDefaultThr )
     {
 
       std::cout << "   thrDistance : bundle specific ( based on distribution's "
@@ -1211,7 +1422,7 @@ void RecognizedBundles::projectAtlas( AtlasBundles& atlasData,
 
     }
 
-    if ( isBundlesFormat && !useDefaultMinLen )
+    if ( !useDefaultMinLen )
     {
 
       std::cout << "   minimumLenghtFiber : bundle specific ( based on "
@@ -1226,7 +1437,7 @@ void RecognizedBundles::projectAtlas( AtlasBundles& atlasData,
 
     }
 
-    if ( isBundlesFormat && !useDefaultMaxLen )
+    if ( !useDefaultMaxLen )
     {
 
       std::cout << "   maximumLenghtFiber : bundle specific ( based on "
@@ -1241,7 +1452,7 @@ void RecognizedBundles::projectAtlas( AtlasBundles& atlasData,
 
     }
 
-    if ( isBundlesFormat && !useDefaultMaxAngle )
+    if ( !useDefaultMaxAngle )
     {
 
       std::cout << "   maxAngle : bundle specific ( based on "
@@ -1255,7 +1466,7 @@ void RecognizedBundles::projectAtlas( AtlasBundles& atlasData,
 
     }
 
-    if ( isBundlesFormat && !useDefautlMaxDirectionAngle )
+    if ( !useDefautlMaxDirectionAngle )
     {
 
       std::cout << "   maxDirectionAngle : bundle specific ( based on "
@@ -1265,12 +1476,11 @@ void RecognizedBundles::projectAtlas( AtlasBundles& atlasData,
     else
     {
 
-      std::cout << "   maxDirectionAngle : " <<
-                                            maxDirectionAngle << std::endl ;
+      std::cout << "   maxDirectionAngle : " << maxDirectionAngle << std::endl ;
 
     }
 
-    if ( isBundlesFormat && !useDefautlMinShapeAngle )
+    if ( !useDefautlMinShapeAngle )
     {
 
       std::cout << "   minShapeAngle : bundle specific  ( based on "
@@ -1280,12 +1490,11 @@ void RecognizedBundles::projectAtlas( AtlasBundles& atlasData,
     else
     {
 
-      std::cout << "   minShapeAngle : " <<
-                                            minShapeAngle << std::endl ;
+      std::cout << "   minShapeAngle : " << minShapeAngle << std::endl ;
 
     }
 
-    if ( isBundlesFormat && !useDefautlMaxShapeAngle )
+    if ( !useDefautlMaxShapeAngle )
     {
 
       std::cout << "   maxShapeAngle : bundle specific  ( based on "
@@ -1295,12 +1504,11 @@ void RecognizedBundles::projectAtlas( AtlasBundles& atlasData,
     else
     {
 
-      std::cout << "   maxShapeAngle : " <<
-                                            maxShapeAngle << std::endl ;
+      std::cout << "   maxShapeAngle : " << maxShapeAngle << std::endl ;
 
     }
 
-    if ( isBundlesFormat && !useDefaultThrDistanceBetweenMedialPoints )
+    if ( !useDefaultThrDistanceBetweenMedialPoints )
     {
 
       std::cout << "   thrDistanceBetweenMedialPoints : bundle specific ( based"
@@ -1315,7 +1523,7 @@ void RecognizedBundles::projectAtlas( AtlasBundles& atlasData,
 
     }
 
-    if ( isBundlesFormat && useMedialPointAverageFiber )
+    if ( useMedialPointAverageFiber )
     {
 
       std::cout << "   medialPointAtlasBundle : medial point of average Fiber "
@@ -1415,9 +1623,8 @@ void RecognizedBundles::projectAtlas( AtlasBundles& atlasData,
 
     }
 
-    BundlesDataFormat& atlasBundleData = atlasData.bundlesData[
-                                                            atlasBundleIndex ] ;
-    BundlesFormat& atlasBundleInfo = atlasData.bundles[ atlasBundleIndex ] ;
+    BundlesData& atlasBundleData = atlasData.bundlesData[ atlasBundleIndex ] ;
+    BundlesMinf& atlasBundleInfo = atlasData.bundlesMinf[ atlasBundleIndex ] ;
     int nbFibersAtlasBundle = atlasBundleData.curves_count ;
 
     // Computing the medials point of atlas fibers and medial point of bundle
@@ -1454,7 +1661,7 @@ void RecognizedBundles::projectAtlas( AtlasBundles& atlasData,
                                                lengthsAtlasBundleFibers ) ;
 
 
-    if( isBundlesFormat && useMedialPointAverageFiber )
+    if( useMedialPointAverageFiber )
     {
 
       for ( int i = 0 ; i < 3 ; i++ )
@@ -1466,16 +1673,16 @@ void RecognizedBundles::projectAtlas( AtlasBundles& atlasData,
 
     }
 
-    if ( isBundlesFormat && !this->useDefautlP )
+    if ( !this->useDefautlP )
     {
 
       this->p = atlasBundleInfo.maxRadius * ( 1.0 + toleranceP ) ;
-      // this->p = atlasData.bundles[ atlasBundleIndex ].averageRadius *
+      // this->p = atlasData.bundlesMinf[ atlasBundleIndex ].averageRadius *
       //                                                     ( 1.0 + toleranceP ) ;
 
     }
 
-    if ( isBundlesFormat && !this->useDefaultThr )
+    if ( !this->useDefaultThr )
     {
 
       if ( useAvgThr )
@@ -1493,14 +1700,14 @@ void RecognizedBundles::projectAtlas( AtlasBundles& atlasData,
 
     }
 
-    if ( isBundlesFormat && !this->useDefaultMaxAngle )
+    if ( !this->useDefaultMaxAngle )
     {
 
       this->maxAngle = atlasBundleInfo.maxAngle * ( 1 + toleranceMaxAngle ) ;
 
     }
 
-    if ( isBundlesFormat && !this->useDefautlMaxDirectionAngle )
+    if ( !this->useDefautlMaxDirectionAngle )
     {
 
       this->maxDirectionAngle = atlasBundleInfo.maxDirectionAngle *
@@ -1508,7 +1715,7 @@ void RecognizedBundles::projectAtlas( AtlasBundles& atlasData,
 
     }
 
-    if ( isBundlesFormat && !this->useDefautlMinShapeAngle )
+    if ( !this->useDefautlMinShapeAngle )
     {
 
       this->minShapeAngle = atlasBundleInfo.minShapeAngle *
@@ -1516,7 +1723,7 @@ void RecognizedBundles::projectAtlas( AtlasBundles& atlasData,
 
     }
 
-    if ( isBundlesFormat && !this->useDefautlMaxShapeAngle )
+    if ( !this->useDefautlMaxShapeAngle )
     {
 
       this->maxShapeAngle = atlasBundleInfo.maxShapeAngle *
@@ -1525,7 +1732,7 @@ void RecognizedBundles::projectAtlas( AtlasBundles& atlasData,
     }
 
 
-    if ( isBundlesFormat && !this->useDefaultMinLen )
+    if ( !this->useDefaultMinLen )
     {
 
       this->minimumLenghtFiber = atlasBundleInfo.minLength *
@@ -1541,7 +1748,7 @@ void RecognizedBundles::projectAtlas( AtlasBundles& atlasData,
 
     }
 
-    if ( isBundlesFormat && !this->useDefaultMaxLen )
+    if ( !this->useDefaultMaxLen )
     {
 
       this->maximumLenghtFiber = atlasBundleInfo.maxLength *
@@ -1557,7 +1764,7 @@ void RecognizedBundles::projectAtlas( AtlasBundles& atlasData,
 
     }
 
-    if ( isBundlesFormat && !useDefaultThrDistanceBetweenMedialPoints )
+    if ( !useDefaultThrDistanceBetweenMedialPoints )
     {
 
       this->thrDistanceBetweenMedialPoints =
@@ -1681,61 +1888,6 @@ void RecognizedBundles::projectAtlas( AtlasBundles& atlasData,
     if ( !labels[ k ].empty() )
     {
 
-      // if ( labels[ k ].size() > 1 )
-      // {
-      //
-      //   std::vector<float>& tractogramFibers =
-      //                                        subjectBundlesData.matrixTracks ;
-      //   std::vector<float> labeledFiber( 3 * nbPoints, 0 ) ;
-      //   subjectBundlesData.getFiberFromTractogram( tractogramFibers,
-      //                                              k,
-      //                                              nbPoints,
-      //                                              labeledFiber ) ;
-      //   float minDisimilarity = 1000 ;
-      //   int16_t selectedLabel = -2 ;
-      //   for ( int _i = 0 ; _i < labels[ k ].size() ; _i++ )
-      //   {
-      //
-      //     int labelValue = labels[ k ][ _i ] ;
-      //
-      //     BundlesDataFormat& atlasBundleData = atlasData.bundlesData[
-      //                                                           labelValue ] ;
-      //
-      //
-      //     float tmpDisimilarity = subjectBundlesData.distanceBetweenBundles(
-      //                                            atlasBundleData.matrixTracks,
-      //                                            labeledFiber,
-      //                                            atlasBundleData.curves_count,
-      //                                            1,
-      //                                            nbPoints,
-      //                                            nbPoints ) ;
-      //
-      //     if ( tmpDisimilarity < minDisimilarity )
-      //     {
-      //
-      //       minDisimilarity = tmpDisimilarity ;
-      //       selectedLabel = labelValue ;
-      //
-      //     }
-      //
-      //
-      //   }
-      //
-      //   if ( selectedLabel == -2 )
-      //   {
-      //
-      //     std::cout << "ERROR : in fiber with multiple labels, could not "
-      //               << "select label with smaller disimilarity to atlas "
-      //               << "bundle " << std::endl ;
-      //     exit( 1 ) ;
-      //
-      //   }
-      //
-      //   std::vector<int16_t> _tmpVectorLabel = { selectedLabel } ;
-      //   labels[ k ] = _tmpVectorLabel ;
-      //
-      // }
-
       nbFibersFound_CPU += 1 ;
 
     }
@@ -1785,7 +1937,7 @@ void RecognizedBundles::projectAtlas( AtlasBundles& atlasData,
 
  }
 
- std::vector< int > labeledFibersBundleCount( nbBundlesAtlas, 0 ) ;
+ std::vector<int> labeledFibersBundleCount( nbBundlesAtlas, 0 ) ;
 
  for ( int i = 0 ; i < nbFibersTractogram ; i++ )
  {
@@ -1876,7 +2028,7 @@ void RecognizedBundles::projectAtlas( AtlasBundles& atlasData,
 
   }
 
-  std::vector< BundlesDataFormat >& labeledFibers = this->bundlesData ;
+  std::vector<BundlesData>& labeledFibers = this->bundlesData ;
   labeledFibers.resize( nbBundlesAtlas ) ;
   int labelIndex ;
   int numberFibersUnlabeled = 0 ;
@@ -1916,8 +2068,8 @@ void RecognizedBundles::projectAtlas( AtlasBundles& atlasData,
     for ( int bundle = 0 ; bundle < nbBundlesAtlas ; bundle++ )
     {
 
-      printf( "Labeled bundle : %s   |   Curve count : %d \n",
-               atlasData.bundles[ bundle ].bundles.c_str(),
+      printf( "Labeled bundle : %s   |   Curve count : %ld \n",
+               atlasData.bundlesMinf[ bundle ].bundles.c_str(),
                labeledFibers[ bundle ].curves_count ) ;
 
     }
@@ -2059,7 +2211,7 @@ void RecognizedBundles::projectAtlas( AtlasBundles& atlasData,
           labeledFibers[ bundle ].curves_count > minimumNumberFibers )
     {
 
-      printf("\rProcessing fiber [ %10d / %10d ]",
+      printf("\rProcessing bundle [ %10d / %10d ]",
                                         countProcessedRecognizedBundles + 1 ,
                                                         nbBundlesRecognized ) ;
       std::cout << "" << std::flush ;
@@ -2069,123 +2221,125 @@ void RecognizedBundles::projectAtlas( AtlasBundles& atlasData,
     if ( labeledFibers[ bundle ].curves_count > minimumNumberFibers )
     {
 
-      if ( isBundlesFormat )
+
+      // std::string labelName = getFilenameNoExtension(
+      //                                   atlasBundlesFilenames[ bundle ] ) ;
+      std::string labelName = atlasData.bundlesNames[ bundle ] ;
+
+      BundlesMinf outBundlesInfo = atlasData.bundlesMinf[ bundle ] ;
+
+      std::string format = outBundlesInfo.getFormat() ;
+
+      outBundlesInfo.curves_count = labeledFibers[ bundle ].curves_count ;
+
+      if ( format == ".tck" )
       {
 
-        // std::string labelName = getFilenameNoExtension(
-        //                                   atlasBundlesFilenames[ bundle ] ) ;
-        std::string labelName = atlasData.bundlesNames[ bundle ] ;
+        outBundlesInfo.computeHeaderTck(
+                                        labeledFibers[ bundle ].curves_count ) ;
+        outBundlesInfo.computeTckOffsetBinary() ;
 
-        BundlesFormat outBundlesInfo = atlasData.bundles[ bundle ] ;
+      }
+      int sizeOutBundlesFilename =
+                               outputDirectory.size() + labelName.size() + 8 ;
+      char outBundlesFilename[ sizeOutBundlesFilename ] ;
+      strcpy( outBundlesFilename, outputDirectory.c_str() ) ;
+      strcat( outBundlesFilename, labelName.c_str() ) ;
+      strcat( outBundlesFilename, format.c_str() ) ;
 
-        outBundlesInfo.curves_count = labeledFibers[ bundle ].curves_count ;
-        int sizeOutBundlesFilename =
-                                 outputDirectory.size() + labelName.size() + 8 ;
-        char outBundlesFilename[ sizeOutBundlesFilename ] ;
-        strcpy( outBundlesFilename, outputDirectory.c_str() ) ;
-        strcat( outBundlesFilename, labelName.c_str() ) ;
-        strcat( outBundlesFilename, ".bundles" ) ;
+      // In the initialization fo labeledFibers we did not give a format for
+      // the labeledFibers[ bundle ], hence using format stored in .minf
+      if ( format == ".bundles" )
+      {
 
-        if ( compareRecognizedWithAtlas )
-        {
+        labeledFibers[ bundle ].isBundles = true ;
+        labeledFibers[ bundle ].isTrk = false ;
+        labeledFibers[ bundle ].isTck = false ;
 
-          BundlesDataFormat& tractogramFibers_1 =
-                                               atlasData.bundlesData[ bundle ] ;
-          BundlesDataFormat& tractogramFibers_2 = labeledFibers[ bundle ] ;
-          int nbFibersTract_1 = atlasData.bundlesData[ bundle ].curves_count ;
-          int nbFibersTract_2 = labeledFibers[ bundle ].curves_count ;
-          float disimilarity =  atlasData.distanceBetweenBundles(
+      }
+      else if ( format == ".trk" )
+      {
+
+        labeledFibers[ bundle ].isBundles = false ;
+        labeledFibers[ bundle ].isTrk = true ;
+        labeledFibers[ bundle ].isTck = false ;
+
+      }
+      else if ( ".tck" )
+      {
+
+        labeledFibers[ bundle ].isBundles = false ;
+        labeledFibers[ bundle ].isTrk = false ;
+        labeledFibers[ bundle ].isTck = true ;
+
+      }
+      else
+      {
+
+        std::string outMessage = "BundlesMinf::getFormat : attributes " \
+                                 "isBundles, isTrk and isTck are all set to " \
+                                 "false, not supported format found \n" ;
+
+        throw( std::invalid_argument( outMessage ) ) ;
+
+      }
+
+      labeledFibers[ bundle ].write( outBundlesFilename, outBundlesInfo ) ;
+
+      if ( compareRecognizedWithAtlas )
+      {
+
+        BundlesData& tractogramFibers_1 = atlasData.bundlesData[ bundle ] ;
+        BundlesData& tractogramFibers_2 = labeledFibers[ bundle ] ;
+        int nbFibersTract_1 = atlasData.bundlesData[ bundle ].curves_count ;
+        int nbFibersTract_2 = labeledFibers[ bundle ].curves_count ;
+        float disimilarity =  atlasData.distanceBetweenBundles(
                                                              tractogramFibers_1,
                                                              tractogramFibers_2,
                                                              nbFibersTract_1,
                                                              nbFibersTract_2,
                                                              nbPoints ) ;
 
-          // float thresholdAdjacency = 5 ; // In mm
-          std::vector<int> nbAdjacentFibersRecognizedToAtlasBundles(
-                                                          nbFibersTract_2, 0 ) ;
-          atlasData.computeNumberAdjacentFibersRecognizedToAtlasBundles(
-                                    labeledFibers[ bundle ],
-                                    atlasData.bundlesNames[ bundle ],
-                                    thresholdAdjacency,
-                                    nbAdjacentFibersRecognizedToAtlasBundles ) ;
+        // float thresholdAdjacency = 5 ; // In mm
+        std::vector<int> nbAdjacentFibersRecognizedToAtlasBundles(
+                                                        nbFibersTract_2, 0 ) ;
+        atlasData.computeNumberAdjacentFibersRecognizedToAtlasBundles(
+                                  labeledFibers[ bundle ],
+                                  atlasData.bundlesNames[ bundle ],
+                                  thresholdAdjacency,
+                                  nbAdjacentFibersRecognizedToAtlasBundles ) ;
 
-          std::vector<int> nbAdjacentFibersAtlasToRecognizedBundles(
-                                                          nbFibersTract_1, 0 ) ;
-          atlasData.computeNumberAdjacentFibersAtlasToRecognizedBundles(
-                                    labeledFibers[ bundle ],
-                                    atlasData.bundlesNames[ bundle ],
-                                    thresholdAdjacency,
-                                    nbAdjacentFibersAtlasToRecognizedBundles ) ;
+        std::vector<int> nbAdjacentFibersAtlasToRecognizedBundles(
+                                                        nbFibersTract_1, 0 ) ;
+        atlasData.computeNumberAdjacentFibersAtlasToRecognizedBundles(
+                                  labeledFibers[ bundle ],
+                                  atlasData.bundlesNames[ bundle ],
+                                  thresholdAdjacency,
+                                  nbAdjacentFibersAtlasToRecognizedBundles ) ;
 
-          float coverageRecognizedToAtlas =
-                                  atlasData.coverageRecognizedToAtlasBundles(
-                                    nbAdjacentFibersRecognizedToAtlasBundles ) ;
+        float coverageRecognizedToAtlas =
+                                atlasData.coverageRecognizedToAtlasBundles(
+                                  nbAdjacentFibersRecognizedToAtlasBundles ) ;
 
-          float coverageAtlasToRecognized =
-                                  atlasData.coverageRecognizedToAtlasBundles(
-                                    nbAdjacentFibersAtlasToRecognizedBundles ) ;
+        float coverageAtlasToRecognized =
+                                atlasData.coverageRecognizedToAtlasBundles(
+                                  nbAdjacentFibersAtlasToRecognizedBundles ) ;
 
-          float overlap = atlasData.overlapRecognizedToAtlasBundles(
-                                    nbAdjacentFibersRecognizedToAtlasBundles ) ;
+        float overlap = atlasData.overlapRecognizedToAtlasBundles(
+                                  nbAdjacentFibersRecognizedToAtlasBundles ) ;
 
-          float adjacency = atlasData.bundlesAdjacency(
-                                                   coverageRecognizedToAtlas,
-                                                   coverageAtlasToRecognized ) ;
+        float adjacency = atlasData.bundlesAdjacency(
+                                                 coverageRecognizedToAtlas,
+                                                 coverageAtlasToRecognized ) ;
 
-          outBundlesInfo.bundlesWriting( outBundlesFilename,
-                                         disimilarity,
-                                         coverageRecognizedToAtlas,
-                                         overlap,
-                                         adjacency,
-                                         verbose ) ;
-
-        }
-        else
-        {
-
-          outBundlesInfo.bundlesWriting( outBundlesFilename, verbose ) ;
-
-        }
-
-        int sizeOutBundlesDataFilename =
-                                outputDirectory.size() + labelName.size() + 12 ;
-        char outBundlesDataFilename[ sizeOutBundlesDataFilename ] ;
-        strcpy( outBundlesDataFilename, outputDirectory.c_str() ) ;
-        strcat( outBundlesDataFilename, labelName.c_str() ) ;
-        strcat( outBundlesDataFilename, ".bundlesdata" ) ;
-
-        labeledFibers[ bundle ].bundlesdataWriting( outBundlesDataFilename,
-                                                    verbose ) ;
-
+        outBundlesInfo.write( outBundlesFilename,
+                              disimilarity,
+                              coverageRecognizedToAtlas,
+                              overlap,
+                              adjacency ) ;
 
       }
-      else if ( isTRKFormat )
-      {
 
-        std::cout << "WARNING : TRK format not yet supported, exiting..."
-                  << std::endl ;
-        exit( 1 ) ;
-
-        // std::string labelName = getFilenameNoExtension(
-        //                                         atlasTRKFilenames[ bundle ] ) ;
-        std::string labelName = atlasData.bundlesNames[ bundle ] ;
-
-        TrkFormat outTRK ;
-
-        outTRK.matrixTracks = labeledFibers[ bundle ].matrixTracks ;
-        outTRK.pointsPerTrack = labeledFibers[ bundle ].pointsPerTrack ;
-        outTRK.curves_count = labeledFibers[ bundle ].curves_count ;
-
-        int sizeOutTRKFilename = outputDirectory.size() + labelName.size() + 4 ;
-        char outTRKFilename[ sizeOutTRKFilename ] ;
-        strcpy( outTRKFilename, outputDirectory.c_str() ) ;
-        strcat( outTRKFilename, labelName.c_str() ) ;
-        strcat( outTRKFilename, ".trk" ) ;
-
-        outTRK.trkWriting( outTRKFilename, verbose ) ;
-
-      }
 
       countProcessedRecognizedBundles += 1 ;
 
@@ -2214,7 +2368,7 @@ void RecognizedBundles::projectAtlas( AtlasBundles& atlasData,
 
     }
 
-    BundlesDataFormat unlabeledBundlesData ;
+    BundlesData unlabeledBundlesData ;
     unlabeledBundlesData.curves_count = numberFibersUnlabeled ;
     unlabeledBundlesData.matrixTracks.resize(
                                    numberFibersUnlabeled * 3 * nbPoints, 0 ) ;
@@ -2287,47 +2441,34 @@ void RecognizedBundles::projectAtlas( AtlasBundles& atlasData,
                                                         << nbNans << std::endl ;
 
     }
-///////////////////
+    ///////////////
 
 
 
     /// Saving
-    if ( isBundlesFormat )
+    std::string labelName = "unlabeledFibers" ;
+
+    BundlesMinf unlabeledInfo = atlasData.bundlesMinf[ 0 ] ;
+
+    unlabeledInfo.curves_count = numberFibersUnlabeled ;
+
+    std::string format = unlabeledInfo.getFormat() ;
+
+    if ( format == ".tck" )
     {
 
-      std::string labelName = "unlabeledFibers" ;
-
-      BundlesFormat unlabeledInfo = atlasData.bundles[ 0 ] ;
-
-      unlabeledInfo.curves_count = numberFibersUnlabeled ;
-      int sizeOutBundlesFilename =
-                               outputDirectory.size() + labelName.size() + 8 ;
-      char outBundlesFilename[ sizeOutBundlesFilename ] ;
-      strcpy( outBundlesFilename, outputDirectory.c_str() ) ;
-      strcat( outBundlesFilename, labelName.c_str() ) ;
-      strcat( outBundlesFilename, ".bundles" ) ;
-
-      unlabeledInfo.bundlesWriting( outBundlesFilename, verbose ) ;
-
-      int sizeOutBundlesDataFilename =
-                              outputDirectory.size() + labelName.size() + 12 ;
-      char outBundlesDataFilename[ sizeOutBundlesDataFilename ] ;
-      strcpy( outBundlesDataFilename, outputDirectory.c_str() ) ;
-      strcat( outBundlesDataFilename, labelName.c_str() ) ;
-      strcat( outBundlesDataFilename, ".bundlesdata" ) ;
-
-      unlabeledBundlesData.bundlesdataWriting( outBundlesDataFilename,
-                                                                     verbose ) ;
-
+      unlabeledInfo.computeHeaderTck( numberFibersUnlabeled ) ;
+      unlabeledInfo.computeTckOffsetBinary() ;
 
     }
-    else
-    {
 
-      std::cout << "ERROR : The only format supported is .bundles \n" ;
-      exit( 1 ) ;
+    int sizeOutBundlesFilename = outputDirectory.size() + labelName.size() + 8 ;
+    char outBundlesFilename[ sizeOutBundlesFilename ] ;
+    strcpy( outBundlesFilename, outputDirectory.c_str() ) ;
+    strcat( outBundlesFilename, labelName.c_str() ) ;
+    strcat( outBundlesFilename, format.c_str() ) ;
 
-    }
+    unlabeledBundlesData.write( outBundlesFilename, unlabeledInfo ) ;
 
   }
 
@@ -2339,7 +2480,3 @@ void RecognizedBundles::projectAtlas( AtlasBundles& atlasData,
   }
 
 }
-
-////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////

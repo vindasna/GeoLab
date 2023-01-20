@@ -22,7 +22,8 @@
 #include <omp.h>
 #include <experimental/filesystem>
 
-#include "ProjectAtlas.h"
+#include "alignFibersInBundle.h"
+#include "ioWrapper.h"
 
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -136,29 +137,52 @@ int main( int argc, char* argv[] )
   std::string inputBundlesFilename ;
   std::string inputBundlesDataFilename ;
   bool isBundlesFormat = false ;
+  bool isTrk = false ;
+  bool isTck = false ;
 
-  if ( inputFilename.find( ".bundlesdata" ) != std::string::npos )
+  if ( endswith( inputFilename, ".bundlesdata" ) )
   {
 
     inputBundlesDataFilename = inputFilename ;
 
-    inputBundlesFilename = inputFilename ;
-    size_t index = inputFilename.find( ".bundlesdata" ) ;
-    inputBundlesFilename.replace( index, 12, ".bundles") ;
+    inputBundlesFilename = replaceExtension( inputFilename, ".bundles" ) ;
 
     isBundlesFormat = true ;
+    format = ".bundles" ;
 
   }
-  else if ( inputFilename.find( ".bundles" ) != std::string::npos )
+  else if ( endswith( inputFilename, ".bundles" ) )
   {
 
     inputBundlesFilename = inputFilename ;
 
-    inputBundlesDataFilename = inputFilename ;
-    size_t index = inputFilename.find( ".bundles" ) ;
-    inputBundlesDataFilename.replace( index, 8, ".bundlesdata") ;
+    inputBundlesDataFilename = replaceExtension( inputFilename,
+                                                              ".bundlesdata" ) ;
 
     isBundlesFormat = true ;
+    format = ".bundles" ;
+
+  }
+  else if ( endswith( inputFilename, ".trk" ) )
+  {
+
+    inputBundlesDataFilename = inputFilename ;
+
+    inputBundlesFilename = replaceExtension( inputFilename, ".minf" ) ;
+
+    isTrk = true ;
+    format = ".trk" ;
+
+  }
+  else if ( endswith( inputFilename, ".tck" ) )
+  {
+
+    inputBundlesDataFilename = inputFilename ;
+
+    inputBundlesFilename = replaceExtension( inputFilename, ".minf" ) ;
+
+    isTck = true ;
+    format = ".tck" ;
 
   }
   else
@@ -171,33 +195,9 @@ int main( int argc, char* argv[] )
   }
 
 
-  BundlesDataFormat inputBundlesData ;
-  BundlesFormat inputBundleInfo ;
+  BundlesData inputBundlesData( inputBundlesDataFilename.c_str() ) ;
+  BundlesMinf inputBundleInfo( inputBundlesFilename.c_str() ) ;
 
-  if ( isBundlesFormat )
-  {
-
-    if ( verbose )
-    {
-
-      std::cout << "Reading : " << inputBundlesFilename << std::endl ;
-
-    }
-
-    inputBundleInfo.bundlesReading( inputBundlesFilename.c_str(),
-                                        verbose ) ;
-
-    if ( verbose )
-    {
-
-      std::cout << "Reading : " << inputBundlesDataFilename << std::endl ;
-
-    }
-    inputBundlesData.bundlesdataReading( inputBundlesDataFilename.c_str(),
-                                        inputBundlesFilename.c_str(),
-                                        verbose ) ;
-
-  }
 
   // Sanity checks //
   int nbPoints = inputBundlesData.pointsPerTrack[ 0 ] ;
@@ -221,13 +221,13 @@ int main( int argc, char* argv[] )
 
 
   //---------------------------- Aligning fibers -----------------------------//
-  BundlesDataFormat outputBundlesData( inputBundlesData ) ;
+  BundlesData outputBundlesData( inputBundlesData ) ;
   outputBundlesData.matrixTracks.resize( 3 * nbPoints * nbCurves +
                                                          3 * 2 * nbCurves, 0 ) ;
   outputBundlesData.pointsPerTrack.resize( 2 * nbCurves ) ;
   outputBundlesData.curves_count = 2 * nbCurves ;
 
-  BundlesFormat outputBundleInfo( inputBundleInfo ) ;
+  BundlesMinf outputBundleInfo( inputBundleInfo ) ;
   outputBundleInfo.curves_count = 2 * nbCurves ;
 
   std::vector<float> referenceFiber( 3 * nbPoints, 0 ) ;
@@ -283,8 +283,7 @@ int main( int argc, char* argv[] )
                                     movingFiber,
                                     nbPoints,
                                     registeredFiber,
-                                    normalVectorRegistered,
-                                    verbose ) ;
+                                    normalVectorRegistered ) ;
 
     std::vector<float> directionVectorRegistered( 3, 0 ) ;
     inputBundlesData.computeDirectionVectorFiberTractogram( registeredFiber,
@@ -351,24 +350,73 @@ int main( int argc, char* argv[] )
   std::string outputBundlesFilename ;
   std::string outputBundlesDataFilename ;
 
-  if ( outputFilename.find( ".bundlesdata" ) != std::string::npos )
+  if ( endswith( outputFilename, ".bundlesdata" ) )
   {
+
+    if ( format != ".bundles" )
+    {
+
+      std::cout << "ERROR : input and output format must be the same "
+                << std::endl ;
+      exit( 1 ) ;
+
+    }
 
     outputBundlesDataFilename = outputFilename ;
 
-    outputBundlesFilename = outputFilename ;
-    size_t index = outputFilename.find( ".bundlesdata" ) ;
-    outputBundlesFilename.replace( index, 12, ".bundles") ;
+    outputBundlesFilename = replaceExtension( outputFilename, ".bundles" ) ;
 
   }
-  else if ( outputFilename.find( ".bundles" ) != std::string::npos )
+  else if ( endswith( outputFilename, ".bundles" ) )
   {
+
+    if ( format != ".bundles" )
+    {
+
+      std::cout << "ERROR : input and output format must be the same "
+                << std::endl ;
+      exit( 1 ) ;
+
+    }
 
     outputBundlesFilename = outputFilename ;
 
+    outputBundlesDataFilename = replaceExtension( outputFilename,
+                                                              ".bundlesdata" ) ;
+
+  }
+  else if ( endswith( outputFilename, ".trk" ) )
+  {
+
+    if ( format != ".trk" )
+    {
+
+      std::cout << "ERROR : input and output format must be the same "
+                << std::endl ;
+      exit( 1 ) ;
+
+    }
+
     outputBundlesDataFilename = outputFilename ;
-    size_t index = outputFilename.find( ".bundles" ) ;
-    outputBundlesDataFilename.replace( index, 8, ".bundlesdata") ;
+
+    outputBundlesFilename = replaceExtension( outputFilename, ".minf" ) ;
+
+  }
+  else if ( endswith( outputFilename, ".tck" ) )
+  {
+
+    if ( format != ".tck" )
+    {
+
+      std::cout << "ERROR : input and output format must be the same "
+                << std::endl ;
+      exit( 1 ) ;
+
+    }
+
+    outputBundlesDataFilename = outputFilename ;
+
+    outputBundlesFilename = replaceExtension( outputFilename, ".minf" ) ;
 
   }
   else
@@ -380,9 +428,8 @@ int main( int argc, char* argv[] )
 
   }
 
-  outputBundlesData.bundlesdataWriting( outputBundlesDataFilename.c_str(),
-                                                                     verbose ) ;
-  outputBundleInfo.bundlesWriting( outputBundlesFilename.c_str(), verbose ) ;
+  outputBundlesData.write( outputBundlesDataFilename.c_str(),
+                                                            outputBundleInfo ) ;
 
   return 0 ;
 

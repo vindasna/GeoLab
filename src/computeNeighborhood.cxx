@@ -24,6 +24,7 @@
 #include <experimental/filesystem>
 
 #include "computeNeighborhood.h"
+#include "ioWrapper.h"
 
 
 
@@ -127,7 +128,7 @@ void readIndexInTractogram( const char* predictedLabelsFilename,
 ////////////////////////////////////////////////////////////////////////////////
 /////////////////// Compute distance of a fiber to a bundle ////////////////////
 ////////////////////////////////////////////////////////////////////////////////
-float computeDistanceFiberToBundle( BundlesDataFormat& atlasBundleData,
+float computeDistanceFiberToBundle( BundlesData& atlasBundleData,
                                     const std::vector<float>& fiber )
 {
 
@@ -151,7 +152,7 @@ float computeDistanceFiberToBundle( BundlesDataFormat& atlasBundleData,
   // float distance = 0 ;
   std::vector<float> distances( nbFibersAtlasBundle, 0 ) ;
 
-  #pragma omp parallel for
+  #pragma omp parallel for num_threads( nbThreadsUsed )
   for ( int atlasFiberIndex = 0 ; atlasFiberIndex < nbFibersAtlasBundle ;
                                                              atlasFiberIndex++ )
   {
@@ -191,7 +192,8 @@ int main( int argc, char* argv[] )
   const auto start_time = std::chrono::system_clock::now() ;
 
   int index_input, index_atlas, index_output, index_thr, index_minLen,
-                          index_maxLen, index_tolThr, index_verbose, index_help ;
+                                index_maxLen, index_tolThr, index_verbose,
+                                                   index_nbThreads, index_help ;
   index_input = getFlagPosition( argc, argv, "-i" ) ;
   index_atlas = getFlagPosition( argc, argv, "-a" ) ;
   index_output = getFlagPosition( argc, argv, "-o" ) ;
@@ -199,6 +201,7 @@ int main( int argc, char* argv[] )
   index_minLen = getFlagPosition( argc, argv, "-minLen" ) ;
   index_maxLen = getFlagPosition( argc, argv, "-maxLen" ) ;
   index_tolThr = getFlagPosition( argc, argv, "-tolThr" ) ;
+  index_nbThreads = getFlagPosition( argc, argv, "-nbThreads" ) ;
   index_verbose = getFlagPosition( argc, argv, "-v" ) ;
   index_help = getFlagPosition( argc, argv, "-h" ) ;
 
@@ -217,6 +220,8 @@ int main( int argc, char* argv[] )
               << "[-tolThr] : multipicative value for distance threshold "
               << "(default = 1.2) \n"
               << "[-thr] : Threshold distance (Default = maxRadius) \n"
+              << "[-nbThreads] : Sets the value of omp_set_num_threads "
+              << "(default : number of cores ) \n"
               << "[-v] : Set verbosity level at 1 \n"
               << "[-h] : Show this message " << std::endl ;
     exit( 1 ) ;
@@ -320,6 +325,37 @@ int main( int argc, char* argv[] )
   }
 
 
+  if ( index_nbThreads )
+  {
+
+    nbThreads = std::stoi( argv[ index_nbThreads + 1 ] ) ;
+    if ( nbThreads <= 0 )
+    {
+
+      std::cout << "Invalid argument for -nbThreads : you must give a postive "
+                << "integer " << std::endl ;
+      exit( 1 ) ;
+
+    }
+
+  }
+  else
+  {
+
+    nbThreads = -1 ;
+
+  }
+  omp_set_num_threads( nbThreads ) ;
+
+  #pragma omp parallel
+  {
+
+    nbThreadsUsed = omp_get_num_threads() ;
+
+  }
+  std::cout << "Number of threads : " << nbThreadsUsed << std::endl ;
+
+
   if ( index_verbose )
   {
     if ( argv[ index_verbose + 1 ] )
@@ -348,48 +384,19 @@ int main( int argc, char* argv[] )
                                               inputTractogramPath.size() - 1 ) ;
 
   }
-  std::string inputBundlesDataFilename ;
-  std::string inputBundlesFilename ;
-  std::string inputTRKFilename ;
 
-  if ( inputTractogramPath.find( ".bundlesdata" ) != std::string::npos )
+
+  if ( !endswith( inputTractogramPath, ".bundles" ) &&
+       !endswith( inputTractogramPath, ".bundlesdata" ) &&
+       !endswith( inputTractogramPath, ".trk" ) &&
+       !endswith( inputTractogramPath, ".tck" ) )
   {
 
-    inputBundlesDataFilename = inputTractogramPath ;
-
-    inputBundlesFilename = inputTractogramPath ;
-    size_t index = inputTractogramPath.find( ".bundlesdata" ) ;
-    inputBundlesFilename.replace( index, 12, ".bundles") ;
-
-    isBundlesFormat = true ;
-
-  }
-  else if ( inputTractogramPath.find( ".bundles" ) != std::string::npos )
-  {
-
-    inputBundlesFilename = inputTractogramPath ;
-
-    inputBundlesDataFilename = inputTractogramPath ;
-    size_t index = inputTractogramPath.find( ".bundles" ) ;
-    inputBundlesDataFilename.replace( index, 8, ".bundlesdata") ;
-
-    isBundlesFormat = true ;
-
-  }
-  else if ( inputTractogramPath.find( ".trk" ) != std::string::npos )
-  {
-
-    inputTRKFilename = inputTractogramPath ;
-
-    isTRKFormat = true ;
-
-  }
-  else
-  {
-
-    std::cout << "ERROR : Only output format supported is "
-              << ".bundles/.bundlesdata " << std::endl ;
-    exit( 1 ) ;
+    std::stringstream outMessageOss ;
+    std::string outMessage = "computeNeighborhood : Only supported formats " \
+                             "for input ares .bundles/.bundlesdata, .trk, " \
+                             ".tck \n" ;
+    throw( std::invalid_argument( outMessage ) ) ;
 
   }
 
@@ -404,6 +411,20 @@ int main( int argc, char* argv[] )
 
   }
 
+  if ( !is_dir( atlasDirectory ) )
+  {
+
+    std::stringstream outMessageOss ;
+    outMessageOss << "computeNeighborhood : atlas directory "
+                  << atlasDirectory << " does not exists\n" ;
+
+    std::string outMessage = outMessageOss.str() ;
+
+    throw( std::invalid_argument( outMessage ) ) ;
+
+
+  }
+
   /// ********************************************************************** ///
 
   std::string outputDirectory( argv[ index_output + 1 ] ) ;
@@ -415,100 +436,34 @@ int main( int argc, char* argv[] )
 
   }
 
+  if ( !( is_dir( outputDirectory ) ) )
+  {
 
-  //////////////////////////////////////////////////////////////////////////////
-  // isBundlesFormat = true ;
-  // isTRKFormat = false ;
+    mkdir( outputDirectory ) ;
+  }
+
+
 
   //   xxxxxxxxxxxxxxxxxxxxx Reading inputTractogram xxxxxxxxxxxxxxxxxxxxxx   //
 
-  BundlesFormat inputTractogramInfo ;
-  BundlesDataFormat inputTractogram ;
-  TrkFormat trkData ;
+  BundlesMinf inputTractogramInfo( inputTractogramPath.c_str() ) ;
+
+  BundlesData inputTractogram( inputTractogramPath.c_str() ) ;
 
 
-  if ( isBundlesFormat )
-  {
-
-    if ( verbose )
-    {
-
-      std::cout << "Reading : " << inputBundlesFilename << std::endl ;
-
-    }
-
-    inputTractogramInfo.bundlesReading(
-                                       inputBundlesFilename.c_str(), verbose ) ;
-
-
-    if ( verbose )
-    {
-
-      std::cout << "Reading : " << inputBundlesDataFilename << std::endl ;
-
-    }
-
-
-    inputTractogram.bundlesdataReading( inputBundlesDataFilename.c_str(),
-                                       inputBundlesFilename.c_str(),
-                                       verbose ) ;
-
-  }
-  else if ( isTRKFormat )
-  {
-
-    if ( verbose )
-    {
-
-      std::cout << "Reading : " << inputTRKFilename << std::endl ;
-
-    }
-
-    trkData.trkReading( inputTRKFilename.c_str(), verbose ) ;
-    inputTractogram.matrixTracks = trkData.matrixTracks ;
-    inputTractogram.pointsPerTrack = trkData.pointsPerTrack ;
-    inputTractogram.curves_count = trkData.curves_count ;
-
-  }
-  else
-  {
-
-    std::cout << "ERROR : The only supported format are .bundles/.bundlesdata "
-              << "and .trk" << std::endl ;
-    exit( 1 ) ;
-
-  }
 
   //   xxxxxxxxxxxxxxxxxxxxxx Reading atlas Bundle xxxxxxxxxxxxxxxxxxxxxxxx   //
-  bool isBundlesFormatAtlas = false ;
-  bool isTRKFormatAtlas = false ;
-  if ( atlasDirectory.find( "-trk" ) == std::string::npos )
-  {
-
-    isBundlesFormatAtlas = true ;
-    isTRKFormatAtlas = false ;
-
-  }
-  else
-  {
-
-    isBundlesFormatAtlas = false ;
-    isTRKFormatAtlas = true ;
-
-  }
   AtlasBundles atlasBundles( atlasDirectory.c_str(),
-                             isBundlesFormatAtlas,
-                             isTRKFormatAtlas,
+                             inputTractogram.isBundles,
+                             inputTractogram.isTrk,
+                             inputTractogram.isTck,
                              verbose ) ;
-
-  // BundlesFormat atlasBundleInfo( atlasBundle.c_str(), verbose ) ;
-
 
   //////////////////////////////////////////////////////////////////////////////
   if ( verbose )
   {
 
-    if ( !isBundlesFormatAtlas || index_thr )
+    if ( index_thr )
     {
 
       std::cout << "Threshold distance : " << thresholdDistance << " mm \n" ;
@@ -540,7 +495,7 @@ int main( int argc, char* argv[] )
 
   }
 
-  int nbBundlesAtlas = atlasBundles.bundles.size() ;
+  int nbBundlesAtlas = atlasBundles.bundlesMinf.size() ;
 
   if ( verbose )
   {
@@ -549,24 +504,14 @@ int main( int argc, char* argv[] )
 
   }
 
-  #pragma omp parallel for
+
+  #pragma omp parallel for num_threads( nbThreadsUsed )
   for ( int bundle = 0 ; bundle < nbBundlesAtlas ; bundle++ )
   {
 
-    /*
-    if ( verbose < 2 )
-    {
+    BundlesMinf& atlasBundleInfo = atlasBundles.bundlesMinf[ bundle ] ;
+    BundlesData& atlasBundleData = atlasBundles.bundlesData[ bundle ] ;
 
-      printf( "Processing bundle [ %d / %d ] \r", bundle + 1, nbBundlesAtlas ) ;
-      fflush( stdout ) ;
-
-    }
-    */
-
-
-
-    BundlesFormat& atlasBundleInfo = atlasBundles.bundles[ bundle ] ;
-    BundlesDataFormat& atlasBundleData = atlasBundles.bundlesData[ bundle ] ;
 
     std::vector<float> medialPointAtlasBundle = atlasBundleInfo.centerBundle ;
 
@@ -618,8 +563,8 @@ int main( int argc, char* argv[] )
     int64_t nbFibersTractogram = inputTractogram.curves_count ;
 
     int nbPoints = inputTractogram.pointsPerTrack[ 0 ] ;
-    // std::vector to create large arrays
-    std::vector< int > indexNeighborFibers( nbFibersTractogram, 0 ) ;
+
+    std::vector<int> indexNeighborFibers( nbFibersTractogram, 0 ) ;
     int curveCountNeighborhood = 0 ;
     int64_t nbElementsExtractedNeighborhood = 0 ;
 
@@ -752,192 +697,52 @@ int main( int argc, char* argv[] )
     }
 
 
+    //------------------------- Saving neighborhood ------------------------//
+    BundlesMinf extractedNeighborhoodInfo( inputTractogramPath.c_str() ) ;
+    std::string outFormat = extractedNeighborhoodInfo.getFormat() ;
 
+    std::string outputBundlesFilename = outputDirectory +
+                                        atlasBundles.bundlesNames[ bundle ] +
+                                        outFormat ;
 
-    if ( isBundlesFormat )
+    if ( verbose > 1 )
     {
 
+      std::cout << "Saving " << outputBundlesFilename << std::endl ;
+
+    }
 
 
-
-      //------------------------- Saving neighborhood ------------------------//
-
-      BundlesFormat extractedNeighborhoodInfo( inputBundlesFilename.c_str(),
-                                               verbose ) ;
-
-      std::string outputBundlesFilename = outputDirectory +
-                                          atlasBundles.bundlesNames[ bundle ] +
-                                          ".bundles" ;
-
-      if ( verbose > 1 )
-      {
-
-        std::cout << "Saving " << outputBundlesFilename << std::endl ;
-
-      }
-
-      extractedNeighborhoodInfo.curves_count = curveCountNeighborhood ;
-      // extractedNeighborhoodInfo.curves_count = atlasBundleData.curves_count ;
-      // extractedNeighborhoodInfo.curves_count = 10 ;
-
-      extractedNeighborhoodInfo.bundlesWriting( outputBundlesFilename.c_str(),
-                                                                     verbose ) ;
+    extractedNeighborhoodInfo.curves_count = curveCountNeighborhood ;
 
 
+    if ( outFormat == ".tck" )
+    {
 
-      BundlesDataFormat extractedNeighborhoodData( extractedNeighborhoodTotal,
-                                                   pointsPerTrackNeighborhood,
-                                                   curveCountNeighborhood ) ;
+      extractedNeighborhoodInfo.computeTckOffsetBinary() ;
+
+    }
+
+    BundlesData extractedNeighborhoodData( inputTractogramPath.c_str() ) ;
+    extractedNeighborhoodData.matrixTracks = extractedNeighborhoodTotal ;
+    extractedNeighborhoodData.pointsPerTrack = pointsPerTrackNeighborhood ;
+    extractedNeighborhoodData.curves_count = curveCountNeighborhood ;
+    extractedNeighborhoodData.tracksScalars.resize( curveCountNeighborhood ) ;
+    extractedNeighborhoodData.tracksProperties.resize(
+                                                      curveCountNeighborhood ) ;
+
+    extractedNeighborhoodData.write( outputBundlesFilename.c_str(),
+                                                   extractedNeighborhoodInfo ) ;
 
 
-      std::string outputBundlesDataFilename =
-                                           outputDirectory +
-                                           atlasBundles.bundlesNames[ bundle ] +
-                                           ".bundlesdata" ;
+    // Saving index in tractogram of neighbors fibers
+    std::string indexInTractogramOfNeighborsFilename = outputDirectory +
+                                        atlasBundles.bundlesNames[ bundle ] +
+                                        "Index.bin" ;
 
-      // Saving index in tractogram of neighbors fibers
-      std::string indexInTractogramOfNeighborsFilename = outputDirectory +
-                                          atlasBundles.bundlesNames[ bundle ] +
-                                          "Index.bin" ;
-
-      saveIndexInTractogram( indexInTractogramOfNeighborsFilename.c_str(),
+    saveIndexInTractogram( indexInTractogramOfNeighborsFilename.c_str(),
                                                 indexInTractogramOfNeighbors ) ;
 
-
-      //
-      std::vector<int64_t> indexInTractogramRead ;
-      int32_t testNbFibers = indexInTractogramOfNeighbors.size() ;
-      readIndexInTractogram( indexInTractogramOfNeighborsFilename.c_str(),
-                             indexInTractogramRead,
-                             testNbFibers,
-                             verbose ) ;
-
-
-      // std::cout << "Test read index : " << std::endl ;
-      // for ( int i = 0 ; i < testNbFibers ; i++ )
-      // {
-      //
-      //   std::cout << indexInTractogramRead[ i ] << "\t|\t" <<
-      //                           indexInTractogramOfNeighbors[ i ] << std::endl ;
-      //
-      // }
-      // std::cout << "Done" << std::endl ;
-
-
-////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////
-      // // Selecting maxNbFibers fibers in moving bundle that resemble the most to
-      // // the reference bundle
-      // // int maxNbFibers = atlasBundleData.curves_count  ;
-      // int maxNbFibers = 10  ;
-      //
-      // std::vector<float> selectedMovingFibers( 3 * nbPoints * maxNbFibers, 0 ) ;
-      // std::vector<int> pointsPerTrackSelectedFibers( maxNbFibers, 0 ) ;
-      //
-      //
-      // std::vector<float> distancesMovingFibersToReference( curveCountNeighborhood, 0 ) ;
-      // #pragma omp parallel for
-      // for ( int fiberIndex = 0 ; fiberIndex < curveCountNeighborhood ; fiberIndex++ )
-      // {
-      //
-      //   std::vector<float> fiber( 3 * nbPoints, 0 ) ;
-      //   extractedNeighborhoodData.getFiberFromTractogram(
-      //                                           extractedNeighborhoodData.matrixTracks,
-      //                                           fiberIndex,
-      //                                           nbPoints,
-      //                                           fiber ) ;
-      //   distancesMovingFibersToReference[ fiberIndex ] =
-      //                computeDistanceFiberToBundle( atlasBundleData, fiber ) ;
-      //
-      // }
-      //
-      // std::vector<int> indices( curveCountNeighborhood, 0 ) ;
-      // std::iota( indices.begin(), indices.end(), 0 ) ;
-      // std::partial_sort( indices.begin(), indices.begin() + maxNbFibers,
-      //                    indices.end(),
-      //                    [&distancesMovingFibersToReference]( int i, int j )
-      //                    { return distancesMovingFibersToReference[ i ] >
-      //                             distancesMovingFibersToReference[ j ] ; } ) ;
-      //
-      //
-      // for ( int fiberSelectedIndex = 0 ; fiberSelectedIndex < maxNbFibers ;
-      //                                                       fiberSelectedIndex++ )
-      // {
-      //
-      //   int offsetExtractedNeighborhood = 3 * nbPoints * fiberSelectedIndex ;
-      //
-      //   // Find minimum element index
-      //   int minIndex = indices[ fiberSelectedIndex ] ;
-      //
-      //   std::vector<float> fiber( 3 * nbPoints, 0 ) ;
-      //   // extractedNeighborhoodData.getFiberFromTractogram(
-      //   //                                         extractedNeighborhoodData.matrixTracks,
-      //   //                                         fiberSelectedIndex,
-      //   //                                         nbPoints,
-      //   //                                         fiber ) ;
-      //   extractedNeighborhoodData.getFiberFromTractogram(
-      //                                           extractedNeighborhoodData.matrixTracks,
-      //                                           minIndex,
-      //                                           nbPoints,
-      //                                           fiber ) ;
-      //
-      //   std::copy( fiber.begin(),
-      //              fiber.begin() + 3 * nbPoints,
-      //              selectedMovingFibers.begin() + offsetExtractedNeighborhood ) ;
-      //
-      //   pointsPerTrackSelectedFibers[ fiberSelectedIndex ] =
-      //                               extractedNeighborhoodData.pointsPerTrack[ minIndex ] ;
-      //
-      // }
-      //
-      // extractedNeighborhoodData.matrixTracks = std::vector<float>() ; // deallocation
-      // extractedNeighborhoodData.matrixTracks = selectedMovingFibers ;
-      //
-      // extractedNeighborhoodData.pointsPerTrack = std::vector<int>() ; // deallocation
-      // extractedNeighborhoodData.pointsPerTrack = pointsPerTrackSelectedFibers ;
-      //
-      // extractedNeighborhoodData.curves_count = maxNbFibers ;
-      //
-      //
-      // if ( verbose )
-      // {
-      //
-      //   std::cout << " Done " << std::endl ;
-      //
-      // }
-      //
-      // float lengthTest = extractedNeighborhoodData.computeLengthFiber( 0 ) ;
-      // std::cout << "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n" ;
-      // std::cout <<  lengthTest << std::endl ;
-      // std::cout << "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n" ;
-////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////
-
-      if ( verbose > 1 )
-      {
-
-        std::cout << "Saving " << outputBundlesDataFilename << std::endl ;
-
-      }
-
-      extractedNeighborhoodData.bundlesdataWriting(
-                                             outputBundlesDataFilename .c_str(),
-                                             verbose ) ;
-
-
-
-
-    }
-    else
-    {
-
-      std::cout << "ERROR : Only output files supported are .bundles/"
-                << ".bundlesdata " << std::endl ;
-      exit( 1 ) ;
-
-    }
 
   }
 

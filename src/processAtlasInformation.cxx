@@ -25,6 +25,8 @@
 #include <experimental/filesystem>
 
 #include "processAtlasInformation.h"
+#include "ioWrapper.h"
+#include "niftiImage.h"
 
 ///////////////////////////////////////////////////////////////////////////////
 ////////// Function to get flag position when parsing arguments ///////////////
@@ -57,112 +59,10 @@ int getFlagPosition( int argc, char* argv[], const std::string& flag )
 ////////////////////////////////////////////////////////////////////////////////
 
 //----------------------------------------------------------------------------//
-//----------------------------- Read .nii header -----------------------------//
-//----------------------------------------------------------------------------//
-niiFormat readNiiHeader( const char* niiFilename )
-{
-
-  niiFormat niiHeader ;
-
-  std::string niiString( niiFilename ) ;
-
-  if ( niiString.find( ".nii" ) != std::string::npos &&
-                                niiString.find( ".gz" ) == std::string::npos )
-  {
-
-    if ( verbose )
-    {
-
-      std::cout << "Reading : " << niiFilename << std::endl ;
-
-    }
-
-    std::FILE *f = std::fopen( niiFilename, "rb" ) ;
-    if ( !f )
-    {
-
-      std::cout << "Problem opening file : " << niiFilename << std::endl ;
-      exit( 1 ) ;
-
-    }
-
-    std::fread( &niiHeader.sizeof_hdr, sizeof( niiHeader.sizeof_hdr ), 1, f ) ;
-    std::fread( &niiHeader.data_type, sizeof( niiHeader.data_type ), 1, f ) ;
-    std::fread( &niiHeader.db_name, sizeof( niiHeader.db_name ), 1, f ) ;
-    std::fread( &niiHeader.extents, sizeof( niiHeader.extents ), 1, f ) ;
-    std::fread( &niiHeader.session_error, sizeof( niiHeader.session_error ),
-                                                                       1, f ) ;
-    std::fread( &niiHeader.regular, sizeof( niiHeader.regular ), 1, f ) ;
-    std::fread( &niiHeader.dim_info, sizeof( niiHeader.dim_info ), 1, f ) ;
-    std::fread( &niiHeader.dim, sizeof( niiHeader.dim ), 1, f );
-    std::fread( &niiHeader.intent_p1, sizeof( niiHeader.intent_p1 ), 1, f ) ;
-    std::fread( &niiHeader.intent_p2, sizeof( niiHeader.intent_p2 ), 1, f ) ;
-    std::fread( &niiHeader.intent_p3, sizeof( niiHeader.intent_p3 ), 1, f ) ;
-    std::fread( &niiHeader.intent_code, sizeof( niiHeader.intent_code ),
-                                                                      1, f ) ;
-    std::fread( &niiHeader.datatype, sizeof( niiHeader.datatype ), 1, f ) ;
-    std::fread( &niiHeader.bitpix, sizeof( niiHeader.bitpix ), 1, f ) ;
-    std::fread( &niiHeader.slice_start, sizeof( niiHeader.slice_start ),
-                                                                      1, f ) ;
-    std::fread( &niiHeader.pixdim, sizeof( niiHeader.pixdim ), 1, f ) ;
-    std::fread( &niiHeader.scl_slope, sizeof( niiHeader.scl_slope ), 1, f ) ;
-    std::fread( &niiHeader.scl_inter, sizeof( niiHeader.scl_inter ), 1, f ) ;
-    std::fread( &niiHeader.slice_end, sizeof( niiHeader.slice_end ), 1, f ) ;
-    std::fread( &niiHeader.slice_code, sizeof( niiHeader.slice_code ), 1, f ) ;
-    std::fread( &niiHeader.xyzt_units, sizeof( niiHeader.xyzt_units ), 1, f ) ;
-    std::fread( &niiHeader.cal_max, sizeof( niiHeader.cal_max ), 1, f ) ;
-    std::fread( &niiHeader.cal_min, sizeof( niiHeader.cal_min ), 1, f ) ;
-    std::fread( &niiHeader.slice_duration, sizeof( niiHeader.slice_duration ),
-                                                                        1, f ) ;
-    std::fread( &niiHeader.toffset, sizeof( niiHeader.toffset ), 1, f ) ;
-    std::fread( &niiHeader.glmax, sizeof( niiHeader.glmax ), 1, f ) ;
-    std::fread( &niiHeader.gmin, sizeof( niiHeader.gmin ), 1, f ) ;
-    std::fread( &niiHeader.descrip, sizeof( niiHeader.descrip ), 1, f ) ;
-    std::fread( &niiHeader.aux_file, sizeof( niiHeader.aux_file ), 1, f ) ;
-    std::fread( &niiHeader.qform_code, sizeof( niiHeader.qform_code ), 1, f ) ;
-    std::fread( &niiHeader.sform_code, sizeof( niiHeader.sform_code ), 1, f ) ;
-    std::fread( &niiHeader.quatern_b, sizeof( niiHeader.quatern_b ), 1, f ) ;
-    std::fread( &niiHeader.quatern_c, sizeof( niiHeader.quatern_c ), 1, f ) ;
-    std::fread( &niiHeader.quatern_d, sizeof( niiHeader.quatern_d ), 1, f ) ;
-    std::fread( &niiHeader.qoffset_x, sizeof( niiHeader.qoffset_x ), 1, f ) ;
-    std::fread( &niiHeader.qoffset_y, sizeof( niiHeader.qoffset_y ), 1, f ) ;
-    std::fread( &niiHeader.qoffset_z, sizeof( niiHeader.qoffset_z ), 1, f ) ;
-    std::fread( &niiHeader.srow_x, sizeof( niiHeader.srow_x ), 1, f ) ;
-    std::fread( &niiHeader.srow_y, sizeof( niiHeader.srow_y ), 1, f ) ;
-    std::fread( &niiHeader.srow_z, sizeof( niiHeader.srow_z ), 1, f ) ;
-    std::fread( &niiHeader.intent_name, sizeof( niiHeader.intent_name ), 1,
-                                                                           f ) ;
-    std::fread( &niiHeader.magic, sizeof( niiHeader.magic ), 1, f ) ;
-
-    std::fclose ( f ) ;
-
-    if ( verbose )
-    {
-
-      std::cout << "Done" << std::endl ;
-
-    }
-
-  }
-  else
-  {
-
-    std::cout << "Error file format : the only format supported for the "
-              << "reference image is .nii" << std::endl ;
-    exit( 1 ) ;
-
-  }
-
-  return niiHeader ;
-
-}
-
-
-//----------------------------------------------------------------------------//
 //-------------------------- Find radius of bundle ---------------------------//
 //----------------------------------------------------------------------------//
 void computeCenterAtlasBundleFibers(
-                             BundlesDataFormat& atlasBundleData,
+                             BundlesData& atlasBundleData,
                              std::vector<float>& medialPointsAtlasBundleFibers )
 {
 
@@ -196,7 +96,7 @@ void computeCenterAtlasBundleFibers(
 //----------------------- Compute average fiber bundle -----------------------//
 //----------------------------------------------------------------------------//
 void computeAverageFiberBundle(
-                        BundlesDataFormat& atlasBundleData,
+                        BundlesData& atlasBundleData,
                         const std::vector<float>& medialPointsAtlasBundleFibers,
                         int nbPoints,
                         std::vector<float>& averageFiber,
@@ -311,7 +211,7 @@ void computeAverageFiberBundle(
 //--------------------- Compute gravity center of bundle ---------------------//
 //----------------------------------------------------------------------------//
 void computeGravityCenterAtlasBundle(
-                                  BundlesDataFormat& atlasBundleData,
+                                  BundlesData& atlasBundleData,
                                   int nbPoints,
                                   std::vector<float>& gravityCenterAtlasBundle )
 {
@@ -397,7 +297,7 @@ void computeDistancesToCenterBundle(
 //------------- Compute normal vector of fibers in atlas bundle --------------//
 //----------------------------------------------------------------------------//
 void computeNormalVectorFibersAtlasBundle(
-                                       BundlesDataFormat& atlasBundleData,
+                                       BundlesData& atlasBundleData,
                                        std::vector<float>& normalVectorsBundle )
 {
 
@@ -426,7 +326,7 @@ void computeNormalVectorFibersAtlasBundle(
 //--------- Compute distances between medial points fibers in bundle ---------//
 //----------------------------------------------------------------------------//
 void computeDistancesBetweenMedialPointsBundle(
-                        BundlesDataFormat& atlasBundleData,
+                        BundlesData& atlasBundleData,
                         const std::vector<float>& medialPointsAtlasBundleFibers,
                         std::vector<float>& distancesBetweenMedialPointsBundle )
 {
@@ -507,7 +407,7 @@ void computeDistancesBetweenMedialPointsBundle(
 //----------------------------------------------------------------------------//
 //--------------------------- Compute angle bundle ---------------------------//
 //----------------------------------------------------------------------------//
-void computeAnglesBundle( BundlesDataFormat& atlasBundleData,
+void computeAnglesBundle( BundlesData& atlasBundleData,
                           const std::vector<float>& normalVectorsBundle,
                           std::vector<float>& anglesAtlasBundle )
 {
@@ -585,8 +485,131 @@ void computeAnglesBundle( BundlesDataFormat& atlasBundleData,
 // --------------------- Compute direction angles bundle -------------------- //
 //----------------------------------------------------------------------------//
 
+// void computeDirectionAnglesBundle(
+//                                 BundlesData& atlasBundleData,
+//                                 const std::vector<float>& normalVectorsBundle,
+//                                 int nbPoints,
+//                                 std::vector<float>& directionAnglesAtlasBundle )
+// {
+//
+//   int nbFibersAtlasBundle = atlasBundleData.curves_count ;
+//
+//   int indexAnglesAtlasBundle = 0 ;
+//
+//   #pragma omp parallel for
+//   for ( int atlasBundleFiberIndex_1 = 0 ;
+//                              atlasBundleFiberIndex_1 < nbFibersAtlasBundle ;
+//                                                     atlasBundleFiberIndex_1++ )
+//   {
+//
+//     std::vector<float> normalVector1( 3, 0 ) ;
+//     for ( int i =0 ; i < 3 ; i++ )
+//     {
+//
+//       normalVector1[ i ] = normalVectorsBundle[
+//                                              3 * atlasBundleFiberIndex_1 + i ] ;
+//
+//     }
+//
+//     std::vector<float> fiber1( 3 * nbPoints, 0 ) ;
+//     std::vector<float> newNormalVectorFiber1( 3, 0 ) ;
+//     atlasBundleData.putFiberInPlaneXY( normalVector1,
+//                                        atlasBundleData.matrixTracks,
+//                                        atlasBundleFiberIndex_1,
+//                                        nbPoints,
+//                                        fiber1,
+//                                        newNormalVectorFiber1 ) ;
+//
+//     std::vector<float> directionVectorFiber1( 3, 0 ) ;
+//     atlasBundleData.computeDirectionVectorFiberTractogram(
+//                                                        fiber1,
+//                                                        newNormalVectorFiber1,
+//                                                        directionVectorFiber1 ) ;
+//
+//
+//     if ( atlasBundleFiberIndex_1 + 1 < nbFibersAtlasBundle )
+//     {
+//
+//       for ( int atlasBundleFiberIndex_2 = atlasBundleFiberIndex_1 + 1 ;
+//                                  atlasBundleFiberIndex_2 < nbFibersAtlasBundle ;
+//                                                       atlasBundleFiberIndex_2++ )
+//       {
+//
+//         if ( atlasBundleFiberIndex_2 != atlasBundleFiberIndex_1 )
+//         {
+//
+//           std::vector<float> normalVector2( 3, 0 ) ;
+//           for ( int i =0 ; i < 3 ; i++ )
+//           {
+//
+//             normalVector2[ i ] = normalVectorsBundle[
+//                                              3 * atlasBundleFiberIndex_2 + i ] ;
+//
+//           }
+//
+//           std::vector<float> fiber2( 3 * nbPoints, 0 ) ;
+//           std::vector<float> newNormalVectorFiber2( 3, 0 ) ;
+//           atlasBundleData.putFiberInPlaneXY( normalVector2,
+//                                              atlasBundleData.matrixTracks,
+//                                              atlasBundleFiberIndex_2,
+//                                              nbPoints,
+//                                              fiber2,
+//                                              newNormalVectorFiber2 ) ;
+//
+//           std::vector<float> directionVectorFiber2( 3, 0 ) ;
+//           atlasBundleData.computeDirectionVectorFiberTractogram(
+//                                                        fiber2,
+//                                                        newNormalVectorFiber2,
+//                                                        directionVectorFiber2 ) ;
+//
+//
+//           float angleBetweenPlanes = atlasBundleData.computeAngleBetweenPlanes(
+//                                                        newNormalVectorFiber1,
+//                                                        newNormalVectorFiber2 ) ;
+//
+//           if ( angleBetweenPlanes > 5 )
+//           {
+//
+//             std::cout << "\nERROR : could not align fibers, got minimum angle "
+//                       << "between planes of " << angleBetweenPlanes << "\n" ;
+//             exit( 1 ) ;
+//
+//           }
+//
+//
+//
+//           // Computing angle between directions
+//           float angle = atlasBundleData.computeAngleBetweenDirections(
+//                                                        directionVectorFiber1,
+//                                                        directionVectorFiber2 ) ;
+//
+//           indexAnglesAtlasBundle = atlasBundleFiberIndex_1 *
+//                                                  ( 2 * nbFibersAtlasBundle - 1 -
+//                                                  atlasBundleFiberIndex_1 ) / 2 +
+//                                                   atlasBundleFiberIndex_2 -
+//                                                    atlasBundleFiberIndex_1 - 1 ;
+//
+//           // if ( angle > 90 )
+//           // {
+//           //
+//           //   angle = 180 - angle ;
+//           //
+//           // }
+//
+//           directionAnglesAtlasBundle[ indexAnglesAtlasBundle ] = angle ;
+//
+//         }
+//
+//       }
+//
+//     }
+//
+//   }
+//
+// }
+
 void computeDirectionAnglesBundle(
-                                BundlesDataFormat& atlasBundleData,
+                                BundlesData& atlasBundleData,
                                 const std::vector<float>& normalVectorsBundle,
                                 int nbPoints,
                                 std::vector<float>& directionAnglesAtlasBundle )
@@ -612,18 +635,15 @@ void computeDirectionAnglesBundle(
     }
 
     std::vector<float> fiber1( 3 * nbPoints, 0 ) ;
-    std::vector<float> newNormalVectorFiber1( 3, 0 ) ;
-    atlasBundleData.putFiberInPlaneXY( normalVector1,
-                                       atlasBundleData.matrixTracks,
-                                       atlasBundleFiberIndex_1,
-                                       nbPoints,
-                                       fiber1,
-                                       newNormalVectorFiber1 ) ;
+    atlasBundleData.getFiberFromTractogram( atlasBundleData.matrixTracks,
+                                            atlasBundleFiberIndex_1,
+                                            nbPoints,
+                                            fiber1 ) ;
 
     std::vector<float> directionVectorFiber1( 3, 0 ) ;
     atlasBundleData.computeDirectionVectorFiberTractogram(
                                                        fiber1,
-                                                       newNormalVectorFiber1,
+                                                       normalVector1,
                                                        directionVectorFiber1 ) ;
 
 
@@ -648,33 +668,16 @@ void computeDirectionAnglesBundle(
           }
 
           std::vector<float> fiber2( 3 * nbPoints, 0 ) ;
-          std::vector<float> newNormalVectorFiber2( 3, 0 ) ;
-          atlasBundleData.putFiberInPlaneXY( normalVector2,
-                                             atlasBundleData.matrixTracks,
-                                             atlasBundleFiberIndex_2,
-                                             nbPoints,
-                                             fiber2,
-                                             newNormalVectorFiber2 ) ;
+          atlasBundleData.getFiberFromTractogram( atlasBundleData.matrixTracks,
+                                                  atlasBundleFiberIndex_2,
+                                                  nbPoints,
+                                                  fiber2 ) ;
 
           std::vector<float> directionVectorFiber2( 3, 0 ) ;
           atlasBundleData.computeDirectionVectorFiberTractogram(
                                                        fiber2,
-                                                       newNormalVectorFiber2,
+                                                       normalVector2,
                                                        directionVectorFiber2 ) ;
-
-
-          float angleBetweenPlanes = atlasBundleData.computeAngleBetweenPlanes(
-                                                       newNormalVectorFiber1,
-                                                       newNormalVectorFiber2 ) ;
-
-          if ( angleBetweenPlanes > 5 )
-          {
-
-            std::cout << "\nERROR : could not align fibers, got minimum angle "
-                      << "between planes of " << angleBetweenPlanes << "\n" ;
-            exit( 1 ) ;
-
-          }
 
 
 
@@ -712,7 +715,7 @@ void computeDirectionAnglesBundle(
 //--------------------- Compute direction angles bundle ----------------------//
 //----------------------------------------------------------------------------//
 void computeShapeAnglesBundle(
-                        BundlesDataFormat& atlasBundleData,
+                        BundlesData& atlasBundleData,
                         int nbPoints,
                         const std::vector<float>& medialPointsAtlasBundleFibers,
                         std::vector<float>& shapeAnglesAtlasBundle )
@@ -760,7 +763,7 @@ void computeShapeAnglesBundle(
 //------------------- Compute min similarity measure (dMDA) ------------------//
 //----------------------------------------------------------------------------//
 void computeAverageDisimilarity(
-                        BundlesDataFormat& atlasBundleData,
+                        BundlesData& atlasBundleData,
                         const std::vector<float>& normalVectorsBundle,
                         const std::vector<float>& medialPointsAtlasBundleFibers,
                         int nbPoints,
@@ -804,8 +807,7 @@ void computeAverageDisimilarity(
                             atlasBundleFiberIndex_1,
                             nbPoints,
                             fiber1,
-                            newNormalVectorFiber1,
-                            0 ) ;
+                            newNormalVectorFiber1 ) ;
 
 
     if ( atlasBundleFiberIndex_1 + 1 < nbFibersAtlasBundle )
@@ -843,8 +845,7 @@ void computeAverageDisimilarity(
                                 atlasBundleFiberIndex_2,
                                 nbPoints,
                                 fiber2,
-                                newNormalVectorFiber2,
-                                0 ) ;
+                                newNormalVectorFiber2 ) ;
 
 
 
@@ -880,7 +881,7 @@ void computeAverageDisimilarity(
 //------------------- Compute min similarity measure (MDF) ------------------//
 //----------------------------------------------------------------------------//
 void computeAverageDisimilarityMDF(
-                        BundlesDataFormat& atlasBundleData,
+                        BundlesData& atlasBundleData,
                         const std::vector<float>& normalVectorsBundle,
                         const std::vector<float>& medialPointsAtlasBundleFibers,
                         int nbPoints,
@@ -1014,9 +1015,10 @@ inline float computeMaxVector( const std::vector<float>& inputVector )
 int main( int argc, char* argv[] )
 {
 
-  int index_atlas, index_reference, index_averageFibers, index_useMDF,
-                                                     index_verbose, index_help ;
+  int index_atlas, index_format, index_reference, index_averageFibers,
+                                       index_useMDF, index_verbose, index_help ;
   index_atlas =   getFlagPosition( argc, argv, "-a") ;
+  index_format =   getFlagPosition( argc, argv, "-f") ;
   index_reference =   getFlagPosition( argc, argv, "-r") ;
   index_averageFibers = getFlagPosition( argc, argv, "-af") ;
   index_useMDF = getFlagPosition( argc, argv, "-useMDF" ) ;
@@ -1028,6 +1030,8 @@ int main( int argc, char* argv[] )
 
     std::cout << "Function to convert bundles format : \n"
               << "-a : Directory with the atlas (one file per bundle) \n"
+              << "-f : Format of atlas bundles ( optios = [ .bundles, .trk, "
+              << ".tck ] ) \n"
               << "[-r] : Reference .nii image where the atlas is \n"
               << "[-af] : Output directory where to save the average fibers of "
               << "the bundles \n"
@@ -1057,6 +1061,30 @@ int main( int argc, char* argv[] )
       atlasDirectory = atlasDirectory + "/" ;
 
     }
+
+  }
+
+  std::string format ;
+  if ( index_format )
+  {
+
+    format = argv[ index_format + 1 ] ;
+
+    if ( format != ".bundles" && format != ".trk" && format != ".tck" )
+    {
+
+      std::cout << "The only supported formats for the atlas bundles are "
+                << ".bundles, .trk and .tck" << std::endl ;
+      exit( 1 ) ;
+
+    }
+
+  }
+  else
+  {
+
+    std::cout << "-f argument required..." << std::endl ;
+    exit( 1 ) ;
 
   }
 
@@ -1138,120 +1166,57 @@ int main( int argc, char* argv[] )
 
   //   xxxxxxxxxxxxxxxxxxxxxxxxxx Reading Atlas xxxxxxxxxxxxxxxxxxxxxxxxxx   //
 
-  int sizeBytesFullAtlas = 0 ;
-  AtlasBundles atlasData ;
-
   std::vector< std::string > atlasBundlesFilenames ;
-  std::vector< std::string > atlasBundlesDataFilenames ;
-  std::string tmpBundlesDataFilename ;
   std::string tmpBundlesFilename ;
 
   for ( const auto & file : std::experimental::filesystem::directory_iterator(
                                                     atlasDirectory.c_str() ) )
   {
 
-    tmpBundlesDataFilename = file.path() ;
-    tmpBundlesFilename = tmpBundlesDataFilename ;
-    std::string key (".bundlesdata") ;
+    tmpBundlesFilename = file.path() ;
 
-    if ( tmpBundlesDataFilename.find( ".bundlesdata" ) != std::string::npos )
+    if ( endswith( tmpBundlesFilename, format) )
     {
-
-      std::size_t found = tmpBundlesFilename.rfind( key ) ;
-      tmpBundlesFilename.replace( found, key.length(), ".bundles" ) ;
-
-      atlasBundlesDataFilenames.push_back( tmpBundlesDataFilename ) ;
+;
       atlasBundlesFilenames.push_back( tmpBundlesFilename ) ;
 
     }
-    else if ( tmpBundlesDataFilename.find( ".trk" ) != std::string::npos )
-    {
-
-      std::cout << "Format error : Input tractogram is .bundles but .trk "
-                << "files found in the atlas directory. Projection between "
-                << "different formats is not supported yet \n" ;
-      exit( 1 ) ;
-
-    }
 
   }
 
-  int nbBundlesDataFiles = atlasBundlesDataFilenames.size() ;
-  int nbBundlesFiles = atlasBundlesFilenames.size() ;
+  bool isBundles = false ;
+  bool isTrk = false ;
+  bool isTck = false ;
 
-  if ( nbBundlesDataFiles != nbBundlesFiles )
+  if ( format == ".bundles" )
   {
 
-    std::cout << "There has to be a .bundles file for each .bundlesdata : \n"
-              << "Number of .bundles files : " << nbBundlesFiles
-              << "\nNumber of .bundlesdata files : " << nbBundlesDataFiles
-              << std::endl ;
-    exit( 1 ) ;
+    isBundles = true ;
 
   }
-
-  atlasData.bundles.resize( nbBundlesFiles ) ;
-  atlasData.bundlesData.resize( nbBundlesFiles ) ;
-
-  if ( verbose )
+  else if ( format == ".trk" )
   {
 
-    std::cout << "Reading atlas : " << atlasDirectory << std::endl ;
-  }
+    isTrk = true ;
 
-  for ( int k = 0 ; k < nbBundlesFiles ; k++ )
+  }
+  else
   {
 
-    if ( verbose > 1 )
-    {
-
-      printf("\rReading bundle [ %d / %d ]   |   %s", k + 1 , nbBundlesFiles,
-                                          atlasBundlesFilenames[ k ].c_str() ) ;
-      std::cout << "" << std::flush ;
-
-    }
-    else if ( verbose )
-    {
-
-      printf("\rReading bundle [ %d / %d ]", k + 1 , nbBundlesFiles ) ;
-      std::cout << "" << std::flush ;
-
-    }
-
-    std::string bundlesFilename = atlasBundlesFilenames[ k ] ;
-    std::string bundlesdataFilename = atlasBundlesDataFilenames[ k ] ;
-
-
-    BundlesFormat bundleInfo( bundlesFilename.c_str(), 0 ) ;
-
-    atlasData.bundles[ k ] = bundleInfo ;
-
-    BundlesDataFormat bundleData( bundlesdataFilename.c_str(),
-                                  bundlesFilename.c_str(),
-                                  0 ) ;
-
-
-    // atlasData.bundlesData.push_back( bundleData ) ;
-    atlasData.bundlesData[ k ] = bundleData  ;
-
-    for ( int fiber = 0 ; fiber < atlasData.bundlesData[ k ].curves_count ;
-                                                                      fiber++ )
-    {
-
-      sizeBytesFullAtlas +=
-                       3 * atlasData.bundlesData[ k ].pointsPerTrack[ fiber ] *
-                                                               sizeof( float ) ;
-
-    }
+    isTck = true ;
 
   }
 
-  if ( verbose > 0 )
-  {
 
-    std::cout << "\n" ;
 
-  }
+  bool isBundlesFormat = true ;
+  bool isTRKFormat = false ;
+  AtlasBundles atlasData( atlasDirectory.c_str(),
+                          isBundles,
+                          isTrk,
+                          isTck,
+                          verbose ) ;
+
 
 
   //////////////////////////////// Sanity cheks ////////////////////////////////
@@ -1262,7 +1227,7 @@ int main( int argc, char* argv[] )
   for ( int bundleIndex = 0 ; bundleIndex < nbBundlesAtlas ; bundleIndex++ )
   {
 
-    BundlesDataFormat& bundleFibers = atlasData.bundlesData[ bundleIndex ] ;
+    BundlesData& bundleFibers = atlasData.bundlesData[ bundleIndex ] ;
 
     int nbFibersBundle = bundleFibers.curves_count ;
 
@@ -1295,8 +1260,8 @@ int main( int argc, char* argv[] )
                                                       atlasBundleIndex++ )
   {
 
-    BundlesFormat& atlasBundleInfo = atlasData.bundles[ atlasBundleIndex ] ;
-    BundlesDataFormat& atlasBundleData = atlasData.bundlesData[
+    BundlesMinf& atlasBundleInfo = atlasData.bundlesMinf[ atlasBundleIndex ] ;
+    BundlesData& atlasBundleData = atlasData.bundlesData[
                                                             atlasBundleIndex ] ;
 
     if ( verbose )
@@ -1347,23 +1312,20 @@ int main( int argc, char* argv[] )
       std::string averageFiberBundlesDataFilename = averageFibersDirectory +
                                      "average_" + bundleName + ".bundlesdata" ;
 
-      BundlesFormat averageFiberBundlesInfo( atlasBundleInfo ) ;
+      BundlesMinf averageFiberBundlesInfo( atlasBundleInfo ) ;
       averageFiberBundlesInfo.curves_count = 1 ;
 
-      BundlesDataFormat averageFiberBundlesData ;
+      BundlesData averageFiberBundlesData ;
       averageFiberBundlesData.curves_count = 1 ;
 
       averageFiberBundlesData.pointsPerTrack.push_back( nbPoints ) ;
 
       averageFiberBundlesData.matrixTracks = averageFiber ;
 
-      averageFiberBundlesInfo.bundlesWriting(
-                                            averageFiberBundlesFilename.c_str(),
-                                            0 ) ;
+      averageFiberBundlesInfo.write( averageFiberBundlesFilename.c_str() ) ;
 
-      averageFiberBundlesData.bundlesdataWriting(
-                                        averageFiberBundlesDataFilename.c_str(),
-                                        0 ) ;
+      averageFiberBundlesData.write( averageFiberBundlesDataFilename.c_str(),
+                                     averageFiberBundlesInfo ) ;
 
     }
 
@@ -1687,35 +1649,35 @@ int main( int argc, char* argv[] )
   if ( index_reference )
   {
 
-    niiFormat niiHeader = readNiiHeader( niiFilename.c_str() ) ;
+    NiftiImage niiHeader( niiFilename.c_str() ) ;
     for ( int bundle = 0 ; bundle < nbBundlesAtlas ; bundle++ )
     {
 
       for ( int i = 0 ; i < 3 ; i++ )
       {
 
-        if ( atlasData.bundles[ bundle ].resolution[ i ] == 0 )
+        if ( atlasData.bundlesMinf[ bundle ].resolution[ i ] == 0 )
         {
 
-          atlasData.bundles[ bundle ].resolution[ i ] =
-                                                   niiHeader.pixdim[ i + 1 ] ;
+          atlasData.bundlesMinf[ bundle ].resolution[ i ] =
+                                                     niiHeader.resolution[ i ] ;
 
         }
 
-        if ( atlasData.bundles[ bundle ].size[ i ] == 0 )
+        if ( atlasData.bundlesMinf[ bundle ].size[ i ] == 0 )
         {
 
-          atlasData.bundles[ bundle ].size[ i ] = niiHeader.dim[ i + 1 ] ;
+          atlasData.bundlesMinf[ bundle ].size[ i ] = niiHeader.size[ i ] ;
 
         }
 
 
       }
 
-      if ( atlasData.bundles[ bundle ].space_dimension == 0 )
+      if ( atlasData.bundlesMinf[ bundle ].space_dimension == 0 )
       {
 
-        atlasData.bundles[ bundle ].space_dimension =  3 ;
+        atlasData.bundlesMinf[ bundle ].space_dimension =  3 ;
 
       }
 
@@ -1735,9 +1697,8 @@ int main( int argc, char* argv[] )
   for ( int bundle = 0 ; bundle < nbBundlesAtlas ; bundle++ )
   {
 
-    atlasData.bundles[ bundle ].bundlesWriting(
-                                        atlasBundlesFilenames[ bundle ].c_str(),
-                                        0 ) ;
+    atlasData.bundlesMinf[ bundle ].write(
+                                     atlasBundlesFilenames[ bundle ].c_str() ) ;
 
   }
 

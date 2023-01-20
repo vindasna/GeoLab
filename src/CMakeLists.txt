@@ -6,8 +6,9 @@ foreach(f ${LIB_SOURCE})
     get_filename_component(sourceName ${f} NAME_WE)
     add_executable(${sourceName} ${f})
     target_link_libraries(${sourceName}
-                          BMDDistance
                           stdc++fs
+                          ioWrapper
+                          RecognizedBundles
                           Eigen3::Eigen
                           lbfgspp
                           ${Boost_LIBRARIES}

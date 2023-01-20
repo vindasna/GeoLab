@@ -24,6 +24,7 @@
 #include <experimental/filesystem>
 
 #include "applyPredictedLabels.h"
+#include "ioWrapper.h"
 
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -204,82 +205,82 @@ int main( int argc, char* argv[] )
   int index_input, index_labels, index_output, index_dict, index_save_unlabeled,
                                      index_isSupWMA, index_verbose, index_help ;
 
-  // std::vector<std::string> possibleFlags{ "-i", "-l", "-o", "-d", "-su", "-v",
-  //                                                                       "-h" } ;
-  // std::vector<bool> possibleFlagsNeedArgument{ true, true, true, true, false,
-  //                                                               true, false } ;
-  //
-  //
-  // for ( int k = 1 ; k < argc ; k++ )
-  // {
-  //
-  //   std::string arg = argv[ k ] ;
-  //   auto it = std::find( possibleFlags.begin(), possibleFlags.end(), arg ) ;
-  //   if( it == possibleFlags.end() )
-  //   {
-  //
-  //     if ( k == 1 )
-  //     {
-  //
-  //       std::cout << "ERROR in arguments : " << arg << " is not an argument "
-  //                 << "for applyPredictedLabels command" << std::endl ;
-  //       exit( 1 ) ;
-  //
-  //     }
-  //
-  //     std::string arg2 = argv[ k - 1 ] ;
-  //     it = std::find( possibleFlags.begin(), possibleFlags.end(), arg2 ) ;
-  //     if( it == possibleFlags.end() )
-  //     {
-  //
-  //       std::cout << "ERROR in arguments : " << arg << " is not an argument "
-  //                 << "for applyPredictedLabels command" << std::endl ;
-  //       exit( 1 ) ;
-  //
-  //     }
-  //     int indexFound = it - possibleFlags.begin() ;
-  //     if ( !possibleFlagsNeedArgument[ indexFound ] )
-  //     {
-  //
-  //       std::cout << "ERROR in arguments : " << arg << " is not an argument "
-  //                 << "for applyPredictedLabels command" << std::endl ;
-  //       exit( 1 ) ;
-  //
-  //     }
-  //
-  //   }
-  //   else
-  //   {
-  //
-  //     int indexFound = it - possibleFlags.begin() ;
-  //     if ( possibleFlagsNeedArgument[ indexFound ] )
-  //     {
-  //
-  //       if ( k == argc - 1 )
-  //       {
-  //
-  //         std::cout << "ERROR in arguments : " << arg << " needs an input but "
-  //                   << "none was given ( see -h )" << std::endl ;
-  //         exit( 1 ) ;
-  //
-  //       }
-  //
-  //       std::string arg2 = argv[ k + 1 ] ;
-  //       it = std::find( possibleFlags.begin(), possibleFlags.end(), arg2 ) ;
-  //       if( it != possibleFlags.end() )
-  //       {
-  //
-  //         std::cout << "ERROR in arguments : " << arg << " needs an input but "
-  //                   << "none was given ( see -h )" << std::endl ;
-  //         exit( 1 ) ;
-  //
-  //       }
-  //
-  //     }
-  //
-  //   }
-  //
-  // }
+  std::vector<std::string> possibleFlags{ "-i", "-l", "-o", "-d", "-su",
+                                                       "-supWMA", "-v", "-h" } ;
+  std::vector<bool> possibleFlagsNeedArgument{ true, true, true, true, false,
+                                                          false, true, false } ;
+
+
+  for ( int k = 1 ; k < argc ; k++ )
+  {
+
+    std::string arg = argv[ k ] ;
+    auto it = std::find( possibleFlags.begin(), possibleFlags.end(), arg ) ;
+    if( it == possibleFlags.end() )
+    {
+
+      if ( k == 1 )
+      {
+
+        std::cout << "ERROR in arguments : " << arg << " is not an argument "
+                  << "for applyPredictedLabels command" << std::endl ;
+        exit( 1 ) ;
+
+      }
+
+      std::string arg2 = argv[ k - 1 ] ;
+      it = std::find( possibleFlags.begin(), possibleFlags.end(), arg2 ) ;
+      if( it == possibleFlags.end() )
+      {
+
+        std::cout << "ERROR in arguments : " << arg << " is not an argument "
+                  << "for applyPredictedLabels command" << std::endl ;
+        exit( 1 ) ;
+
+      }
+      int indexFound = it - possibleFlags.begin() ;
+      if ( !possibleFlagsNeedArgument[ indexFound ] )
+      {
+
+        std::cout << "ERROR in arguments : " << arg << " is not an argument "
+                  << "for applyPredictedLabels command" << std::endl ;
+        exit( 1 ) ;
+
+      }
+
+    }
+    else
+    {
+
+      int indexFound = it - possibleFlags.begin() ;
+      if ( possibleFlagsNeedArgument[ indexFound ] )
+      {
+
+        if ( k == argc - 1 )
+        {
+
+          std::cout << "ERROR in arguments : " << arg << " needs an input but "
+                    << "none was given ( see -h )" << std::endl ;
+          exit( 1 ) ;
+
+        }
+
+        std::string arg2 = argv[ k + 1 ] ;
+        it = std::find( possibleFlags.begin(), possibleFlags.end(), arg2 ) ;
+        if( it != possibleFlags.end() )
+        {
+
+          std::cout << "ERROR in arguments : " << arg << " needs an input but "
+                    << "none was given ( see -h )" << std::endl ;
+          exit( 1 ) ;
+
+        }
+
+      }
+
+    }
+
+  }
 
   index_input = getFlagPosition( argc, argv, "-i" ) ;
   index_labels = getFlagPosition( argc, argv, "-l" ) ;
@@ -405,6 +406,13 @@ int main( int argc, char* argv[] )
 
   }
 
+  if ( !is_dir( outputDirectory ) )
+  {
+
+    mkdir( outputDirectory ) ;
+
+  }
+
   std::vector<std::string> dictionaryLabels ;
   if ( index_dict )
   {
@@ -433,131 +441,85 @@ int main( int argc, char* argv[] )
   std::string inputBundlesDataFilename ;
   std::string inputTRKFilename ;
   bool isBundlesFormat = false ;
-  bool isTRKFormat = false ;
+  bool isTrkFormat = false ;
+  bool isTckFormat = false ;
 
-  if ( inputFilename.find( ".bundlesdata" ) != std::string::npos )
+  if ( endswith( inputFilename, ".bundlesdata" ) )
   {
 
     inputBundlesDataFilename = inputFilename ;
 
-    inputBundlesFilename = inputFilename ;
-    size_t index = inputFilename.find( ".bundlesdata" ) ;
-    inputBundlesFilename.replace( index, 12, ".bundles") ;
+    inputBundlesFilename = replaceExtension( inputFilename, ".bundles" ) ;
 
     isBundlesFormat = true ;
 
   }
-  else if ( inputFilename.find( ".bundles" ) != std::string::npos )
+  else if ( endswith( inputFilename, ".bundles" ) )
   {
 
     inputBundlesFilename = inputFilename ;
+
+    inputBundlesDataFilename = replaceExtension( inputFilename,
+                                                              ".bundlesdata" ) ;
+
+    isBundlesFormat = true ;
+
+  }
+  else if ( endswith( inputFilename, ".trk" ) )
+  {
 
     inputBundlesDataFilename = inputFilename ;
-    size_t index = inputFilename.find( ".bundles" ) ;
-    inputBundlesDataFilename.replace( index, 8, ".bundlesdata") ;
 
-    isBundlesFormat = true ;
+    inputBundlesFilename = replaceExtension( inputFilename, ".minf" ) ;
+
+    isTrkFormat = true ;
+
 
   }
-  else if ( inputFilename.find( ".trk" ) != std::string::npos )
+  else if ( endswith( inputFilename, ".tck" ) )
   {
 
-    inputTRKFilename = inputFilename ;
+    inputBundlesDataFilename = inputFilename ;
 
-    isTRKFormat = true ;
+    inputBundlesFilename = replaceExtension( inputFilename, ".minf" ) ;
 
-    std::cout << "WARNING : Projection with .trk format not suported yet... "
-              << "exiting" << std::endl ;
-    return 1 ;
+    isTckFormat = true ;
+
 
   }
   else
   {
 
-    std::cout << "The only tractogram format supported is .bundles and .trk"
+    std::cout << "The only tractogram format supported are .bundles/.trk/.tck"
               << std::endl ;
     exit( 1 ) ;
 
   }
 
 
-  BundlesDataFormat inputTractogram ;
-  BundlesFormat inputTractogramInfo ;
-  TrkFormat trkTractogramInfo ;
-
+  std::string format ;
   if ( isBundlesFormat )
   {
 
-    if ( verbose )
-    {
-
-      std::cout << "Reading : " << inputBundlesFilename << std::endl ;
-
-    }
-
-    inputTractogramInfo.bundlesReading( inputBundlesFilename.c_str(),
-                                        verbose ) ;
-
-    if ( verbose )
-    {
-
-      std::cout << "Reading : " << inputBundlesDataFilename << std::endl ;
-
-    }
-    inputTractogram.bundlesdataReading( inputBundlesDataFilename.c_str(),
-                                        inputBundlesFilename.c_str(),
-                                        verbose ) ;
+    format = ".bundles" ;
 
   }
-  else if ( isTRKFormat )
+  else if ( isTrkFormat )
   {
 
-    if ( verbose )
-    {
-
-      std::cout << "Reading : " << inputTRKFilename << std::endl ;
-
-    }
-
-    TrkFormat tmpTractogram( inputTRKFilename.c_str(),
-                             verbose ) ;
-    inputTractogram.matrixTracks = tmpTractogram.matrixTracks ;
-    inputTractogram.pointsPerTrack = tmpTractogram.pointsPerTrack ;
-    inputTractogram.curves_count = tmpTractogram.curves_count ;
-
-    memcpy( trkTractogramInfo.id_string, tmpTractogram.id_string,
-                                         sizeof( tmpTractogram.id_string ) ) ;
-    memcpy( trkTractogramInfo.dim , tmpTractogram.dim,
-                                               sizeof( tmpTractogram.dim ) ) ;
-    memcpy( trkTractogramInfo.voxel_size, tmpTractogram.voxel_size,
-                                        sizeof( tmpTractogram.voxel_size ) ) ;
-    memcpy( trkTractogramInfo.origin, tmpTractogram.origin,
-                                            sizeof( tmpTractogram.origin ) ) ;
-    trkTractogramInfo.n_scalars = 0 ;
-    trkTractogramInfo.n_properties = 0 ;
-    memcpy( trkTractogramInfo.vox_to_ras, tmpTractogram.vox_to_ras,
-                                        sizeof( tmpTractogram.vox_to_ras ) ) ;
-    memcpy( trkTractogramInfo.reserved, tmpTractogram.reserved,
-                                          sizeof( tmpTractogram.reserved ) ) ;
-    memcpy( trkTractogramInfo.voxel_order, tmpTractogram.voxel_order,
-                                       sizeof( tmpTractogram.voxel_order ) ) ;
-    memcpy( trkTractogramInfo.pad2, tmpTractogram.pad2,
-                                               sizeof( tmpTractogram.pad2 ) ) ;
-    memcpy( trkTractogramInfo.image_orientation_patient,
-                         tmpTractogram.image_orientation_patient,
-                         sizeof( tmpTractogram.image_orientation_patient ) ) ;
-    memcpy( trkTractogramInfo.pad1, tmpTractogram.pad1,
-                                              sizeof( tmpTractogram.pad1 ) ) ;
-    trkTractogramInfo.invert_x = tmpTractogram.invert_x ;
-    trkTractogramInfo.invert_y = tmpTractogram.invert_y ;
-    trkTractogramInfo.invert_z = tmpTractogram.invert_z ;
-    trkTractogramInfo.swap_xy = tmpTractogram.swap_xy ;
-    trkTractogramInfo.swap_yz = tmpTractogram.swap_yz ;
-    trkTractogramInfo.swap_zx = tmpTractogram.swap_zx ;
-    trkTractogramInfo.version = tmpTractogram.version ;
-    trkTractogramInfo.hdr_size = tmpTractogram.hdr_size ;
+    format = ".trk" ;
 
   }
+  else if ( isTckFormat )
+  {
+
+    format = ".tck" ;
+
+  }
+
+
+  BundlesData inputTractogram( inputBundlesDataFilename.c_str() ) ;
+  BundlesMinf inputTractogramInfo( inputBundlesFilename.c_str() ) ;
 
 
   //   xxxxxxxxxxxxxxxxxxxxxxxxxx Reading label xxxxxxxxxxxxxxxxxxxxxxxxxx   //
@@ -635,7 +597,7 @@ int main( int argc, char* argv[] )
 
 
 
-  ///////////////////////////////// Projection /////////////////////////////////
+  //////////////////////////////// Applt labels ////////////////////////////////
   if ( verbose )
   {
 
@@ -753,7 +715,7 @@ int main( int argc, char* argv[] )
   }
 
 
-  std::vector< BundlesDataFormat > labeledFibers ;
+  std::vector< BundlesData > labeledFibers ;
   labeledFibers.resize( nbBundles ) ;
   int64_t nbUnlabelledFibers = 0 ;
   for ( int i = 0 ; i < nbFibersTractogram ; i++ )
@@ -802,7 +764,7 @@ int main( int argc, char* argv[] )
 
   }
 
-  BundlesDataFormat unlabeledFibersData ;
+  BundlesData unlabeledFibersData ;
   if ( nbUnlabelledFibers > 0 )
   {
 
@@ -860,22 +822,22 @@ int main( int argc, char* argv[] )
           {
 
             labeledFibers[ labelIndex ].matrixTracks.resize(
-                    labeledFibers[ labelIndex ].curves_count * 3 * nbPoints, 0 ) ;
+                  labeledFibers[ labelIndex ].curves_count * 3 * nbPoints, 0 ) ;
             labeledFibers[ labelIndex ].pointsPerTrack.resize(
-                                   labeledFibers[ labelIndex ].curves_count, 0 ) ;
+                                 labeledFibers[ labelIndex ].curves_count, 0 ) ;
 
           }
 
 
           std::copy( inputTractogram.matrixTracks.begin() + offsetTractogram,
                      inputTractogram.matrixTracks.begin() + offsetTractogram +
-                                                                     3 * nbPoints,
+                                                                   3 * nbPoints,
                      labeledFibers[ labelIndex ].matrixTracks.begin() +
-                                             offsetLabeledFibers[ labelIndex ] ) ;
+                                           offsetLabeledFibers[ labelIndex ] ) ;
 
           labeledFibers[ labelIndex ].pointsPerTrack[
-                                offsetpointsPerTrackLabeledFiber[ labelIndex ] ] =
-                                          inputTractogram.pointsPerTrack[ i ] ;
+                              offsetpointsPerTrackLabeledFiber[ labelIndex ] ] =
+                                           inputTractogram.pointsPerTrack[ i ] ;
 
           offsetLabeledFibers[ labelIndex ] += nbPoints * 3 ;
 
@@ -933,55 +895,56 @@ int main( int argc, char* argv[] )
     if ( labeledFibers[ bundle ].curves_count > minimumNumberFibers )
     {
 
+      std::string labelName = "" ;
+      if ( index_dict )
+      {
+
+        labelName += dictionaryLabels[ bundle ] ;
+
+      }
+      else
+      {
+
+        labelName = "cluster_" + std::to_string( bundle ) ;
+
+      }
+
+      BundlesMinf outBundlesInfo = inputTractogramInfo ;
+
+      outBundlesInfo.curves_count = labeledFibers[ bundle ].curves_count ;
+
+      std::stringstream outBundlesFilenameOss ;
+      outBundlesFilenameOss << outputDirectory << labelName << format ;
+      std::string outBundlesFilename = outBundlesFilenameOss.str() ;
+
       if ( isBundlesFormat )
       {
 
-        std::string labelName = "" ;
-        if ( index_dict )
-        {
-
-          labelName += dictionaryLabels[ bundle ] ;
-
-        }
-        else
-        {
-
-          labelName = "cluster_" + std::to_string( bundle ) ;
-
-        }
-
-        BundlesFormat outBundlesInfo = inputTractogramInfo ;
-
-        outBundlesInfo.curves_count = labeledFibers[ bundle ].curves_count ;
-        int sizeOutBundlesFilename =
-                                 outputDirectory.size() + labelName.size() + 8 ;
-        char outBundlesFilename[ sizeOutBundlesFilename ] ;
-        strcpy( outBundlesFilename, outputDirectory.c_str() ) ;
-        strcat( outBundlesFilename, labelName.c_str() ) ;
-        strcat( outBundlesFilename, ".bundles" ) ;
-
-        outBundlesInfo.bundlesWriting( outBundlesFilename, verbose ) ;
-
-        int sizeOutBundlesDataFilename =
-                                outputDirectory.size() + labelName.size() + 12 ;
-        char outBundlesDataFilename[ sizeOutBundlesDataFilename ] ;
-        strcpy( outBundlesDataFilename, outputDirectory.c_str() ) ;
-        strcat( outBundlesDataFilename, labelName.c_str() ) ;
-        strcat( outBundlesDataFilename, ".bundlesdata" ) ;
-
-        labeledFibers[ bundle ].bundlesdataWriting( outBundlesDataFilename,
-                                                    verbose ) ;
-
+        labeledFibers[ bundle ].isBundles = true ;
+        labeledFibers[ bundle ].isTrk = false ;
+        labeledFibers[ bundle ].isTck = false ;
 
       }
-      else if ( isTRKFormat )
+      else if ( isTrkFormat )
       {
 
-        std::cout << "WARNING : TRK format not yet supported, exiting..."
-                  << std::endl ;
-        exit( 1 ) ;
+        labeledFibers[ bundle ].isBundles = false ;
+        labeledFibers[ bundle ].isTrk = true ;
+        labeledFibers[ bundle ].isTck = false ;
 
       }
+      else if ( isTckFormat )
+      {
+
+        labeledFibers[ bundle ].isBundles = false ;
+        labeledFibers[ bundle ].isTrk = false ;
+        labeledFibers[ bundle ].isTck = true ;
+
+      }
+
+      labeledFibers[ bundle ].write( outBundlesFilename.c_str(),
+                                                              outBundlesInfo ) ;
+
 
       countProcessedRecognizedBundles += 1 ;
 
@@ -994,27 +957,19 @@ int main( int argc, char* argv[] )
 
     std::cout << "\nSaving unlabeled fibers..." << std::endl ;
 
-    BundlesFormat outBundlesInfo = inputTractogramInfo ;
+
+    std::string labelName = "unlabeled" ;
+
+    BundlesMinf outBundlesInfo = inputTractogramInfo ;
 
     outBundlesInfo.curves_count = unlabeledFibersData.curves_count ;
-    std::string labelName = "unlabeled" ;
-    int sizeOutBundlesFilename =
-                             outputDirectory.size() + labelName.size() + 8 ;
-    char outBundlesFilename[ sizeOutBundlesFilename ] ;
-    strcpy( outBundlesFilename, outputDirectory.c_str() ) ;
-    strcat( outBundlesFilename, labelName.c_str() ) ;
-    strcat( outBundlesFilename, ".bundles" ) ;
 
-    outBundlesInfo.bundlesWriting( outBundlesFilename, verbose ) ;
 
-    int sizeOutBundlesDataFilename =
-                            outputDirectory.size() + labelName.size() + 12 ;
-    char outBundlesDataFilename[ sizeOutBundlesDataFilename ] ;
-    strcpy( outBundlesDataFilename, outputDirectory.c_str() ) ;
-    strcat( outBundlesDataFilename, labelName.c_str() ) ;
-    strcat( outBundlesDataFilename, ".bundlesdata" ) ;
+    std::stringstream outBundlesFilenameOss ;
+    outBundlesFilenameOss << outputDirectory << labelName << format ;
+    std::string outBundlesFilename = outBundlesFilenameOss.str() ;
 
-    unlabeledFibersData.bundlesdataWriting( outBundlesDataFilename, verbose ) ;
+    unlabeledFibersData.write( outBundlesFilename.c_str(), outBundlesInfo ) ;
 
     std::cout << "Done" << std::endl ;
 

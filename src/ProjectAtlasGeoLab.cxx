@@ -25,6 +25,7 @@
 #include <boost/process.hpp>
 
 #include "ProjectAtlasGeoLab.h"
+#include "ioWrapper.h"
 
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -51,1233 +52,18 @@ int getFlagPosition( int argc, char* argv[], const std::string& flag )
 
 }
 
-
-////////////////////////////////////////////////////////////////////////////////
-//////////////////// Function to check if file exists //////////////////////////
-////////////////////////////////////////////////////////////////////////////////
-
-inline bool is_file( const std::string& path )
-{
-
-  struct stat buffer ;
-  return( stat ( path.c_str(), &buffer ) == 0 ) ;
-
-}
-
-////////////////////////////////////////////////////////////////////////////////
-////////////////// Function to check if directory exists ///////////////////////
-////////////////////////////////////////////////////////////////////////////////
-
-inline bool is_dir( const std::string& path )
-{
-
-  return( std::experimental::filesystem::is_directory( path ) ) ;
-
-}
-
-
-////////////////////////////////////////////////////////////////////////////////
-/////////////////////// Function to create directory ///////////////////////////
-////////////////////////////////////////////////////////////////////////////////
-
-inline bool mkdir( const std::string& path )
-{
-
-  return( std::experimental::filesystem::create_directory( path ) ) ;
-
-}
-
-
-////////////////////////////////////////////////////////////////////////////////
-////////////////////////// Function to delete file /////////////////////////////
-////////////////////////////////////////////////////////////////////////////////
-
-inline bool rmfile( const std::string& path )
-{
-
-  if ( is_file( path ) )
-  {
-
-    return( std::experimental::filesystem::remove( path ) ) ;
-
-  }
-
-  return( false ) ;
-
-}
-
-////////////////////////////////////////////////////////////////////////////////
-/////////////////////// Function to delete directory ///////////////////////////
-////////////////////////////////////////////////////////////////////////////////
-inline bool rmdir( const std::string& path )
-{
-
-  if ( is_dir( path ) )
-  {
-
-    if ( std::experimental::filesystem::remove_all( path ) )
-    {
-
-      return( true ) ;
-
-    }
-    else
-    {
-
-      return( false ) ;
-    }
-
-  }
-  else
-  {
-
-    return( false ) ;
-
-  }
-
-}
-
-////////////////////////////////////////////////////////////////////////////////
-////////////////////////// Function to copy file ///////////////////////////////
-////////////////////////////////////////////////////////////////////////////////
-inline bool copy( const std::string& source,
-                  const std::string& destination )
-{
-
-  return( std::experimental::filesystem::copy_file( source, destination ) ) ;
-
-}
-
-////////////////////////////////////////////////////////////////////////////////
-///////////////////////// Function to rename file //////////////////////////////
-////////////////////////////////////////////////////////////////////////////////
-inline bool rename( const std::string& source, const std::string& destination )
-{
-
-  try
-  {
-
-    std::experimental::filesystem::rename( source, destination ) ;
-    if ( !is_file( source ) && is_file( destination ) )
-    {
-
-      return( true ) ;
-
-    }
-    return( false ) ;
-
-  }
-  catch ( ... )
-  {
-
-    return( false ) ;
-
-  }
-
-}
-
-
-////////////////////////////////////////////////////////////////////////////////
-/////////////// Function to check if string ends with sub-string ///////////////
-////////////////////////////////////////////////////////////////////////////////
-inline bool endswith( const std::string& input,
-                      const std::string& substring )
-{
-
-  std::string tmpString ;
-  char lastChar = input[ input.size() - 1 ] ;
-  if ( lastChar == '/' )
-  {
-
-    tmpString = input.substr( 0, input.size() - 1 ) ;
-
-  }
-  else
-  {
-
-    tmpString = input ;
-
-  }
-
-  std::string endSubstring = input.substr( input.size() - substring.size(),
-                                                                input.size() ) ;
-
-  if ( endSubstring == substring )
-  {
-
-    return( true ) ;
-
-  }
-  else
-  {
-
-    return( false ) ;
-
-  }
-
-}
-
-////////////////////////////////////////////////////////////////////////////////
-//////////////////// Function to get parent directory //////////////////////////
-////////////////////////////////////////////////////////////////////////////////
-inline std::string dirname( const std::string& path )
-{
-
-  std::string tmpString = path ;
-  char lastChar = tmpString[ tmpString.size() - 1 ] ;
-  if ( lastChar == '/' )
-  {
-
-    tmpString = tmpString.substr( 0, tmpString.size() - 1 ) ;
-
-  }
-
-  std::experimental::filesystem::path p( tmpString ) ;
-
-  std::string dirname = p.parent_path() ;
-  lastChar = dirname[ dirname.size() - 1 ] ;
-  if ( lastChar == '/' )
-  {
-
-    dirname = dirname.substr( 0, dirname.size() - 1 ) ;
-
-  }
-  dirname += "/" ;
-  return( dirname ) ;
-
-}
-
-////////////////////////////////////////////////////////////////////////////////
-//////////////////// Function to replace extension file ////////////////////////
-////////////////////////////////////////////////////////////////////////////////
-inline std::string replaceExtension( const std::string& path,
-                                     const std::string& newExtension )
-{
-
-  std::string tmpString = path ;
-  char lastChar = tmpString[ tmpString.size() - 1 ] ;
-  if ( lastChar == '/' )
-  {
-
-    tmpString = tmpString.substr( 0, tmpString.size() - 1 ) ;
-
-  }
-
-  std::experimental::filesystem::path p( tmpString ) ;
-  std::string filenameNoExtension = p.stem() ;
-  std::ostringstream _tmpOss ;
-  _tmpOss << dirname( path ) << filenameNoExtension ;
-  std::string newPath = _tmpOss.str() ;
-  newPath += newExtension ;
-
-  return( newPath ) ;
-
-}
-
-
-////////////////////////////////////////////////////////////////////////////////
-//////////////////// Function to check atlas directory /////////////////////////
-////////////////////////////////////////////////////////////////////////////////
-int countFilesDirectory( const std::string& path )
-{
-
-  if ( !is_dir( path ) )
-  {
-
-    return( -1 ) ;
-
-  }
-
-  int nbFilesInDirectory = 0 ;
-
-  for ( const auto & file : std::experimental::filesystem::directory_iterator(
-                                                                        path ) )
-  {
-
-    nbFilesInDirectory += 1 ;
-
-  }
-
-  return( nbFilesInDirectory ) ;
-
-}
-
-
-
-////////////////////////////////////////////////////////////////////////////////
-//////////////////// Function to count files directory /////////////////////////
-////////////////////////////////////////////////////////////////////////////////
-void checkAtlasDirectory( const std::string& path,
-                          std::string& outputDirectory )
- // Not const for outputDirectory
-{
-
-  int nbCorrectFiles = 0 ;
-
-  for ( const auto & file : std::experimental::filesystem::directory_iterator(
-                                                                        path ) )
-  {
-
-    std::string tmpBundlesDataFilename ;
-    std::string tmpBundlesFilename ;
-
-    tmpBundlesDataFilename = file.path() ;
-    tmpBundlesFilename = tmpBundlesDataFilename ;
-    std::string key (".bundlesdata") ;
-
-    if ( tmpBundlesDataFilename.find( ".bundlesdata" ) != std::string::npos )
-    {
-
-      std::size_t found = tmpBundlesFilename.rfind( key ) ;
-      tmpBundlesFilename.replace( found, key.length(), ".bundles" ) ;
-
-      if ( is_file( tmpBundlesDataFilename ) && is_file( tmpBundlesFilename ) )
-      {
-
-        nbCorrectFiles += 1 ;
-
-      }
-      else
-      {
-
-        if (  is_file( tmpBundlesDataFilename ) &&
-                                                !is_file( tmpBundlesFilename ) )
-        {
-
-          std::cout << "ERROR : File " << tmpBundlesDataFilename << " found "
-                    << "but complementary file " << tmpBundlesFilename
-                    << " not found " << std::endl ;
-
-          if ( is_dir( outputDirectory ) )
-          {
-
-            rmdir( outputDirectory ) ;
-
-          }
-          exit( 1 ) ;
-
-        }
-
-        if (  !is_file( tmpBundlesDataFilename ) &&
-                                                is_file( tmpBundlesFilename ) )
-        {
-
-          std::cout << "ERROR : File " << tmpBundlesFilename << " found "
-                    << "but complementary file " << tmpBundlesDataFilename
-                    << " not found " << std::endl ;
-
-          if ( is_dir( outputDirectory ) )
-          {
-
-            rmdir( outputDirectory ) ;
-
-          }
-          exit( 1 ) ;
-
-        }
-
-      }
-
-    }
-
-  }
-
-  if ( nbCorrectFiles > 0 )
-  {
-
-    std::cout << "Atlas directory : OK " << std::endl ;
-
-  }
-  else
-  {
-
-    std::cout << "ERROR : the atlas directory " << path << " does not contain "
-              << "any bundles in .bundles format " << std::endl ;
-
-    if ( is_dir( outputDirectory ) )
-    {
-
-      rmdir( outputDirectory ) ;
-
-    }
-    exit( 1 ) ;
-
-  }
-
-}
-
-
-////////////////////////////////////////////////////////////////////////////////
-//////////////////// Function to launch process with timeout ///////////////////
-////////////////////////////////////////////////////////////////////////////////
-std::string run_sh_process_timeout( const std::string& command, int timeout )
-{
-
-  try
-  {
-
-    boost::process::ipstream out ; // To not pipe output in main process
-    boost::process::ipstream err ; // To not pipe error in main process
-
-    boost::process::group g ;
-    boost::process::child c( command.c_str(), boost::process::std_out > out,
-                                              boost::process::std_err > err, g ) ;
-    if ( !g.wait_for( std::chrono::seconds( timeout ) ) )
-    {
-
-      g.terminate() ;
-
-    }
-
-    if ( c.running() )
-    {
-
-      c.wait() ;
-
-    }
-
-
-    std::string line;
-    std::ostringstream outStringOss ;
-    while ( std::getline( out, line ) )
-    {
-
-      outStringOss << line << "\n" ;
-
-    }
-    std::string outString = outStringOss.str() ;
-    return( outString ) ;
-
-  }
-  catch ( ... )
-  {
-
-    std::ostringstream outStringOss ;
-    outStringOss << "ERROR boost " ;
-    std::string outString = outStringOss.str() ;
-    return( outString ) ;
-
-  }
-
-}
-
-////////////////////////////////////////////////////////////////////////////////
-////////////////// Function to launch process without timeout //////////////////
-////////////////////////////////////////////////////////////////////////////////
-int run_sh_process( const std::string& command )
-{
-
-  boost::process::ipstream out ; // To not pipe output in main process
-  boost::process::ipstream err ; // To not pipe error in main process
-
-  boost::process::group g ;
-  boost::process::child c( command.c_str(), boost::process::std_out > out,
-                                            boost::process::std_err > err, g ) ;
-
-
-  if ( verbose > 1 )
-  {
-
-    std::string line;
-    while ( std::getline( out, line ) )
-    {
-
-      std::cout << line << std::endl ;
-
-    }
-
-  }
-  else
-  {
-
-    // Using this because c.wait() bugs with long process (why?)
-
-    std::string line;
-    while ( std::getline( out, line ) )
-    {
-
-      if ( verbose > 1 )
-      {
-
-        std::ostringstream _tmpOss ;
-        _tmpOss << "\rRunning command : " << command ;
-        std::string _tmp = _tmpOss.str() ;
-        std::cout << _tmp ;
-
-      }
-
-    }
-
-  }
-
-  try
-  {
-
-    c.wait() ;
-
-  }
-  catch ( ... ){}
-
-  return( c.exit_code() ) ;
-
-}
-
-
-
-///////////////////////////////////////////////////////////////////////////////
-/////////////// Function to read the predicted labels file ////////////////////
-///////////////////////////////////////////////////////////////////////////////
-void readingPredictedLabels( const char* predictedLabelsFilename,
-                             std::vector<std::vector<int16_t>>& predictedLabels,
-                             const std::string& outputDirectory,
-                             int nbFibers,
-                             int verbose )
-{
-
-  predictedLabels.resize( nbFibers ) ;
-
-  const char delim = ':' ;
-  std::string line ;
-  std::ifstream dictFile ;
-  dictFile.open( predictedLabelsFilename ) ;
-  if ( dictFile.fail() )
-  {
-
-    std::cout << "Problem reading file : " << predictedLabelsFilename
-                                           << std::endl ;
-
-    if ( is_dir( outputDirectory ) )
-    {
-
-      rmdir( outputDirectory ) ;
-
-    }
-    exit( 1 ) ;
-
-  }
-  while ( std::getline( dictFile, line ) )
-  {
-
-    std::vector< std::string > out ;
-    std::stringstream ss( line ) ;
-    std::string s ;
-    while ( std::getline( ss, s, delim ) )
-    {
-
-      s.erase( std::remove( s.begin(), s.end(), ' ' ), s.end() ) ;
-      out.push_back( s ) ;
-
-    }
-
-    predictedLabels[ stoi( out[ 0 ] ) ].push_back( stoi( out[ 1 ] ) ) ;
-
-  }
-
-  dictFile.close() ;
-
-}
-
-
-///////////////////////////////////////////////////////////////////////////////
-/////////////// Function to save the predicted labels file ////////////////////
-///////////////////////////////////////////////////////////////////////////////
-void saveLabels( const char* labelsBinaryFilename,
-                 const std::vector<std::vector<int16_t>>& labels,
-                 const std::string& outputDirectory )
-{
-
-  std::ofstream file ;
-  file.open( labelsBinaryFilename ) ;
-  if ( file.fail() )
-  {
-
-    std::cout << "Problem opening file to write : " << labelsBinaryFilename <<
-                                                                     std::endl ;
-    if ( is_dir( outputDirectory ) )
-    {
-
-      rmdir( outputDirectory ) ;
-
-    }
-    exit( 1 ) ;
-
-  }
-
-  int n_curves = labels.size() ;
-
-  for ( int track = 0 ; track < n_curves ; track++ )
-  {
-
-    int nbLabels = labels[ track ].size() ;
-    for ( int _labelIndex = 0 ; _labelIndex < nbLabels ; _labelIndex++ )
-    {
-
-      int label = labels[ track ][ _labelIndex ] ;
-
-      file << track << " : " << label << std::endl ;
-
-
-    }
-
-  }
-
-  file.close() ;
-
-
-}
-
-
-
-///////////////////////////////////////////////////////////////////////////////
-/////////////// Function to read the dictionary labels file ///////////////////
-///////////////////////////////////////////////////////////////////////////////
-void readLabelsDict( const char* labelsDictFilename,
-                     std::vector<std::string>& bundlesNames,
-                     const std::string& outputDirectory )
-{
-
-  const char delim = ':' ;
-  std::string line ;
-  std::ifstream dictFile ;
-  dictFile.open( labelsDictFilename ) ;
-  if ( dictFile.fail() )
-  {
-
-    std::cout << "Problem reading file : " << labelsDictFilename
-                                           << std::endl ;
-
-    if ( is_dir( outputDirectory ) )
-    {
-
-      rmdir( outputDirectory ) ;
-
-    }
-    exit( 1 ) ;
-
-  }
-  while ( std::getline( dictFile, line ) )
-  {
-
-    std::vector< std::string > out ;
-    std::stringstream ss( line ) ;
-    std::string s ;
-    while ( std::getline( ss, s, delim ) )
-    {
-
-      s.erase( std::remove( s.begin(), s.end(), ' ' ), s.end() ) ;
-      out.push_back( s ) ;
-
-    }
-
-    bundlesNames.push_back( out[ 0 ] ) ;
-
-  }
-
-  dictFile.close() ;
-
-
-}
-
-///////////////////////////////////////////////////////////////////////////////
-/////////////// Function to save the dictionary labels file ///////////////////
-///////////////////////////////////////////////////////////////////////////////
-void saveLabelsDict( const char* labelsDictFilename,
-                     const std::vector<std::string>& bundlesNames,
-                     const std::string& outputDirectory )
-{
-
-  std::ofstream file( labelsDictFilename ) ;
-  if ( !file )
-  {
-
-    std::cout << "Cannot save file, there's a problem with the saving path " ;
-    if ( is_dir( outputDirectory ) )
-    {
-
-      rmdir( outputDirectory ) ;
-
-    }
-    exit( 1 );
-
-  }
-
-  int nbBundles = bundlesNames.size() ;
-
-  for ( int bundle = 0 ; bundle < nbBundles ; bundle++ )
-  {
-
-    file << bundlesNames[ bundle ] << " : " << bundle << std::endl ;
-
-  }
-
-  file.close() ;
-
-
-}
-
-
-
-////////////////////////////////////////////////////////////////////////////////
-//////////////////// Read index in tractogram neighbors ////////////////////////
-////////////////////////////////////////////////////////////////////////////////
-void readIndexInTractogram( const char* predictedLabelsFilename,
-                            std::vector<int64_t>& predictedLabels,
-                            const std::string& outputDirectory,
-                            int nbFibers,
-                            int verbose )
-{
-
-  predictedLabels.resize( nbFibers ) ;
-
-  std::ifstream file ;
-  file.open( predictedLabelsFilename, std::ios::binary | std::ios::in ) ;
-  if ( file.fail() )
-  {
-
-    std::cout << "Problem reading file : " << predictedLabelsFilename <<
-                                                                     std::endl ;
-
-    if ( is_dir( outputDirectory ) )
-    {
-
-      rmdir( outputDirectory ) ;
-
-    }
-    exit( 1 ) ;
-
-  }
-
-  for ( int fiber = 0 ; fiber < nbFibers ; fiber++ )
-  {
-
-    file.read( reinterpret_cast<char*>( &( predictedLabels[ fiber ] ) ),
-                                                           sizeof( int64_t ) ) ;
-
-  }
-
-  file.close() ;
-
-}
-
-
-////////////////////////////////////////////////////////////////////////////////
-/////////////// Function to get vector with altas bundles paths ////////////////
-////////////////////////////////////////////////////////////////////////////////
-std::string getAtlasBunldesPaths( const std::string& outputDirectory,
-                                  const std::string& atlasDirectory,
-                                  std::vector<std::string>& atlasBundlesPaths )
-{
-
-  std::ostringstream oss ;
-  oss << outputDirectory << "tmpAtlasDir/" ;
-  std::string tmpAtlasDir = oss.str() ;
-
-  if ( !is_dir( tmpAtlasDir ) )
-  {
-
-    mkdir( tmpAtlasDir ) ;
-
-  }
-
-
-  for ( const auto & file : std::experimental::filesystem::directory_iterator(
-                                                              atlasDirectory ) )
-  {
-
-    std::string tmpBundlesDataFilename ;
-    std::string tmpBundlesFilename ;
-
-    tmpBundlesDataFilename = file.path() ;
-    tmpBundlesFilename = tmpBundlesDataFilename ;
-    std::string key(".bundlesdata") ;
-
-    if ( tmpBundlesDataFilename.find( ".bundlesdata" ) != std::string::npos )
-    {
-
-      std::size_t found = tmpBundlesFilename.rfind( key ) ;
-      tmpBundlesFilename.replace( found, key.length(), ".bundles" ) ;
-
-      if ( is_file( tmpBundlesDataFilename ) && is_file( tmpBundlesFilename ) )
-      {
-
-        std::experimental::filesystem::path tmpPath( tmpBundlesFilename ) ;
-        std::string bundleName = tmpPath.stem() ;
-
-        std::ostringstream tmpBundleDirOss ;
-        tmpBundleDirOss << tmpAtlasDir << bundleName << "/" ;
-        std::string tmpBundleDir = tmpBundleDirOss.str( ) ;
-        if ( !is_dir( tmpBundleDir ) )
-        {
-
-          mkdir( tmpBundleDir ) ;
-
-        }
-
-        std::ostringstream _bundlesPathOss ;
-        _bundlesPathOss << tmpBundleDir << bundleName << ".bundles" ;
-        std::string _bundlesPath = _bundlesPathOss.str() ;
-
-        std::ostringstream _bundlesdataPathOss ;
-        _bundlesdataPathOss << tmpBundleDir << bundleName << ".bundlesdata" ;
-        std::string _bundlesdataPath = _bundlesdataPathOss.str() ;
-
-        if ( is_file( _bundlesPath ) )
-        {
-
-          rmfile( _bundlesPath ) ;
-
-        }
-        bool isCopy1 = copy( tmpBundlesFilename, _bundlesPath ) ;
-        if ( !isCopy1 )
-        {
-
-          std::cout << "ERROR : unable to copy " << tmpBundlesFilename << "to "
-                    << _bundlesPath << std::endl ;
-
-          if ( is_dir( outputDirectory ) )
-          {
-
-            rmdir( outputDirectory ) ;
-
-          }
-          exit( 1 ) ;
-
-        }
-
-        if ( is_file( _bundlesdataPath ) )
-        {
-
-          rmfile( _bundlesdataPath ) ;
-
-        }
-        bool isCopy2 = copy( tmpBundlesDataFilename, _bundlesdataPath ) ;
-        if ( !isCopy2 )
-        {
-
-          std::cout << "ERROR : unable to copy " << tmpBundlesDataFilename
-                    << " to " << _bundlesdataPath << std::endl ;
-
-          if ( is_dir( outputDirectory ) )
-          {
-
-            rmdir( outputDirectory ) ;
-
-          }
-          exit( 1 ) ;
-
-        }
-
-        atlasBundlesPaths.push_back( tmpBundleDir ) ;
-
-      }
-
-    }
-
-  }
-
-  return( tmpAtlasDir ) ;
-
-
-}
-
-
-////////////////////////////////////////////////////////////////////////////////
-/////////////// Function to get vector with altas bundles paths ////////////////
-////////////////////////////////////////////////////////////////////////////////
-void getAtlasNeighborhoodCentroids(
-                              const std::string& outputDirectory,
-                              const std::string& inputDirectory,
-                              const std::vector<std::string>& atlasBundlesPaths,
-                              std::vector<std::string>& bundlesPaths )
-{
-
-
-  int nbBundles = atlasBundlesPaths.size() ;
-
-  for ( int i = 0 ; i < nbBundles ; i++ )
-  {
-
-    std::string _tmpAtlasBundlePath = atlasBundlesPaths[ i ] ;
-
-    char lastChar = _tmpAtlasBundlePath[ _tmpAtlasBundlePath.size() - 1 ] ;
-    if ( lastChar == '/' )
-    {
-
-      _tmpAtlasBundlePath = _tmpAtlasBundlePath.substr( 0,
-                                              _tmpAtlasBundlePath.size() - 1 ) ;
-
-    }
-
-    std::experimental::filesystem::path tmpPath( _tmpAtlasBundlePath ) ;
-    std::string bundleName = tmpPath.stem() ;
-
-    std::ostringstream tmpBundlesPathOss ;
-    tmpBundlesPathOss << inputDirectory << bundleName << ".bundles" ;
-    std::string tmpBundlesPath = tmpBundlesPathOss.str() ;
-
-    std::ostringstream tmpBundlesDataPathOss ;
-    tmpBundlesDataPathOss << inputDirectory << bundleName << ".bundlesdata" ;
-    std::string tmpBundlesDataPath = tmpBundlesDataPathOss.str() ;
-
-    if ( is_file( tmpBundlesPath ) && is_file( tmpBundlesDataPath ) )
-    {
-
-      bundlesPaths.push_back( tmpBundlesPath ) ;
-
-    }
-    else
-    {
-
-      std::cout << "ERROR : atlas neighborhood centroids file "
-                << tmpBundlesPath << " or file " << tmpBundlesDataPath
-                << " does not exists " << std::endl ;
-      if ( is_dir( outputDirectory ) )
-      {
-
-        rmdir( outputDirectory ) ;
-
-      }
-      exit( 1 ) ;
-
-    }
-
-  }
-
-  if ( bundlesPaths.size() != nbBundles )
-  {
-
-    std::cout << "ERROR : could not find centroids in " << inputDirectory
-              << " for all bundles in atlas " << std::endl ;
-    exit( 1 ) ;
-
-  }
-
-}
-
-////////////////////////////////////////////////////////////////////////////////
-/////////////// Function to get vector with nieghborhood paths /////////////////
-////////////////////////////////////////////////////////////////////////////////
-void getNeighborhoodFilenames(
-                             const std::string& tmpNeighborhoodDir,
-                             const std::vector<std::string>& atlasBundlesPaths,
-                             std::vector<std::string>& neighborhoodFilenames,
-                             const std::string& outputDirectory )
-{
-
-  int nbBundles = atlasBundlesPaths.size() ;
-
-  if ( !is_dir( tmpNeighborhoodDir ) )
-  {
-
-    mkdir( tmpNeighborhoodDir ) ;
-
-  }
-
-  for ( int i = 0 ; i < nbBundles ; i++ )
-  {
-
-    std::string _tmpAtlasBundlePath = atlasBundlesPaths[ i ] ;
-
-    char lastChar = _tmpAtlasBundlePath[ _tmpAtlasBundlePath.size() - 1 ] ;
-    if ( lastChar == '/' )
-    {
-
-      _tmpAtlasBundlePath = _tmpAtlasBundlePath.substr( 0,
-                                              _tmpAtlasBundlePath.size() - 1 ) ;
-
-    }
-
-    std::experimental::filesystem::path tmpPath( _tmpAtlasBundlePath ) ;
-    std::string bundleName = tmpPath.stem() ;
-
-    std::ostringstream tmpNeighborhoodPathOss ;
-    tmpNeighborhoodPathOss << tmpNeighborhoodDir << bundleName << ".bundles" ;
-    std::string tmpNeighborhoodPath = tmpNeighborhoodPathOss.str() ;
-
-    if ( is_file( tmpNeighborhoodPath ) )
-    {
-
-      neighborhoodFilenames.push_back( tmpNeighborhoodPath ) ;
-
-    }
-    else
-    {
-
-      std::cout << "ERROR : neighborhood " << tmpNeighborhoodPath
-                << " does not exists " << std::endl ;
-      if ( is_dir( outputDirectory ) )
-      {
-
-        rmdir( outputDirectory ) ;
-
-      }
-      exit( 1 ) ;
-
-    }
-
-  }
-
-}
-
-////////////////////////////////////////////////////////////////////////////////
-///////////////////// Function to convert .bundles -> trk //////////////////////
-////////////////////////////////////////////////////////////////////////////////
-void convertBundlesFormat( const std::string& inputBundles,
-                           const std::string& outputTrk,
-                           const std::string& referenceImage,
-                           const std::string& outputDirectory )
-{
-
-  std::ostringstream commandOss ;
-  commandOss << convertBundleFormatsFile << "  "
-             << "-i " << inputBundles << " "
-             << "-o " << outputTrk << " "
-             << "-r " << referenceImage << " "
-             << "-v " ;
-  std::string command = commandOss.str() ;
-  if ( is_file( outputTrk ) && !force )
-  {
-
-    if ( verbose > 1 )
-    {
-
-      std::cout << "WARNING : output file of convertBundlesFormat : "
-                << outputTrk << "already exists and -force flag was not used, "
-                << "trying computations with existing file" << std::endl ;
-      return ;
-
-    }
-
-  }
-  int isFail = run_sh_process( command ) ;
-  if ( isFail )
-  {
-
-    std::cout << "ERROR : could not convert " << inputBundles << " to "
-              << outputTrk << ", got exit code " << isFail << std::endl ;
-
-    if ( is_dir( outputDirectory ) )
-    {
-
-
-      rmdir( outputDirectory ) ;
-    }
-    exit( 1 ) ;
-
-  }
-
-}
-
-
-////////////////////////////////////////////////////////////////////////////////
-//////// Function to save adjacencies, coverages and overlaps in a .tsv ////////
-////////////////////////////////////////////////////////////////////////////////
-void saveComparisonMeasuresWithAtlas(
-                                    const std::vector<float>& coveragesBundles,
-                                    const std::vector<float>& adjacencyBundles,
-                                    const std::vector<float>& overlapBundles,
-                                    const std::vector<std::string>& labelsDict,
-                                    const char* fileName,
-                                    const std::string& outputDirectory )
-{
-
-  std::ofstream file ;
-  file.open( fileName ) ;
-  if ( file.fail() )
-  {
-
-    std::cout << "Problem opening file to write : " << fileName << std::endl ;
-    if ( is_dir( outputDirectory ) )
-    {
-
-      rmdir( outputDirectory ) ;
-
-    }
-    exit( 1 ) ;
-
-  }
-
-  int nbBundles = coveragesBundles.size() ;
-  if ( adjacencyBundles.size() != nbBundles )
-  {
-
-    std::cout << "ERROR in saveComparisonMeasuresWithAtlas : the number of "
-              << "bundles with coverage is different than the number of bundles"
-              << " with adjacency " << std::endl ;
-    exit( 1 ) ;
-
-  }
-  if ( overlapBundles.size() != nbBundles )
-  {
-
-    std::cout << "ERROR in saveComparisonMeasuresWithAtlas : the number of "
-              << "bundles with coverage is different than the number of bundles"
-              << " with overlap " << std::endl ;
-    exit( 1 ) ;
-
-  }
-  if ( labelsDict.size() != nbBundles )
-  {
-
-    std::cout << "ERROR in saveComparisonMeasuresWithAtlas : the number of "
-              << "bundles in labelsDict is different than the number of bundles"
-              << " with overlap " << std::endl ;
-    exit( 1 ) ;
-
-  }
-
-  file << "Bundle_Name\tCoverage\tAdjacency\tOverlap" << std::endl ;
-
-  for ( int _bundle = 0 ; _bundle < nbBundles ; _bundle++ )
-  {
-
-    std::string _bundleName = labelsDict[ _bundle ] ;
-    float _coverage = coveragesBundles[ _bundle ] ;
-    float _adjacency = adjacencyBundles[ _bundle ] ;
-    float _overlap = overlapBundles[ _bundle ] ;
-
-    file << _bundleName << "\t" << _coverage << "\t" << _adjacency << "\t"
-                                                      << _overlap << std::endl ;
-
-  }
-
-  file.close() ;
-
-
-}
-
-////////////////////////////////////////////////////////////////////////////////
-/////////// Function to get coverage with atlas of extracted bundle ////////////
-////////////////////////////////////////////////////////////////////////////////
-float getCoverageWithAtlas( const std::string& bundleFilename )
-{
-
-
-  BundlesFormat bundle( bundleFilename.c_str(), 0 ) ;
-  if ( bundle.coverageWithAtlas < 0 )
-  {
-
-    std::cout << "ERROR : got invalid coverage of " << bundle.coverageWithAtlas
-                                                    << std::endl ;
-    exit( 1 ) ;
-
-  }
-  return( bundle.coverageWithAtlas ) ;
-
-}
-
-////////////////////////////////////////////////////////////////////////////////
-/////////// Function to get adjacency with atlas of extracted bundle ///////////
-////////////////////////////////////////////////////////////////////////////////
-float getAdjacencyWithAtlas( const std::string& bundleFilename )
-{
-
-
-  BundlesFormat bundle( bundleFilename.c_str(), 0 ) ;
-  if ( bundle.adjacencyWithAtlas < 0 )
-  {
-
-    std::cout << "ERROR : got invalid coverage of " << bundle.adjacencyWithAtlas
-                                                    << std::endl ;
-    exit( 1 ) ;
-
-  }
-  return( bundle.adjacencyWithAtlas ) ;
-
-}
-
-////////////////////////////////////////////////////////////////////////////////
-/////////// Function to get adjacency with atlas of extracted bundle ///////////
-////////////////////////////////////////////////////////////////////////////////
-float getOverlapWithAtlas( const std::string& bundleFilename )
-{
-
-
-  BundlesFormat bundle( bundleFilename.c_str(), 0 ) ;
-  if ( bundle.overlapWithAtlas < 0 )
-  {
-
-    std::cout << "ERROR : got invalid coverage of " << bundle.overlapWithAtlas
-                                                    << std::endl ;
-    exit( 1 ) ;
-
-  }
-  return( bundle.overlapWithAtlas ) ;
-
-}
-
-
-
-////////////////////////////////////////////////////////////////////////////////
-/////////////// Function to get average radius of atlas  bundle ////////////////
-////////////////////////////////////////////////////////////////////////////////
-float getAverageRadiusAtlasBundle( const std::string& bundleFilename )
-{
-
-  BundlesFormat bundle( bundleFilename.c_str(), 0 ) ;
-  if ( bundle.averageRadius <= 0 )
-  {
-
-    std::cout << "ERROR : got invalid radius of " << bundle.averageRadius
-                                                  << std::endl ;
-    exit( 1 ) ;
-
-  }
-  return( bundle.averageRadius ) ;
-
-}
-
-////////////////////////////////////////////////////////////////////////////////
-/// Function to get average distance between medial points of atlas  bundle ////
-////////////////////////////////////////////////////////////////////////////////
-float getAverageDistanceBetweenMedialPoints( const std::string& bundleFilename )
-{
-
-  BundlesFormat bundle( bundleFilename.c_str(), 0 ) ;
-  if ( bundle.averageDistanceBetweenMedialPoints <= 0 )
-  {
-
-    std::cout << "ERROR : got invalid radius of "
-              << bundle.averageDistanceBetweenMedialPoints << std::endl ;
-    exit( 1 ) ;
-
-  }
-  return( bundle.averageDistanceBetweenMedialPoints ) ;
-
-}
-
-
-
-////////////////////////////////////////////////////////////////////////////////
-//////////////// Function to get number of fibers atlas bundle /////////////////
-////////////////////////////////////////////////////////////////////////////////
-int getNbFibers( const std::string& bundleFilename )
-{
-
-  BundlesFormat bundle( bundleFilename.c_str(), 0 ) ;
-  if ( bundle.curves_count <= 0 )
-  {
-
-    std::cout << "ERROR : got invalid fiber count of " << bundle.curves_count
-                                                       << std::endl ;
-    exit( 1 ) ;
-
-  }
-  return( bundle.curves_count ) ;
-
-}
-
-
-
 ////////////////////////////////////////////////////////////////////////////////
 //////////////////////// Function to apply Recobundles /////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 void applyRecoBundles( const std::string& movedTractogramNeighborhood,
                        const std::string& atlasBundleDirectory,
                        const std::string& atlasNeighborhoodFile,
+                       const std::string& atlasNeighborhoodCentroidsFile,
                        const std::string& outputDirectory,
                        const std::string& referenceImage,
+                       const std::string& format,
                        int nbPointsPerFiber,
+                       int portDipyServer,
                        int verbose )
 {
 
@@ -1292,26 +78,74 @@ void applyRecoBundles( const std::string& movedTractogramNeighborhood,
 
   }
 
-  std::experimental::filesystem::path tmpPath( _tmpAtlasBundlePath ) ;
+  std::experimental::filesystem::path tmpPath(
+                                 replaceExtension( _tmpAtlasBundlePath, "" ) ) ;
   std::string bundleName = tmpPath.stem() ;
 
 
   std::ostringstream recognizedBundleOss ;
-  recognizedBundleOss << outputDirectory << bundleName << ".bundles" ;
+  recognizedBundleOss << outputDirectory << bundleName ;
+  if ( format == ".bundles" || format == ".bundlesdata" )
+  {
+
+    recognizedBundleOss << ".bundles" ;
+
+  }
+  else if ( format == ".tck" || format == ".trk" )
+  {
+
+    recognizedBundleOss << ".minf" ;
+
+  }
   std::string recognizedBundle = recognizedBundleOss.str() ;
 
   std::ostringstream recognizedBundledataOss ;
-  recognizedBundledataOss << outputDirectory << bundleName << ".bundlesdata" ;
+  recognizedBundledataOss << outputDirectory << bundleName ;
+  if ( format == ".bundles" || format == ".bundlesdata" )
+  {
+
+    recognizedBundledataOss << ".bundlesdata" ;
+
+  }
+  else if ( format == ".tck" || format == ".trk" )
+  {
+
+    recognizedBundledataOss << format ;
+
+  }
   std::string recognizedBundledata = recognizedBundledataOss.str() ;
 
   std::ostringstream recognizedBundleClassicOss ;
-  recognizedBundleClassicOss << outputDirectory << bundleName
-                                         << "_classic.bundles" ;
+  recognizedBundleClassicOss << outputDirectory << bundleName << "_classic" ;
+  if ( format == ".bundles" || format == ".bundlesdata" )
+  {
+
+    recognizedBundleClassicOss << ".bundles" ;
+
+  }
+  else if ( format == ".tck" || format == ".trk" )
+  {
+
+    recognizedBundleClassicOss << ".minf" ;
+
+  }
   std::string recognizedBundleClassic = recognizedBundleClassicOss.str() ;
 
   std::ostringstream recognizedBundledataClassicOss ;
   recognizedBundledataClassicOss << outputDirectory << bundleName
-                                             << "_classic.bundlesdata" ;
+                                                                 << "_classic" ;
+  if ( format == ".bundles" || format == ".bundlesdata" )
+  {
+
+    recognizedBundledataClassicOss << ".bundlesdata" ;
+
+  }
+  else if ( format == ".tck" || format == ".trk" )
+  {
+
+    recognizedBundledataClassicOss << format ;
+
+  }
   std::string recognizedBundledataClassic =
                                           recognizedBundledataClassicOss.str() ;
 
@@ -1326,16 +160,23 @@ void applyRecoBundles( const std::string& movedTractogramNeighborhood,
   std::string labelsDictRecognizedSBRPath =
                                           labelsDictRecognizedSBRPathOss.str() ;
 
+
+  std::ostringstream clientsLogFilePathOss ;
+  clientsLogFilePathOss << outputDirectory << "clientsDipyLog.txt" ;
+  std::string clientsLogFilePath = clientsLogFilePathOss.str() ;
+
   float coverage_classic = -1 ;
   float adjacency_classic = -1 ;
   // if ( false )
   if ( is_file( recognizedBundle ) )
   {
 
+
     coverage_classic = getCoverageWithAtlas( recognizedBundle ) ;
     adjacency_classic = getAdjacencyWithAtlas( recognizedBundle ) ;
+    int nbFibersClassic = getNbFibers( recognizedBundle ) ;
     // if ( coverage_classic > 0.80 && adjacency_classic > 0.80 )
-    if ( adjacency_classic > 0.90 )
+    if ( adjacency_classic > 0.70 && nbFibersClassic > 10 )
     {
 
       if ( verbose > 1 )
@@ -1367,12 +208,13 @@ void applyRecoBundles( const std::string& movedTractogramNeighborhood,
         std::cout << "ERROR : could not copy " << recognizedBundle << " to "
                   << recognizedBundleClassic << std::endl ;
 
-        if ( is_dir( outputDirectory ) )
-        {
-
-          rmdir( outputDirectory ) ;
-
-        }
+        // if ( is_dir( outputDirectory ) )
+        // {
+        //
+        //   rmdir( outputDirectory ) ;
+        //
+        // }
+        closeDipyServer( portDipyServer ) ;
         exit( 1 ) ;
 
       }
@@ -1384,12 +226,13 @@ void applyRecoBundles( const std::string& movedTractogramNeighborhood,
         std::cout << "ERROR : could not copy " << recognizedBundledata << " to "
                   << recognizedBundledataClassic << std::endl ;
 
-        if ( is_dir( outputDirectory ) )
-        {
-
-          rmdir( outputDirectory ) ;
-
-        }
+        // if ( is_dir( outputDirectory ) )
+        // {
+        //
+        //   rmdir( outputDirectory ) ;
+        //
+        // }
+        closeDipyServer( portDipyServer ) ;
         exit( 1 ) ;
 
       }
@@ -1412,12 +255,16 @@ void applyRecoBundles( const std::string& movedTractogramNeighborhood,
 
 
   std::string atlasNeighborhood ;
-  if ( !( endswith( atlasNeighborhoodFile, ".bundles" ) ) )
+  if ( !( endswith( atlasNeighborhoodFile, format ) ) )
   {
 
-    std::ostringstream _tmpOss ;
-    _tmpOss << atlasNeighborhoodFile << bundleName << ".bundles" ;
-    atlasNeighborhood = _tmpOss.str() ;
+    std::stringstream outMessageOss ;
+    outMessageOss << "ERROR : in applyRecoBundles, atlasNeighborhoodFile must "
+                  << "be in .bundles/.trk/.tck format, got "
+                  << atlasNeighborhoodFile << std::endl ;
+    std::string outMessage = outMessageOss.str() ;
+    throw( std::invalid_argument( outMessage ) ) ;
+
 
   }
   else
@@ -1433,12 +280,13 @@ void applyRecoBundles( const std::string& movedTractogramNeighborhood,
     std::cout << "ERROR : in applyRecoBundles, atlas neighborhood file "
               << atlasNeighborhood << " does not exists " << std::endl ;
 
-    if ( is_dir( outputDirectory ) )
-    {
-
-      rmdir( outputDirectory ) ;
-
-    }
+    // if ( is_dir( outputDirectory ) )
+    // {
+    //
+    //   rmdir( outputDirectory ) ;
+    //
+    // }
+    closeDipyServer( portDipyServer ) ;
     exit( 1 ) ;
 
   }
@@ -1446,7 +294,7 @@ void applyRecoBundles( const std::string& movedTractogramNeighborhood,
 
   // Computing centroids neighborhood atlas
   std::ostringstream atlasBundleFileOss ;
-  atlasBundleFileOss << atlasBundleDirectory << bundleName << ".bundles" ;
+  atlasBundleFileOss << atlasBundleDirectory << bundleName << format ;
   std::string atlasBundleFile = atlasBundleFileOss.str() ;
   float averageRadius = getAverageRadiusAtlasBundle( atlasBundleFile ) ;
   std::string atlasNeighborhoodCentroids ;
@@ -1455,16 +303,37 @@ void applyRecoBundles( const std::string& movedTractogramNeighborhood,
 
     atlasNeighborhoodCentroids = replaceExtension( atlasNeighborhood,
                                                    "_centroids.bundles" ) ;
-    std::ostringstream computeCentroidsCommandOss ;
-    computeCentroidsCommandOss << "python3 "
-                               << computeCentroidsFilename << " "
+    if ( format == ".trk" || format == ".tck" )
+    {
+
+      atlasNeighborhoodCentroids = replaceExtension( atlasNeighborhoodCentroids,
+                                                                      format ) ;
+
+      std::string atlasNeighborhoodCentroidsMinf = replaceExtension(
+                                         atlasNeighborhoodCentroids, ".minf" ) ;
+
+      std::string atlasNeighborhoodMinf = replaceExtension(
+                                                  atlasNeighborhood, ".minf" ) ;
+
+      copy( atlasNeighborhoodMinf, atlasNeighborhoodCentroidsMinf ) ;
+
+
+
+    }
+
+    std::ostringstream computeCentroidsCommandClientOss ;
+    computeCentroidsCommandClientOss << "python3 "
+                               << computeCentroidsClientFilename << " "
                                << "-i " << atlasNeighborhood << " "
                                << "-o " << atlasNeighborhoodCentroids << " "
                                << "-r " << referenceImage << " "
                                << "-thr " << averageRadius << " "
                                << "-nbPoints " << nbPointsPerFiber << " "
+                               << "-lf " << clientsLogFilePath << " "
+                               << "-p " << portDipyServer << " "
                                << "-v 1 " ;
-    std::string computeCentroidsCommand = computeCentroidsCommandOss.str() ;
+    std::string computeCentroidsCommandClient =
+                                        computeCentroidsCommandClientOss.str() ;
     int isFailCentroids = 0 ;
     if ( countFilesDirectory( atlasNeighborhoodCentroids ) > 5 && !force )
     {
@@ -1473,7 +342,7 @@ void applyRecoBundles( const std::string& movedTractogramNeighborhood,
       {
 
         std::cout << "WARNING : output directory of "
-                  << computeCentroidsFilename << " : "
+                  << computeCentroidsClientFilename << " : "
                   << atlasNeighborhoodCentroids << " already exists and "
                   << "with more than 5 files and th -force flag was not used, "
                   << "trying computations with existing directory"
@@ -1489,7 +358,19 @@ void applyRecoBundles( const std::string& movedTractogramNeighborhood,
       if ( _tmpNbFibers > 500 )
       {
 
-        isFailCentroids = run_sh_process( computeCentroidsCommand ) ;
+        isFailCentroids = run_sh_process( computeCentroidsCommandClient ) ;
+        if ( is_file( atlasNeighborhoodCentroids ) )
+        {
+
+          isFailCentroids = 0 ;
+
+        }
+        else
+        {
+
+          isFailCentroids = 1 ;
+
+        }
 
       }
       else
@@ -1509,15 +390,16 @@ void applyRecoBundles( const std::string& movedTractogramNeighborhood,
                 << atlasNeighborhood << ", got exit_code " << isFailCentroids
                                                                   << std::endl ;
 
-      std::cout << "ERROR WITH COMMAND : \n " << computeCentroidsCommand
+      std::cout << "ERROR WITH COMMAND : \n " << computeCentroidsCommandClient
                                               << std::endl ;
-      exit( 1 ) ;
-      if ( is_dir( outputDirectory ) )
-      {
 
-        rmdir( outputDirectory ) ;
-
-      }
+      // if ( is_dir( outputDirectory ) )
+      // {
+      //
+      //   rmdir( outputDirectory ) ;
+      //
+      // }
+      closeDipyServer( portDipyServer ) ;
       exit( 1 ) ;
 
     }
@@ -1526,25 +408,51 @@ void applyRecoBundles( const std::string& movedTractogramNeighborhood,
   else
   {
 
-    atlasNeighborhoodCentroids = atlasNeighborhoodFile ;
+    atlasNeighborhoodCentroids = atlasNeighborhoodCentroidsFile ;
 
   }
 
   // Compute centroids neighborhood moved tractogram
+  // int nbClustersAtlasNeighborhood = getNbFibers( atlasNeighborhoodCentroids ) ;
   std::string movedTractogramNeighborhoodCentroids = replaceExtension(
                                                     movedTractogramNeighborhood,
                                                     "_centroids.bundles" ) ;
-  std::ostringstream computeCentroidsCommand2Oss ;
-  computeCentroidsCommand2Oss << "python3 "
-                         << computeCentroidsFilename << " "
+
+  if ( format == ".trk" || format == ".tck" )
+  {
+
+    movedTractogramNeighborhoodCentroids = replaceExtension(
+                                           movedTractogramNeighborhoodCentroids,
+                                           format ) ;
+
+    std::string movedTractogramNeighborhoodCentroidsMinf = replaceExtension(
+                               movedTractogramNeighborhoodCentroids, ".minf" ) ;
+
+    std::string movedTractogramNeighborhoodMinf = replaceExtension(
+                                        movedTractogramNeighborhood, ".minf" ) ;
+
+    copy( movedTractogramNeighborhoodMinf,
+                                    movedTractogramNeighborhoodCentroidsMinf ) ;
+
+
+
+  }
+
+  std::ostringstream computeCentroidsCommandClient2Oss ;
+  computeCentroidsCommandClient2Oss << "python3 "
+                         << computeCentroidsClientFilename << " "
                          << "-i " << movedTractogramNeighborhood << " "
                          << "-o " << movedTractogramNeighborhoodCentroids << " "
                          << "-r " << referenceImage << " "
                          << "-thr " << averageRadius << " "
                          << "-nbPoints " << nbPointsPerFiber << " "
+                         // << "-mnc " << nbClustersAtlasNeighborhood << " "
+                         << "-lf " << clientsLogFilePath << " "
+                         << "-p " << portDipyServer << " "
                          << "-v 1 " ;
-  std::string computeCentroidsCommand2 = computeCentroidsCommand2Oss.str() ;
-  bool isFailCentroids = 0 ;
+  std::string computeCentroidsCommandClient2 =
+                                       computeCentroidsCommandClient2Oss.str() ;
+  int isFailCentroids = 0 ;
   if ( countFilesDirectory( movedTractogramNeighborhoodCentroids ) > 5 &&
                                                                         !force )
   {
@@ -1552,9 +460,10 @@ void applyRecoBundles( const std::string& movedTractogramNeighborhood,
     if ( verbose > 1 )
     {
 
-      std::cout << "WARNING : output directory of " << computeCentroidsFilename
-                << " : " << movedTractogramNeighborhoodCentroids << " already "
-                << "exists with more than 5 files and -force flag was not used,"
+      std::cout << "WARNING : output directory of "
+                << computeCentroidsClientFilename << " : "
+                << movedTractogramNeighborhoodCentroids << " already exists "
+                << "with more than 5 files and -force flag was not used,"
                 << " trying computations  with existing directory"
                 << std::endl ;
 
@@ -1568,7 +477,19 @@ void applyRecoBundles( const std::string& movedTractogramNeighborhood,
     if ( _tmpNbFibers > 500 )
     {
 
-      isFailCentroids = run_sh_process( computeCentroidsCommand2 ) ;
+      isFailCentroids = run_sh_process( computeCentroidsCommandClient2 ) ;
+      if ( is_file( movedTractogramNeighborhoodCentroids ) )
+      {
+
+        isFailCentroids = 0 ;
+
+      }
+      else
+      {
+
+        isFailCentroids = 1 ;
+
+      }
 
     }
     else
@@ -1579,6 +500,7 @@ void applyRecoBundles( const std::string& movedTractogramNeighborhood,
 
     }
 
+
   }
   if ( isFailCentroids )
   {
@@ -1586,12 +508,17 @@ void applyRecoBundles( const std::string& movedTractogramNeighborhood,
     std::cout << "ERROR : could not compute centroids for "
               << movedTractogramNeighborhood << ", got exit_code "
                                                << isFailCentroids << std::endl ;
-    if ( is_dir( outputDirectory ) )
-    {
 
-      rmdir( outputDirectory ) ;
+    std::cout << "ERROR WITH COMMAND : \n " << computeCentroidsCommandClient2
+                                            << std::endl ;
 
-    }
+    // if ( is_dir( outputDirectory ) )
+    // {
+    //
+    //   rmdir( outputDirectory ) ;
+    //
+    // }
+    closeDipyServer( portDipyServer ) ;
     exit( 1 ) ;
 
   }
@@ -1602,18 +529,44 @@ void applyRecoBundles( const std::string& movedTractogramNeighborhood,
                                                     movedTractogramNeighborhood,
                                                     "_moved.bundles" ) ;
 
-  std::ostringstream registerBundlesCommadOss ;
-  registerBundlesCommadOss << "python3 "
-                         << registerBundlesFile << " "
-                         << "-s " << atlasNeighborhoodCentroids << " "
-                         << "-m " << movedTractogramNeighborhoodCentroids << " "
+
+  if ( format == ".trk" || format == ".tck" )
+  {
+
+    neighborhoodRegistered = replaceExtension( neighborhoodRegistered, format) ;
+
+    std::string neighborhoodRegisteredMinf = replaceExtension(
+                                             neighborhoodRegistered, ".minf" ) ;
+
+    std::string movedTractogramNeighborhoodMinf = replaceExtension(
+                                        movedTractogramNeighborhood, ".minf" ) ;
+
+    copy( movedTractogramNeighborhoodMinf, neighborhoodRegisteredMinf ) ;
+
+
+
+  }
+
+  std::ostringstream registerBundlesClientCommadOss ;
+  registerBundlesClientCommadOss << "python3 "
+                         << registerBundlesClientFile << " "
+                         << "-s " << replaceExtension(
+                                     atlasNeighborhoodCentroids, format ) << " "
+                         << "-m " << replaceExtension(
+                           movedTractogramNeighborhoodCentroids, format ) << " "
                          << "-ra " << referenceImage << " "
-                         << "-b " << movedTractogramNeighborhood << " "
+                         << "-b " << replaceExtension(
+                                    movedTractogramNeighborhood, format ) << " "
                          << "-o " << neighborhoodRegistered << " "
                          << "-n " << nbPointsPerFiber << " "
                          << "-xfm " << "rigid" << " "
+                         << "-lf " << clientsLogFilePath << " "
+                         << "-p " << portDipyServer << " "
                          << "-v 1" ;
-  std::string registerBundlesCommad = registerBundlesCommadOss.str() ;
+  std::string registerBundlesClientCommad =
+                                          registerBundlesClientCommadOss.str() ;
+
+
   // int timeout = 100 ; // In s
   int timeout = 500 ; // In s
   std::string _tmpError1 ;
@@ -1623,7 +576,7 @@ void applyRecoBundles( const std::string& movedTractogramNeighborhood,
     if ( verbose > 1 )
     {
 
-      std::cout << "WARNING : output file of " << registerBundlesFile
+      std::cout << "WARNING : output file of " << registerBundlesClientFile
                 << " : " << neighborhoodRegistered << " already exists and "
                 << "the -force flag was not used, trying computations with "
                 << "existing file" << std::endl ;
@@ -1634,7 +587,20 @@ void applyRecoBundles( const std::string& movedTractogramNeighborhood,
   else
   {
 
-    _tmpError1 = run_sh_process_timeout( registerBundlesCommad, timeout ) ;
+    _tmpError1 = run_sh_process_timeout( registerBundlesClientCommad,
+                                                                     timeout ) ;
+    if ( is_file( neighborhoodRegistered ) )
+    {
+
+      _tmpError1 = " OK" ;
+
+    }
+    else
+    {
+
+      _tmpError1 = "PROBLEM" ;
+
+    }
 
   }
 
@@ -1652,7 +618,7 @@ void applyRecoBundles( const std::string& movedTractogramNeighborhood,
     {
 
       std::cout << "\nERROR : Fail with command :\n"
-                << registerBundlesCommad << "\nFail to register "
+                << registerBundlesClientCommad << "\nFail to register "
                 << movedTractogramNeighborhoodCentroids << " to "
                 << atlasNeighborhoodCentroids << ", got : \"" << _tmpError1
                                                           << "\"" << std::endl ;
@@ -1668,6 +634,7 @@ void applyRecoBundles( const std::string& movedTractogramNeighborhood,
 
         std::cout << "ERROR : could not move file " << recognizedBundleClassic
                   << " to " << recognizedBundle << std::endl ;
+        closeDipyServer( portDipyServer ) ;
         exit( 1 ) ;
 
       }
@@ -1685,6 +652,7 @@ void applyRecoBundles( const std::string& movedTractogramNeighborhood,
         std::cout << "ERROR : could not move file "
                   << recognizedBundledataClassic << " to "
                    << recognizedBundledata << std::endl ;
+        closeDipyServer( portDipyServer ) ;
         exit( 1 ) ;
 
       }
@@ -1719,14 +687,26 @@ void applyRecoBundles( const std::string& movedTractogramNeighborhood,
 
   // Projection
   std::ostringstream atlasInfoPathOss ;
-  atlasInfoPathOss << atlasBundleDirectory << bundleName << ".bundles" ;
+  atlasInfoPathOss << atlasBundleDirectory << bundleName ;
+  if ( format == ".bundles" || format == ".bundlesdata" )
+  {
+
+    atlasInfoPathOss << ".bundles" ;
+
+  }
+  else if ( format == ".trk" || format == ".tck" )
+  {
+
+    atlasInfoPathOss << ".minf" ;
+
+  }
   std::string atlasInfoPath = atlasInfoPathOss.str() ;
   float thrDistanceBetweenMedialPointsBundle = thrDistanceBetweenMedialPoints ;
   if ( !index_thrDBMP )
   {
 
     thrDistanceBetweenMedialPointsBundle =
-                      getAverageDistanceBetweenMedialPoints( atlasInfoPath ) ;
+                  getAverageDistanceBetweenMedialPoints( atlasInfoPath ) ;
     thrDistanceBetweenMedialPointsBundle *= ( 1 +
                                       toleranceDistanceBetweenMedialPoints ) ;
 
@@ -1750,38 +730,32 @@ void applyRecoBundles( const std::string& movedTractogramNeighborhood,
                          << "-tolMinShapeAng " << toleranceMinShapeAngle << " "
                          << "-tolMaxShapeAng " << toleranceMaxShapeAngle << " "
                          << "-tolLenght " << toleranceLenght << " "
-                         << "-tolDBMP " << toleranceDistanceBetweenMedialPoints
-                                                                         << " "
                          << "-thrAdj " << adjacencyForCompareBundles << " "
                          << "-cb "
+                         << "-nbThreads " << nbThreads << " "
                          << "-v 1" ;
-  // projectAtlasCommandOss << projectAtlasFile << " "
-  //                        << "-i " << neighborhoodRegistered << " "
-  //                        << "-a " << atlasBundleDirectory << " "
-  //                        << "-o " << outputDirectory << " "
-  //                        << "-l " << "labelsSBR_" << bundleName << " "
-  //                        << "-minNbFibers " << minimumNumberFibers << " "
-  //                        << "-thrSim " << thrPercentageSimilarity << " "
-  //                        << "-useSimple "
-  //                        << "-cb "
-  //                        << "-v 1" ;
+
   std::string projectAtlasCommand = projectAtlasCommandOss.str() ;
   // Here we do not use force because we want to always do the RecoBundles
   // projection
+
   int isFailProjection = run_sh_process( projectAtlasCommand ) ;
+
   if ( isFailProjection )
   {
 
     std::cout << "ERROR : could not project " << neighborhoodRegistered
               << " to " << atlasBundleDirectory << ", got exit code "
-              << isFailProjection << std::endl ;
+              << isFailProjection << " with command " << projectAtlasCommand
+                                                                  << std::endl ;
 
-    if ( is_dir( outputDirectory ) )
-    {
-
-      rmdir( outputDirectory ) ;
-
-    }
+    // if ( is_dir( outputDirectory ) )
+    // {
+    //
+    //   rmdir( outputDirectory ) ;
+    //
+    // }
+    closeDipyServer( portDipyServer ) ;
     exit( 1 ) ;
 
   }
@@ -1795,13 +769,14 @@ void applyRecoBundles( const std::string& movedTractogramNeighborhood,
     {
 
       std::cout << "ERROR : invalid coverage_classic : -1 " << std::endl ;
-      exit( 1 ) ;
-      if ( is_dir( outputDirectory ) )
-      {
 
-        rmdir( outputDirectory ) ;
-
-      }
+      // if ( is_dir( outputDirectory ) )
+      // {
+      //
+      //   rmdir( outputDirectory ) ;
+      //
+      // }
+      closeDipyServer( portDipyServer ) ;
       exit( 1 ) ;
 
     }
@@ -1829,6 +804,7 @@ void applyRecoBundles( const std::string& movedTractogramNeighborhood,
 
         std::cout << "ERROR : could not move file " << recognizedBundleClassic
                   << " to " << recognizedBundle << std::endl ;
+        closeDipyServer( portDipyServer ) ;
         exit( 1 ) ;
 
       }
@@ -1841,6 +817,7 @@ void applyRecoBundles( const std::string& movedTractogramNeighborhood,
         std::cout << "ERROR : could not move file "
                   << recognizedBundledataClassic << " to "
                   << recognizedBundledata << std::endl ;
+        closeDipyServer( portDipyServer ) ;
         exit( 1 ) ;
 
       }
@@ -1915,6 +892,7 @@ void applyRecoBundles( const std::string& movedTractogramNeighborhood,
 
           std::cout << "ERROR : could not move file " << recognizedBundleClassic
                     << " to " << recognizedBundle << std::endl ;
+          closeDipyServer( portDipyServer ) ;
           exit( 1 ) ;
 
         }
@@ -1932,6 +910,7 @@ void applyRecoBundles( const std::string& movedTractogramNeighborhood,
           std::cout << "ERROR : could not move file "
                     << recognizedBundledataClassic << " to "
                      << recognizedBundledata << std::endl ;
+          closeDipyServer( portDipyServer ) ;
           exit( 1 ) ;
 
         }
@@ -1992,6 +971,7 @@ void applyRecoBundles( const std::string& movedTractogramNeighborhood,
 
             std::cout << "ERROR : could not move " << recognizedBundleClassic
                       << " to " << recognizedBundle << std::endl ;
+            closeDipyServer( portDipyServer ) ;
             exit( 1 ) ;
 
           }
@@ -2016,6 +996,7 @@ void applyRecoBundles( const std::string& movedTractogramNeighborhood,
             std::cout << "ERROR : could not move file "
                       << recognizedBundledataClassic << " to "
                        << recognizedBundledata << std::endl ;
+            closeDipyServer( portDipyServer ) ;
             exit( 1 ) ;
 
           }
@@ -2179,6 +1160,105 @@ void applyRecoBundles( const std::string& movedTractogramNeighborhood,
 
 
 ////////////////////////////////////////////////////////////////////////////////
+///////////////////////// Function to close dipy server ////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+void closeDipyServer( int portDipyServer )
+{
+
+  std::cout << "Closing dipy service... " ;
+  std::ostringstream closeDipyServiceOss ;
+  closeDipyServiceOss << "python3 " << closeDipyServerClientFile << " "
+                      << "-p " << portDipyServer << " " ;
+  std::string closeDipyService = closeDipyServiceOss.str() ;
+
+  int isCloseServerFail = run_sh_process( closeDipyService ) ;
+  if ( isCloseServerFail )
+  {
+
+    std::cout << "WARNING : could not close dipy service... " << std::endl ;
+
+  }
+
+}
+
+
+////////////////////////////////////////////////////////////////////////////////
+////////////////// Function to get port number of dipy server //////////////////
+////////////////////////////////////////////////////////////////////////////////
+int getPortNumberDipyService( std::string& logFilePath )
+{
+
+  sleep( 1 ) ;
+
+	const char delim = ':' ;
+	// const char delim = '\n' ;
+  std::string line ;
+  std::ifstream logFile ;
+	int portDipyServer = -1 ;
+  logFile.open( logFilePath.c_str() ) ;
+  if ( logFile.fail() )
+  {
+
+    std::cout << "Problem reading file : " << logFilePath
+                                           << std::endl ;
+
+
+    exit( 1 ) ;
+
+  }
+  while ( std::getline( logFile, line ) )
+  {
+
+    // std::vector< std::string > out ;
+    std::stringstream ss( line ) ;
+    std::string s ;
+		bool isPort = false ;
+    while ( std::getline( ss, s, delim ) )
+    {
+
+      // s.erase( std::remove( s.begin(), s.end(), ' ' ), s.end() ) ;
+			// std::cout << "Line : " << i << " : \n" << s << std::endl ;
+      // out.push_back( s ) ;
+			if ( s == "Server port " )
+			{
+
+				isPort = true ;
+
+			}
+
+			if ( isPort )
+			{
+
+				try
+				{
+
+					portDipyServer = std::stoi( s ) ;
+					isPort = false ;
+					break ;
+
+				}
+				catch ( std::invalid_argument ){}
+
+			}
+
+			if ( portDipyServer >= 5000 )
+			{
+
+				break ;
+
+			}
+
+    }
+
+  }
+
+	logFile.close() ;
+
+	return( portDipyServer ) ;
+
+}
+
+////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////// MAIN /////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 int main( int argc, char* argv[] )
@@ -2192,8 +1272,11 @@ int main( int argc, char* argv[] )
   index_output = getFlagPosition( argc, argv, "-o" ) ;
   index_cc = getFlagPosition( argc, argv, "-cc" ) ;
   index_rb = getFlagPosition( argc, argv, "-rb" ) ;
+  index_ods = getFlagPosition( argc, argv, "-ods" ) ;
+  index_cds = getFlagPosition( argc, argv, "-cds" ) ;
   index_nbPoints = getFlagPosition( argc, argv, "-nbPoints" ) ;
   index_fa = getFlagPosition( argc, argv, "-fa" ) ;
+  index_an = getFlagPosition( argc, argv, "-an" ) ;
   index_anc = getFlagPosition( argc, argv, "-anc" ) ;
   index_thrCov = getFlagPosition( argc, argv, "-thrCov" ) ;
   index_thrAdj = getFlagPosition( argc, argv, "-thrAdj" ) ;
@@ -2218,6 +1301,7 @@ int main( int argc, char* argv[] )
   index_sp = getFlagPosition( argc, argv, "-sp" ) ;
   index_force = getFlagPosition( argc, argv, "-force" ) ;
   index_nbThreads = getFlagPosition( argc, argv, "-nbThreads" ) ;
+  index_keep_tmp = getFlagPosition( argc, argv, "-ktf" ) ;
   index_verbose = getFlagPosition( argc, argv, "-v" ) ;
   index_help = getFlagPosition( argc, argv, "-h" ) ;
 
@@ -2229,17 +1313,20 @@ int main( int argc, char* argv[] )
               << "-a : Path to the directory with the atlas \n"
               << "-ref : Path to the reference image where the tractogram is \n"
               << "-o : Path to the output directory \n"
-              << "-cc : Path to the computeCentroids.py file \n"
-              << "-rb : Path to the registerBundles.py file \n"
+              << "-cc : Path to the clientComputeCentroids.py file \n"
+              << "-rb : Path to the clientRegisterBundles.py file \n"
+              << "-ods : Path to the dipyServer.py file \n"
+              << "-cds : Path to the clientCloseServer.py file \n"
               << "-nbPoints : Number of points per fiber (same number for all "
               << "fibers) \n"
               << "[-fa] : Path to full atlas tractogram (mandatory for global "
               << "SLR or if -anc is to given) \n"
+              << "[-an] : Path to the atlas neighborhoods (must be given is -fa"
+              << " is not given)\n"
               << "[-anc] : Path to the atlas neighborhoods centroids (must be "
               << "given is -fa is not given)\n"
               << "[-thrCov] : Threshold to keep bundles where coverage is "
               << "greater than thrCov (default : 0 -> keep all bundles ) \n"
-              << "[-thrAdJ] : Threshold for adjacency (Default = 10 mm) \n"
               << "[-thrDBMP] : Threshold for maximum distance between medial "
               << "points (default = 50 mm) \n"
               << "[-tolP] : Tolerance for parameter p (for advanced users, "
@@ -2257,10 +1344,10 @@ int main( int argc, char* argv[] )
               << "[-tolLenght] : Tolerance for parameter lenght (for advanced "
               << "users, default = 0) \n"
               << "[-tolThrCN] : tolerance for computeNeighborhood threshold "
-              << "(default = 1.2) \n"
+              << "(default = 1.5) \n"
               << "[-tolDBMP] : Tolerance for distance between medial points "
               << "(for advanced users, default = 0) \n"
-              << "thrAdj : keep bundle with adjacency greater than given value"
+              << "[thrAdj] : keep bundle with adjacency greater than given value"
               << " (default : 0 -> keep all bundles ) \n"
               << "[-minNbFibers] : Minimum number of fiber to consider a bundle"
               << " recognized ( default : 20 )\n"
@@ -2277,8 +1364,9 @@ int main( int argc, char* argv[] )
 	            << ": false)\n"
               << "[-sp] : Save recognized bundles separetly (default : true)\n"
               << "[-force] : Force to overwrite files (default = false) \n"
-              << "[-nbThreads] : Sets the value of omp_set_num_threads before "
-              << "applyRecoBundles (default : let openMP decide ) \n"
+              << "[-nbThreads] : Sets the value of omp_set_num_threads "
+              << "(default : number of cores ) \n"
+              << "[-ktf] : Keep temp files (default = false) \n"
               << "[-v] : Set verbosity level at 1 \n"
               << "[-h] : Show this message " << std::endl ;
     exit( 1 ) ;
@@ -2305,6 +1393,14 @@ int main( int argc, char* argv[] )
   {
 
     std::cout << "At least -fa or -anc must be given ..." << std::endl ;
+    exit( 1 ) ;
+
+  }
+
+  if ( !index_fa && !index_an )
+  {
+
+    std::cout << "At least -fa or -an must be given ..." << std::endl ;
     exit( 1 ) ;
 
   }
@@ -2341,78 +1437,79 @@ int main( int argc, char* argv[] )
 
   }
 
-  if ( !index_nbPoints )
+  if ( !index_ods )
   {
 
-    std::cout << "-nb argument required ..." << std::endl ;
+    std::cout << "-ods argument required ..." << std::endl ;
     exit( 1 ) ;
 
   }
+
+  if ( !index_cds )
+  {
+
+    std::cout << "-cds argument required ..." << std::endl ;
+    exit( 1 ) ;
+
+  }
+
+  if ( !index_nbPoints )
+  {
+
+    std::cout << "-nbPoints argument required ..." << std::endl ;
+    exit( 1 ) ;
+
+  }
+
+
+  //////////////////////////////////////////////////////////////////////////////
+  int nbCores = omp_get_num_procs() ;
+  std::cout << "Number of cores in the system : " << nbCores << std::endl ;
 
   //////////////////////////////////////////////////////////////////////////////
   ///////////////////////////// Checking arguments /////////////////////////////
   //////////////////////////////////////////////////////////////////////////////
 
   ////////////////////////////// Input tractogram //////////////////////////////
-  std::string inputFilename( argv[ index_input + 1 ] ) ;
-  std::string inputBundlesFilename ;
-  std::string inputBundlesDataFilename ;
-  std::string inputTRKFilename ;
-  char lastChar = inputFilename[ inputFilename.size() - 1 ] ;
+  std::string inputBundlesFilename( argv[ index_input + 1 ] ) ;
+
+  if ( !endswith( inputBundlesFilename, ".bundles" ) &&
+       !endswith( inputBundlesFilename, ".bundlesdata" ) &&
+       !endswith( inputBundlesFilename, ".trk" ) &&
+       !endswith( inputBundlesFilename, ".tck" ) )
+  {
+
+    std::string outMessage = "ProjectAtlasRecoBundles : Only supported " \
+                             "formats for input are .bundles/.bundlesdata, " \
+                             ".trk, .tck \n" ;
+    throw( std::invalid_argument( outMessage ) ) ;
+
+  }
+
+
+  //////////////////////////////////////////////////////////////////////////////
+  char lastChar = inputBundlesFilename[ inputBundlesFilename.size() - 1 ] ;
   if ( lastChar == '/' )
   {
 
-    inputFilename = inputFilename.substr( 0, inputFilename.size() - 1 ) ;
+    inputBundlesFilename = inputBundlesFilename.substr( 0,
+                                             inputBundlesFilename.size() - 1 ) ;
 
   }
-  if ( inputFilename.find( ".bundlesdata" ) != std::string::npos )
+
+
+  if ( !is_file( inputBundlesFilename ) )
   {
 
-    inputBundlesDataFilename = inputFilename ;
+    std::stringstream outMessageOss ;
+    outMessageOss << "ProjectAtlasRecoBundles : input file "
+                  << inputBundlesFilename << "does not exists" << std::endl ;
+    std::string outMessage = outMessageOss.str() ;
+    throw( std::invalid_argument( outMessage ) ) ;
 
-    inputBundlesFilename = inputFilename ;
-    size_t index = inputFilename.find( ".bundlesdata" ) ;
-    inputBundlesFilename.replace( index, 12, ".bundles" ) ;
-
-    inputTRKFilename = inputFilename ;
-    index = inputFilename.find( ".bundlesdata" ) ;
-    inputTRKFilename.replace( index, 12, ".trk" ) ;
 
   }
-  else if ( inputFilename.find( ".bundles" ) != std::string::npos )
-  {
 
-    inputBundlesFilename = inputFilename ;
-
-    inputBundlesDataFilename = inputFilename ;
-    size_t index = inputFilename.find( ".bundles" ) ;
-    inputBundlesDataFilename.replace( index, 8, ".bundlesdata" ) ;
-
-    inputTRKFilename = inputFilename ;
-    inputTRKFilename.replace( index, 8, ".trk" ) ;
-
-  }
-  else
-  {
-
-    std::cout << "The only tractogram format supported is .bundles"
-              << std::endl ;
-    exit( 1 ) ;
-
-  }
-  if ( !is_file( inputFilename ) )
-  {
-
-    std::cout << "ERROR : Input tratogram file " << inputFilename
-                                            << " does not exists" << std::endl ;
-
-  }
-  else
-  {
-
-    std::cout << "Input tractogram : OK " << std::endl ;
-
-  }
 
   ////////////////////////////// Atlas directory ///////////////////////////////
   std::string atlasDirectory( argv[ index_atlas + 1 ] ) ;
@@ -2426,9 +1523,12 @@ int main( int argc, char* argv[] )
   if ( !is_dir( atlasDirectory ) )
   {
 
-    std::cout << "ERROR : Atlas directory " << atlasDirectory << " does not "
-                                                     << "exists " << std::endl ;
-    exit( 1 );
+    std::stringstream outMessageOss ;
+
+    outMessageOss << "ERROR : Atlas directory " << atlasDirectory << " does not"
+                                                    << " exists " << std::endl ;
+    std::string outMessage = outMessageOss.str() ;
+    throw( std::invalid_argument( outMessage ) ) ;
 
   }
   /////////////////////////////// Reference image //////////////////////////////
@@ -2441,33 +1541,29 @@ int main( int argc, char* argv[] )
                                                 referenceFilename.size() - 1 ) ;
 
   }
-  if ( referenceFilename.find( ".nii.gz" ) != std::string::npos )
+  if ( !endswith( referenceFilename, ".nii" ) )
   {
 
-    std::cout << "ERROR : .nii.gz format not supported for the reference image "
-              << std::endl ;
-    exit( 1 ) ;
-
-  }
-  else if ( referenceFilename.find( ".nii" ) != std::string::npos )
-  {
-
-    std::cout << "Reference image : OK " << std::endl ;
+    std::string outMessage = "The only reference image format supported is "\
+                             ".nii\n" ;
+    throw( std::invalid_argument( outMessage ) ) ;
 
   }
   else
   {
 
-    std::cout << "The only reference image format supported is .nii"
-              << std::endl ;
-    exit( 1 ) ;
+    std::cout << "Reference image : OK " << std::endl ;
 
   }
+
   if ( !is_file( referenceFilename ) )
   {
 
-    std::cout << "ERROR : Reference image file " << referenceFilename
+    std::stringstream outMessageOss ;
+    outMessageOss << "ERROR : Reference image file " << referenceFilename
                                             << " does not exists" << std::endl ;
+    std::string outMessage = outMessageOss.str() ;
+    throw( std::invalid_argument( outMessage ) ) ;
 
   }
 
@@ -2488,53 +1584,126 @@ int main( int argc, char* argv[] )
   }
 
   ////////////////////////// Compute centorids command /////////////////////////
-  computeCentroidsFilename = argv[ index_cc + 1 ] ;
-  lastChar = computeCentroidsFilename[ computeCentroidsFilename.size() - 1 ] ;
+  computeCentroidsClientFilename = argv[ index_cc + 1 ] ;
+  lastChar = computeCentroidsClientFilename[
+                                   computeCentroidsClientFilename.size() - 1 ] ;
   if ( lastChar == '/' )
   {
 
-    computeCentroidsFilename = computeCentroidsFilename.substr( 0,
-                                         computeCentroidsFilename.size() - 1 ) ;
+    computeCentroidsClientFilename = computeCentroidsClientFilename.substr( 0,
+                                   computeCentroidsClientFilename.size() - 1 ) ;
 
   }
-  if ( !is_file( computeCentroidsFilename ) )
+  if ( !is_file( computeCentroidsClientFilename ) )
   {
 
-    std::cout << "ERROR : computeCentroids.py file " << computeCentroidsFilename
-              << " does not exists " << std::endl ;
+    std::stringstream outMessageOss ;
+    outMessageOss << "ERROR : clientComputeCentroids.py file "
+                  << computeCentroidsClientFilename << " does not exists "
+                                                                  << std::endl ;
+    std::string outMessage = outMessageOss.str() ;
+    throw( std::invalid_argument( outMessage ) ) ;
 
-    if ( is_dir( outputDirectory ) )
-    {
 
-      rmdir( outputDirectory ) ;
-
-    }
+    // if ( is_dir( outputDirectory ) )
+    // {
+    //
+    //   rmdir( outputDirectory ) ;
+    //
+    // }
     exit( 1 ) ;
 
   }
 
   ////////////////////////// Register bundles command //////////////////////////
-  registerBundlesFile = argv[ index_rb + 1 ] ;
-  lastChar = registerBundlesFile[ registerBundlesFile.size() - 1 ] ;
+  registerBundlesClientFile = argv[ index_rb + 1 ] ;
+  lastChar = registerBundlesClientFile[ registerBundlesClientFile.size() - 1 ] ;
   if ( lastChar == '/' )
   {
 
-    registerBundlesFile = registerBundlesFile.substr( 0,
-                                              registerBundlesFile.size() - 1 ) ;
+    registerBundlesClientFile = registerBundlesClientFile.substr( 0,
+                                        registerBundlesClientFile.size() - 1 ) ;
 
   }
-  if ( !is_file( registerBundlesFile ) )
+  if ( !is_file( registerBundlesClientFile ) )
   {
 
-    std::cout << "ERROR : computeCentroids.py file " << registerBundlesFile
-              << " does not exists " << std::endl ;
+    std::stringstream outMessageOss ;
+    outMessageOss << "ERROR : clientRegisterBundles.py file "
+              << registerBundlesClientFile << " does not exists " << std::endl ;
+    std::string outMessage = outMessageOss.str() ;
+    throw( std::invalid_argument( outMessage ) ) ;
 
-    if ( is_dir( outputDirectory ) )
-    {
 
-      rmdir( outputDirectory ) ;
+    // if ( is_dir( outputDirectory ) )
+    // {
+    //
+    //   rmdir( outputDirectory ) ;
+    //
+    //
+    // }
+    exit( 1 ) ;
 
-    }
+  }
+
+
+  //////////////////////////// Open server command ////////////////////////////
+  openDipyServerClientFile = argv[ index_ods + 1 ] ;
+  lastChar = openDipyServerClientFile[ openDipyServerClientFile.size() - 1 ] ;
+  if ( lastChar == '/' )
+  {
+
+    openDipyServerClientFile = openDipyServerClientFile.substr( 0,
+                                        openDipyServerClientFile.size() - 1 ) ;
+
+  }
+  if ( !is_file( openDipyServerClientFile ) )
+  {
+
+    std::stringstream outMessageOss ;
+    outMessageOss << "ERROR : dipyServer.py file "
+              << openDipyServerClientFile << " does not exists " << std::endl ;
+    std::string outMessage = outMessageOss.str() ;
+    throw( std::invalid_argument( outMessage ) ) ;
+
+    // if ( is_dir( outputDirectory ) )
+    // {
+    //
+    //   rmdir( outputDirectory ) ;
+    //
+    //
+    // }
+    exit( 1 ) ;
+
+  }
+
+  //////////////////////////// Close server command ////////////////////////////
+  closeDipyServerClientFile = argv[ index_cds + 1 ] ;
+  lastChar = closeDipyServerClientFile[ closeDipyServerClientFile.size() - 1 ] ;
+  if ( lastChar == '/' )
+  {
+
+    closeDipyServerClientFile = closeDipyServerClientFile.substr( 0,
+                                        closeDipyServerClientFile.size() - 1 ) ;
+
+  }
+  if ( !is_file( closeDipyServerClientFile ) )
+  {
+
+    std::stringstream outMessageOss ;
+    outMessageOss << "ERROR : clientCloseServer.py file "
+              << closeDipyServerClientFile << " does not exists " << std::endl ;
+    std::string outMessage = outMessageOss.str() ;
+    throw( std::invalid_argument( outMessage ) ) ;
+
+
+    // if ( is_dir( outputDirectory ) )
+    // {
+    //
+    //   rmdir( outputDirectory ) ;
+    //
+    //
+    // }
     exit( 1 ) ;
 
   }
@@ -2544,12 +1713,24 @@ int main( int argc, char* argv[] )
 
   ///////////////////////////////// Full atlas /////////////////////////////////
   std::string fullAtlasFilename ;
-  std::string fullAtlasTrkFilename ;
   if ( index_fa )
   {
 
     std::string tmpFullAtlasPath( argv[ index_fa + 1 ] ) ;
     isFullAtlas = true ;
+
+    if ( !endswith( tmpFullAtlasPath, ".bundles" ) &&
+         !endswith( tmpFullAtlasPath, ".bundlesdata" ) &&
+         !endswith( tmpFullAtlasPath, ".trk" ) &&
+         !endswith( tmpFullAtlasPath, ".tck" ) )
+    {
+
+      std::string outMessage = "ConvertBundleFormat: Only supported formats " \
+                               "for atlas are .bundles/.bundlesdata, .trk, " \
+                               ".tck \n" ;
+      throw( std::invalid_argument( outMessage ) ) ;
+
+    }
 
     char lastChar = tmpFullAtlasPath[ tmpFullAtlasPath.size() - 1 ] ;
     if ( lastChar == '/' )
@@ -2559,53 +1740,53 @@ int main( int argc, char* argv[] )
                                                 tmpFullAtlasPath.size() - 1 ) ;
 
     }
-    if ( tmpFullAtlasPath.find( ".bundlesdata" ) != std::string::npos )
-    {
 
-      fullAtlasFilename = tmpFullAtlasPath ;
-      size_t index = tmpFullAtlasPath.find( ".bundlesdata" ) ;
-      fullAtlasFilename.replace( index, 12, ".bundles") ;
-      fullAtlasTrkFilename = tmpFullAtlasPath ;
-      fullAtlasTrkFilename.replace( index, 12, ".trk") ;
 
-    }
-    else if ( tmpFullAtlasPath.find( ".bundles" ) != std::string::npos )
-    {
-
-      fullAtlasFilename = tmpFullAtlasPath ;
-
-      fullAtlasTrkFilename = tmpFullAtlasPath ;
-      size_t index = tmpFullAtlasPath.find( ".bundles" ) ;
-      fullAtlasTrkFilename.replace( index, 8, ".trk") ;
-
-    }
-    else
-    {
-
-      std::cout << "The only full atlas format supported is .bundles"
-                << std::endl ;
-
-      if ( is_dir( outputDirectory ) )
-      {
-
-        rmdir( outputDirectory ) ;
-
-      }
-
-      exit( 1 ) ;
-
-    }
     if ( !is_file( fullAtlasFilename ) )
     {
 
-      std::cout << "ERROR : Full atlas file " << fullAtlasFilename
+      std::stringstream outMessageOss ;
+      outMessageOss << "ERROR : Full atlas file " << fullAtlasFilename
                                             << " does not exists" << std::endl ;
+      std::string outMessage = outMessageOss.str() ;
+      throw( std::invalid_argument( outMessage ) ) ;
+
 
     }
     else
     {
 
       std::cout << "Full atlas tractogram : OK " << std::endl ;
+
+    }
+
+  }
+
+  ///////////////////////////// Atlas neighborhood /////////////////////////////
+  std::string atlasNeighborhoodDirectory ;
+  if ( index_an )
+  {
+
+    isAtlasNeighborhood = true ;
+
+    atlasNeighborhoodDirectory = argv[ index_anc + 1 ] ;
+    lastChar = atlasNeighborhoodDirectory[ atlasNeighborhoodDirectory.size()
+                                                                         - 1 ] ;
+    if ( lastChar != '/' )
+    {
+
+      atlasNeighborhoodDirectory = atlasNeighborhoodDirectory + "/" ;
+
+    }
+    if ( !is_dir( atlasNeighborhoodDirectory ) )
+    {
+
+      std::stringstream outMessageOss ;
+      outMessageOss << "ERROR : Atlas neighborhood centroids directory "
+                    << atlasNeighborhoodDirectory << " does not exists "
+                    << std::endl ;
+      std::string outMessage = outMessageOss.str() ;
+      throw( std::invalid_argument( outMessage ) ) ;
 
     }
 
@@ -2619,7 +1800,8 @@ int main( int argc, char* argv[] )
     isAtlasNeighborhoodCentroids = true ;
 
     atlasNeighborhoodCentroidsDirectory = argv[ index_anc + 1 ] ;
-    lastChar = atlasNeighborhoodCentroidsDirectory[ atlasDirectory.size() - 1 ] ;
+    lastChar = atlasNeighborhoodCentroidsDirectory[
+                              atlasNeighborhoodCentroidsDirectory.size() - 1 ] ;
     if ( lastChar != '/' )
     {
 
@@ -2630,10 +1812,12 @@ int main( int argc, char* argv[] )
     if ( !is_dir( atlasNeighborhoodCentroidsDirectory ) )
     {
 
-      std::cout << "ERROR : Atlas neighborhood centroids directory "
-                << atlasNeighborhoodCentroidsDirectory << " does not exists "
-                << std::endl ;
-      exit( 1 );
+      std::stringstream outMessageOss ;
+      outMessageOss << "ERROR : Atlas neighborhood centroids directory "
+                   << atlasNeighborhoodCentroidsDirectory << " does not exists "
+                   << std::endl ;
+      std::string outMessage = outMessageOss.str() ;
+      throw( std::invalid_argument( outMessage ) ) ;
 
     }
 
@@ -2665,8 +1849,11 @@ int main( int argc, char* argv[] )
     if ( thrDistanceBetweenMedialPoints < 0 )
     {
 
-      std::cout << "Error argument : thrDBMP must be positive " << std::endl ;
-      exit( 1 ) ;
+      std::stringstream outMessageOss ;
+      outMessageOss << "Error argument : thrDBMP must be positive "
+                                                                  << std::endl ;
+      std::string outMessage = outMessageOss.str() ;
+      throw( std::invalid_argument( outMessage ) ) ;
 
     }
 
@@ -2683,8 +1870,11 @@ int main( int argc, char* argv[] )
     if ( toleranceP < -1 || toleranceP > 1 )
     {
 
-      std::cout << "Error argument : -tolP must be in [-1;1]" << std::endl ;
-      exit( 1 ) ;
+      std::stringstream outMessageOss ;
+      outMessageOss << "Error argument : -tolP must be in [-1;1]" << std::endl ;
+      std::string outMessage = outMessageOss.str() ;
+      throw( std::invalid_argument( outMessage ) ) ;
+
 
     }
 
@@ -2698,8 +1888,11 @@ int main( int argc, char* argv[] )
     if ( toleranceThr < -1 || toleranceThr > 1 )
     {
 
-      std::cout << "Error argument : -tolThr must be in [-1;1]" << std::endl ;
-      exit( 1 ) ;
+      std::stringstream outMessageOss ;
+      outMessageOss << "Error argument : -tolThr must be in [-1;1]"
+                                                                  << std::endl ;
+      std::string outMessage = outMessageOss.str() ;
+      throw( std::invalid_argument( outMessage ) ) ;
 
     }
 
@@ -2713,8 +1906,11 @@ int main( int argc, char* argv[] )
     if ( toleranceMaxAngle < -1 || toleranceMaxAngle > 1 )
     {
 
-      std::cout << "Error argument : -tolMaxAng must be in [-1;1]" << std::endl ;
-      exit( 1 ) ;
+      std::stringstream outMessageOss ;
+      outMessageOss << "Error argument : -tolMaxAng must be in [-1;1]"
+                                                                  << std::endl ;
+      std::string outMessage = outMessageOss.str() ;
+      throw( std::invalid_argument( outMessage ) ) ;
 
     }
 
@@ -2729,9 +1925,11 @@ int main( int argc, char* argv[] )
     if ( toleranceMaxDirectionAngle < -1 || toleranceMaxDirectionAngle > 1 )
     {
 
-      std::cout << "Error argument : -tolMaxDirAng must be in [-1;1]"
+      std::stringstream outMessageOss ;
+      outMessageOss << "Error argument : -tolMaxDirAng must be in [-1;1]"
                                                                   << std::endl ;
-      exit( 1 ) ;
+      std::string outMessage = outMessageOss.str() ;
+      throw( std::invalid_argument( outMessage ) ) ;
 
     }
 
@@ -2745,9 +1943,13 @@ int main( int argc, char* argv[] )
     if ( toleranceMinShapeAngle < -1 || toleranceMinShapeAngle > 1 )
     {
 
-      std::cout << "Error argument : -tolMinShapeAng must be in [-1;1]"
+      std::stringstream outMessageOss ;
+      outMessageOss << "Error argument : -tolMinShapeAng must be in [-1;1]"
                                                                   << std::endl ;
-      exit( 1 ) ;
+      std::string outMessage = outMessageOss.str() ;
+      throw( std::invalid_argument( outMessage ) ) ;
+
+
 
     }
 
@@ -2761,9 +1963,11 @@ int main( int argc, char* argv[] )
     if ( toleranceMaxShapeAngle < -1 || toleranceMaxShapeAngle > 1 )
     {
 
-      std::cout << "Error argument : -tolMaxShapeAng must be in [-1;1]"
+      std::stringstream outMessageOss ;
+      outMessageOss << "Error argument : -tolManShapeAng must be in [-1;1]"
                                                                   << std::endl ;
-      exit( 1 ) ;
+      std::string outMessage = outMessageOss.str() ;
+      throw( std::invalid_argument( outMessage ) ) ;
 
     }
 
@@ -2777,9 +1981,11 @@ int main( int argc, char* argv[] )
     if ( toleranceLenght < -1 || toleranceLenght > 1 )
     {
 
-      std::cout << "Error argument : -tolLenght must be in [-1;1]"
+      std::stringstream outMessageOss ;
+      outMessageOss << "Error argument : -tolLenght must be in [-1;1]"
                                                                   << std::endl ;
-      exit( 1 ) ;
+      std::string outMessage = outMessageOss.str() ;
+      throw( std::invalid_argument( outMessage ) ) ;
 
     }
 
@@ -2793,9 +1999,12 @@ int main( int argc, char* argv[] )
     if ( toleranceThrComputeNeighborhood <= 0 )
     {
 
-      std::cout << "ERROR : argument -tolThrCN must be greater than 0"
+      std::stringstream outMessageOss ;
+      outMessageOss << "ERROR : argument -tolThrCN must be greater than 0"
                                                                   << std::endl ;
-      exit( 1 ) ;
+      std::string outMessage = outMessageOss.str() ;
+      throw( std::invalid_argument( outMessage ) ) ;
+
     }
 
   }
@@ -2809,9 +2018,11 @@ int main( int argc, char* argv[] )
     if ( toleranceDistanceBetweenMedialPoints < -1 )
     {
 
-      std::cout << "Error argument : -tolDBMP must be greater than -1"
+      std::stringstream outMessageOss ;
+      outMessageOss << "Error argument : -tolDBMP must be greater than -1"
                                                                   << std::endl ;
-      exit( 1 ) ;
+      std::string outMessage = outMessageOss.str() ;
+      throw( std::invalid_argument( outMessage ) ) ;
 
     }
 
@@ -2826,8 +2037,11 @@ int main( int argc, char* argv[] )
     if ( minimumNumberFibers < 1 )
     {
 
-      std::cout << "ERROR : argument -minNbFibers must be > 0 " << std::endl ;
-      exit( 1 ) ;
+      std::stringstream outMessageOss ;
+      outMessageOss << "ERROR : argument -minNbFibers must be > 0 "
+                                                                  << std::endl ;
+      std::string outMessage = outMessageOss.str() ;
+      throw( std::invalid_argument( outMessage ) ) ;
 
     }
 
@@ -2841,9 +2055,12 @@ int main( int argc, char* argv[] )
     if ( thrPercentageSimilarity <= 0 || thrPercentageSimilarity > 1 )
     {
 
-      std::cout << "ERROR : argument -thrSim must be greater than 0 and "
-                << "lower or equal to 1 " << std::endl ;
-      exit( 1 ) ;
+      std::stringstream outMessageOss ;
+      outMessageOss << "ERROR : argument -thrSim must be greater than 0 and "
+                    << "lower or equal to 1 " << std::endl ;
+      std::string outMessage = outMessageOss.str() ;
+      throw( std::invalid_argument( outMessage ) ) ;
+
     }
 
   }
@@ -2856,9 +2073,12 @@ int main( int argc, char* argv[] )
     if ( adjacencyForCompareBundles <= 0 )
     {
 
-      std::cout << "ERROR : argument -adjCB must be greater than 0 "
+      std::stringstream outMessageOss ;
+      outMessageOss << "ERROR : argument -adjCB must be greater than 0 "
                                                                   << std::endl ;
-      exit( 1 ) ;
+      std::string outMessage = outMessageOss.str() ;
+      throw( std::invalid_argument( outMessage ) ) ;
+
     }
 
   }
@@ -2873,17 +2093,20 @@ int main( int argc, char* argv[] )
     if ( !is_file( tmpFile ) )
     {
 
-      std::cout << "ERROR : projecAtlas file " << tmpFile
-                << " does not exists " << std::endl ;
+      std::stringstream outMessageOss ;
+      outMessageOss << "ERROR : projecAtlas file " << tmpFile
+                                           << " does not exists " << std::endl ;
+      std::string outMessage = outMessageOss.str() ;
+      throw( std::invalid_argument( outMessage ) ) ;
 
-      if ( is_dir( outputDirectory ) )
-      {
 
-        rmdir( outputDirectory ) ;
+      // if ( is_dir( outputDirectory ) )
+      // {
+      //
+      //   rmdir( outputDirectory ) ;
+      //
+      // }
 
-      }
-
-      exit( 1 ) ;
 
     }
 
@@ -2899,16 +2122,19 @@ int main( int argc, char* argv[] )
     if ( !is_file( tmpFile ) )
     {
 
-      std::cout << "ERROR : ConvertBundleFormat file " << tmpFile
-                << " does not exists " << std::endl ;
+      std::stringstream outMessageOss ;
+      outMessageOss << "ERROR : ConvertBundleFormat file " << tmpFile
+                    << " does not exists " << std::endl ;
+      std::string outMessage = outMessageOss.str() ;
+      throw( std::invalid_argument( outMessage ) ) ;
 
-      if ( is_dir( outputDirectory ) )
-      {
 
-        rmdir( outputDirectory ) ;
-
-      }
-      exit( 1 ) ;
+      // if ( is_dir( outputDirectory ) )
+      // {
+      //
+      //   rmdir( outputDirectory ) ;
+      //
+      // }
 
     }
 
@@ -2924,15 +2150,19 @@ int main( int argc, char* argv[] )
     if ( !is_file( tmpFile ) )
     {
 
-      std::cout << "ERROR : computeNeighborhood file " << tmpFile
-                << " does not exists " << std::endl ;
+      std::stringstream outMessageOss ;
+      outMessageOss << "ERROR : computeNeighborhood file " << tmpFile
+                                           << " does not exists " << std::endl ;
+      std::string outMessage = outMessageOss.str() ;
+      throw( std::invalid_argument( outMessage ) ) ;
 
-      if ( is_dir( outputDirectory ) )
-      {
 
-        rmdir( outputDirectory ) ;
-
-      }
+      // if ( is_dir( outputDirectory ) )
+      // {
+      //
+      //   rmdir( outputDirectory ) ;
+      //
+      // }
       exit( 1 ) ;
 
     }
@@ -2949,20 +2179,23 @@ int main( int argc, char* argv[] )
     if ( !is_file( tmpFile ) )
     {
 
-      std::cout << "ERROR : registerBunldes file " << tmpFile
-                << " does not exists " << std::endl ;
+      std::stringstream outMessageOss ;
+      outMessageOss << "ERROR : registerBunldes file " << tmpFile
+                                           << " does not exists " << std::endl ;
+      std::string outMessage = outMessageOss.str() ;
+      throw( std::invalid_argument( outMessage ) ) ;
 
-      if ( is_dir( outputDirectory ) )
-      {
 
-        rmdir( outputDirectory ) ;
-
-      }
-      exit( 1 ) ;
+      // if ( is_dir( outputDirectory ) )
+      // {
+      //
+      //   rmdir( outputDirectory ) ;
+      //
+      // }
 
     }
 
-    registerBundlesFile = tmpFile ;
+    registerBundlesClientFile = tmpFile ;
 
   }
 
@@ -2986,9 +2219,12 @@ int main( int argc, char* argv[] )
     else
     {
 
-      std::cout << "Argument of -slr must be either \"true\" or \"false\" "
-                << std::endl ;
-      exit( 1 ) ;
+      std::stringstream outMessageOss ;
+      outMessageOss << "Argument of -slr must be either \"true\" or \"false\" "
+                                                                  << std::endl ;
+      std::string outMessage = outMessageOss.str() ;
+      throw( std::invalid_argument( outMessage ) ) ;
+
 
     }
 
@@ -3085,12 +2321,60 @@ int main( int argc, char* argv[] )
   if ( index_nbThreads )
   {
 
+
     nbThreads = std::stoi( argv[ index_nbThreads + 1 ] ) ;
-    if ( nbThreads < 0 )
+    if ( nbThreads <= 0 )
     {
 
       std::cout << "Invalid argument for -nbThreads : you must give a postive "
                 << "integer " << std::endl ;
+      exit( 1 ) ;
+
+    }
+
+  }
+  else
+  {
+
+    // nbThreads = nbCores ;
+    nbThreads = -1 ;
+
+  }
+
+  omp_set_num_threads( nbThreads ) ;
+
+  #pragma omp parallel
+  {
+
+    nbThreadsUsed = omp_get_num_threads() ;
+
+  }
+  std::cout << "Number of threads : " << nbThreadsUsed << std::endl ;
+
+
+
+  ////////////////////////////// Keep temp files ///////////////////////////////
+  if ( index_keep_tmp )
+  {
+
+    std::string _tmpIndexKeepTmpFiles( argv[ index_keep_tmp + 1 ] ) ;
+    if ( _tmpIndexKeepTmpFiles == "true" )
+    {
+
+      keepTmpFiles = true ;
+
+    }
+    else if ( _tmpIndexKeepTmpFiles == "false" )
+    {
+
+      keepTmpFiles = false ;
+
+    }
+    else
+    {
+
+      std::cout << "Argument of -ktf must be either \"true\" or \"false\" "
+                << std::endl ;
       exit( 1 ) ;
 
     }
@@ -3115,6 +2399,8 @@ int main( int argc, char* argv[] )
 
   }
 
+
+
   //////////////////////////////////////////////////////////////////////////////
   //////////////////////////////////////////////////////////////////////////////
   //////////////////////////////////////////////////////////////////////////////
@@ -3137,6 +2423,32 @@ int main( int argc, char* argv[] )
                           << toleranceDistanceBetweenMedialPoints << std::endl ;
 
   }
+
+
+  /////////////////////////////// Getting format ///////////////////////////////
+  std::string format ;
+  if ( endswith( inputBundlesFilename, ".bundles" ) ||
+                              endswith( inputBundlesFilename, ".bundlesdata" ) )
+  {
+
+    format = ".bundles" ;
+
+  }
+  else if ( endswith( inputBundlesFilename, ".trk" ) )
+  {
+
+    format = ".trk" ;
+
+  }
+  else if ( endswith( inputBundlesFilename, ".tck" ) )
+  {
+
+    format = ".tck" ;
+
+  }
+  // Already checked at the begginig of main if extension is one of those format
+
+
   //////////////// Preparing atlas bundles paths (tmpAtlasDir) /////////////////
   if ( verbose )
   {
@@ -3147,10 +2459,12 @@ int main( int argc, char* argv[] )
     std::cout << "#########################################################\n" ;
 
   }
-  checkAtlasDirectory( atlasDirectory, outputDirectory ) ;
+
+  checkAtlasDirectory( atlasDirectory, format ) ;
   std::vector<std::string> atlasBundleDirectories ;
   std::string tmpAtlasDir = getAtlasBunldesPaths( outputDirectory,
                                                   atlasDirectory,
+                                                  format,
                                                   atlasBundleDirectories ) ;
 
   if ( verbose )
@@ -3161,14 +2475,26 @@ int main( int argc, char* argv[] )
   }
 
 
+  //////////////// Getting atlas neighborhood if input is given ////////////////
+  std::vector<std::string> atlasNeighborhoodPaths ;
+  if ( isAtlasNeighborhood )
+  {
+
+    getAtlasNeighborhoodCentroids( atlasNeighborhoodDirectory,
+                                   atlasBundleDirectories,
+                                   format,
+                                   atlasNeighborhoodPaths ) ;
+
+  }
+
   ///////////////// Getting atlas centroids if input is given //////////////////
   std::vector<std::string> atlasNeighborhoodCentroidsPaths ;
   if ( isAtlasNeighborhoodCentroids )
   {
 
-    getAtlasNeighborhoodCentroids( outputDirectory,
-                                   atlasNeighborhoodCentroidsDirectory,
+    getAtlasNeighborhoodCentroids( atlasNeighborhoodCentroidsDirectory,
                                    atlasBundleDirectories,
+                                   format,
                                    atlasNeighborhoodCentroidsPaths ) ;
 
   }
@@ -3189,6 +2515,18 @@ int main( int argc, char* argv[] )
                 << std::endl ;
     }
 
+    if ( format == ".bundles" && format == ".bundlesdata" )
+    {
+
+      std::stringstream outMessageOss ;
+      outMessageOss << "ProjectAtlasRecoBundles : global SLR not compatible "
+                    << "with .bundles/.bundlesdata format\n" ;
+      std::string outMessage = outMessageOss.str() ;
+      throw( std::invalid_argument( outMessage ) ) ;
+
+
+    }
+
     std::ostringstream tmpSLRdirOss ;
     tmpSLRdirOss << outputDirectory << "tmpSLR/" ;
     std::string tmpSLRdir = tmpSLRdirOss.str() ;
@@ -3199,33 +2537,23 @@ int main( int argc, char* argv[] )
 
     }
 
-    convertBundlesFormat( fullAtlasFilename,
-                          fullAtlasTrkFilename,
-                          referenceFilename,
-                          outputDirectory ) ;
-
-
-    convertBundlesFormat( inputBundlesFilename,
-                          inputTRKFilename,
-                          referenceFilename,
-                          outputDirectory ) ;
 
     std::ostringstream movedTractogramTrkOss ;
-    movedTractogramTrkOss << tmpSLRdir << "moved.trk" ;
+    movedTractogramTrkOss << tmpSLRdir << "moved" << format ;
     std::string movedTractogramTrk = movedTractogramTrkOss.str() ;
 
     std::ostringstream globalSLROss ;
     // globalSLROss << "dipy_slr "
-    //              << fullAtlasTrkFilename << " "
-    //              << inputTRKFilename << " "
+    //              << fullAtlasFilename << " "
+    //              << inputBundlesFilename << " "
     //              << "--greater_than 10 "
     //              << "--less_than 200 "
     //              << "--out_dir " << tmpSLRdir << " "
     //              << "--out_moved " << movedTractogramTrk << " "
     //              << "--force " ;
     globalSLROss << "dipy_slr "
-                 << fullAtlasTrkFilename << " "
-                 << inputTRKFilename << " "
+                 << fullAtlasFilename << " "
+                 << inputBundlesFilename << " "
                  << "--out_dir " << tmpSLRdir << " "
                  << "--out_moved " << movedTractogramTrk << " "
                  << "--force " ;
@@ -3275,18 +2603,8 @@ int main( int argc, char* argv[] )
       }
 
       std::ostringstream movedTractogramOss ;
-      movedTractogramOss << tmpSLRdir << "moved.bundles" ;
+      movedTractogramOss << tmpSLRdir << "moved" << format ;
       std::string movedTractogram = movedTractogramOss.str() ;
-
-      convertBundlesFormat( movedTractogramTrk,
-                            movedTractogram,
-                            referenceFilename,
-                            outputDirectory ) ;
-
-      // Cleaning
-      rmfile( fullAtlasTrkFilename ) ;
-      rmfile( inputTRKFilename ) ;
-      rmfile( movedTractogramTrk ) ;
 
       if ( verbose )
       {
@@ -3310,6 +2628,8 @@ int main( int argc, char* argv[] )
 
   }
 
+  const auto start_time_tract_neigh = std::chrono::system_clock::now() ;
+
   std::ostringstream tmpNeighborhoodDirOss ;
   tmpNeighborhoodDirOss << outputDirectory << "tmp_neighborhood_dir/" ;
   std::string tmpNeighborhoodDir = tmpNeighborhoodDirOss.str() ;
@@ -3327,9 +2647,11 @@ int main( int argc, char* argv[] )
                                 << "-a " << atlasDirectory << " "
                                 << "-o " << tmpNeighborhoodDir << " "
 				                        << "-minLen " << 10 << " "
-				                        << "-maxLen " << 100 << " "
+				                        // << "-maxLen " << 100 << " "
+				                        << "-maxLen " << 200 << " "
                                 << "-tolThr " << toleranceThrComputeNeighborhood
                                                                           << " "
+                                << "-nbThreads " << nbCores << " "
                                 << "-v " ;
   std::string computeNeighborhoodCommand = computeNeighborhoodCommandOss.str() ;
   int isNeighborhoodFail = 0 ;
@@ -3350,6 +2672,7 @@ int main( int argc, char* argv[] )
   else
   {
 
+
     isNeighborhoodFail = run_sh_process( computeNeighborhoodCommand ) ;
 
   }
@@ -3360,12 +2683,12 @@ int main( int argc, char* argv[] )
               << "in tractogram, got exit code "
               << isNeighborhoodFail << std::endl ;
 
-    if ( is_dir( outputDirectory ) )
-    {
-
-      rmdir( outputDirectory ) ;
-
-    }
+    // if ( is_dir( outputDirectory ) )
+    // {
+    //
+    //   rmdir( outputDirectory ) ;
+    //
+    // }
     exit( 1 ) ;
 
   }
@@ -3374,21 +2697,27 @@ int main( int argc, char* argv[] )
   std::vector<std::string> neighborhoodFilenames ;
   getNeighborhoodFilenames( tmpNeighborhoodDir,
                             atlasBundleDirectories,
-                            neighborhoodFilenames,
-                            outputDirectory ) ;
+                            format,
+                            neighborhoodFilenames ) ;
 
+
+  const std::chrono::duration< double > duration_tract_neigh =
+                     std::chrono::system_clock::now() - start_time_tract_neigh ;
 
   if ( verbose )
   {
 
+    std::cout << "Duration : " << duration_tract_neigh.count() << std::endl ;
     std::cout << "Done" << std::endl ;
+
 
   }
 
   ///////////////////////// Computing neighborhood atlas ///////////////////////
   std::vector<std::string> neighborhoodAtlasFilenames ;
   std::string tmpNeighborhoodAtlasDir ;
-  if ( !isAtlasNeighborhoodCentroids && isFullAtlas )
+  if ( ( !isAtlasNeighborhoodCentroids || !isAtlasNeighborhood ) &&
+                                                                   isFullAtlas )
   {
 
     if ( verbose )
@@ -3396,11 +2725,13 @@ int main( int argc, char* argv[] )
 
       std::cout << "#########################################################"
                 << std::endl ;
-      std::cout << "Computing atlas neighborhood... " << std::endl ;
+      std::cout << "Computing atlas neighborhood " << std::endl ;
       std::cout << "#########################################################"
                 << std::endl ;
 
     }
+
+    const auto start_time_atlas_neigh = std::chrono::system_clock::now() ;
 
     std::ostringstream tmpNeighborhoodAtlasDirOss ;
     tmpNeighborhoodAtlasDirOss << outputDirectory
@@ -3420,6 +2751,7 @@ int main( int argc, char* argv[] )
                         << "-a " << atlasDirectory << " "
                         << "-o " << tmpNeighborhoodAtlasDir << " "
                         << "-tolThr " << toleranceThrComputeNeighborhood << " "
+                        << "-nbThreads " << nbCores << " "
                         << "-v " ;
     std::string computeAtlasNeighborhoodCommand =
                                       computeAtlasNeighborhoodCommandOss.str() ;
@@ -3453,194 +2785,34 @@ int main( int argc, char* argv[] )
                 << "in full atlas, got exit code " << isAtlasNeighborhoodFail
                                                                   << std::endl ;
 
-      if ( is_dir( outputDirectory ) )
-      {
-
-        rmdir( outputDirectory ) ;
-
-      }
+      // if ( is_dir( outputDirectory ) )
+      // {
+      //
+      //   rmdir( outputDirectory ) ;
+      //
+      // }
       exit( 1 ) ;
 
     }
 
     getNeighborhoodFilenames( tmpNeighborhoodAtlasDir,
                               atlasBundleDirectories,
-                              neighborhoodAtlasFilenames,
-                              outputDirectory ) ;
+                              format,
+                              neighborhoodAtlasFilenames ) ;
 
+
+   const std::chrono::duration< double > duration_atlas_neigh =
+                     std::chrono::system_clock::now() - start_time_atlas_neigh ;
 
     if ( verbose )
     {
 
+      std::cout << "Duration : " << duration_atlas_neigh.count() << std::endl ;
       std::cout << "Done" << std::endl ;
 
     }
 
   }
-
-  ////////////////////////// Projecting atlas without SBR ////////////////////////
-  /*
-  // Not necessary becaus done later on neighborhoods (maybe remove this part)
-  if ( verbose && doClassical )
-  {
-
-    std::cout << "#########################################################\n" ;
-    std::cout << "############## Projecting atlas without SBR #############"
-                                                                  << std::endl ;
-    std::cout << "#########################################################\n" ;
-
-  }
-
-  std::ostringstream projectCommandOss ;
-  projectCommandOss << projectAtlasFile << " "
-                    << "-i " << movedTractogram << " "
-                    << "-a " << atlasDirectory << " "
-                    << "-o " << outputDirectory << " "
-                    << "-l " << "labels" << " "
-                    << "-tolP " << toleranceP << " "
-                    << "-tolThr " << toleranceThr << " "
-                    << "-tolMaxAng " << toleranceMaxAngle << " "
-                    << "-tolMaxDirAng " << toleranceMaxDirectionAngle
-                                                                    << " "
-                    << "-tolMinShapeAng " << toleranceMinShapeAngle << " "
-                    << "-tolMaxShapeAng " << toleranceMaxShapeAngle << " "
-                    << "-tolLenght " << toleranceLenght << " "
-                    << "-cb "
-                    << "-v 1" ;
-  std::string projectCommand = projectCommandOss.str() ;
-  int isProjectAtlasFail = 0 ;
-  if ( countFilesDirectory( outputDirectory ) > 5 && !force )
-  {
-    if ( verbose > 1 )
-    {
-      std::cout << "WARNING : output directory of " << projectAtlasFile
-                << " : " <<  outputDirectory << " already exists with more than"
-                << " 5 files and -force flag was not used, trying computations "
-                << "with existing directory" << std::endl ;
-
-    }
-
-  }
-  else
-  {
-
-    if ( doClassical )
-    {
-
-      isProjectAtlasFail = run_sh_process( projectCommand ) ;
-
-    }
-    else
-    {
-
-      isProjectAtlasFail = 0 ;
-
-    }
-
-  }
-  if ( isProjectAtlasFail )
-  {
-
-    std::cout << "ERROR : could not project atlas without SBR, got exit code "
-              << isProjectAtlasFail << std::endl ;
-
-    if ( is_dir( outputDirectory ) )
-    {
-
-      rmdir( outputDirectory ) ;
-
-    }
-    exit( 1 ) ;
-
-  }
-
-  if ( verbose && doClassical )
-  {
-
-    std::cout << "Done" << std::endl ;
-
-  }
-
-  std::ostringstream labelsDictPathOss ;
-  labelsDictPathOss << outputDirectory << "labels.dict" ;
-  std::string labelsDictPath = labelsDictPathOss.str() ;
-
-  std::ostringstream labelsTxtPathOss ;
-  labelsTxtPathOss << outputDirectory << "labels.txt" ;
-  std::string labelsTxtPath = labelsTxtPathOss.str() ;
-
-  std::ostringstream labelsDictClassicPathOss ;
-  labelsDictClassicPathOss << outputDirectory << "labelsClassic.dict" ;
-  std::string labelsDictClassicPath = labelsDictClassicPathOss.str() ;
-
-  std::ostringstream labelsTxtClassicPathOss ;
-  labelsTxtClassicPathOss << outputDirectory << "labelsClassic.txt" ;
-  std::string labelsTxtClassicPath = labelsTxtClassicPathOss.str() ;
-
-  if ( doClassical )
-  {
-
-    bool isRename = rename( labelsDictPath, labelsDictClassicPath ) ;
-    if ( !isRename )
-    {
-
-      std::cout << "ERROR : could not copy " << labelsDictPath << " to "
-                << labelsDictClassicPath << std::endl ;
-
-      exit( 1 ) ;
-
-      if ( is_dir( outputDirectory ) )
-      {
-
-        rmdir( outputDirectory ) ;
-
-      }
-      exit( 1 ) ;
-
-    }
-
-    isRename = rename( labelsTxtPath, labelsTxtClassicPath ) ;
-    if ( !isRename )
-    {
-
-      std::cout << "ERROR : could not copy " << labelsTxtPath << " to "
-                << labelsTxtClassicPath << std::endl ;
-
-      if ( is_dir( outputDirectory ) )
-      {
-
-        rmdir( outputDirectory ) ;
-
-      }
-      exit( 1 ) ;
-
-    }
-  }
-
-
-
-  int nbBundles = 0 ;
-  if ( !isAtlasNeighborhoodCentroids )
-  {
-
-    nbBundles = neighborhoodAtlasFilenames.size() ;
-
-  }
-  else
-  {
-
-    nbBundles = atlasNeighborhoodCentroidsPaths.size() ;
-
-  }
-
-  if ( nbBundles == 0 )
-  {
-
-    std::cout << "ERROR : no valid bundles in atlas directory" << std::endl ;
-    exit( 1 ) ;
-
-  }
-  */
 
 
   //////////////////////// Projecting atlas without SBR ////////////////////////
@@ -3677,13 +2849,7 @@ int main( int argc, char* argv[] )
 
   }
 
-  if ( nbThreads )
-  {
-
-    omp_set_num_threads( nbThreads ) ;
-
-  }
-  #pragma omp parallel for
+  #pragma omp parallel for schedule(dynamic)
   for ( int i = 0 ; i < nbBundles ; i++ )
   {
 
@@ -3706,15 +2872,28 @@ int main( int argc, char* argv[] )
 
 
     std::ostringstream atlasInfoPathOss ;
-    atlasInfoPathOss << atlasBundleDirectory << bundleName << ".bundles" ;
+    atlasInfoPathOss << atlasBundleDirectory << bundleName ;
+    if ( format == ".bundles" || format == ".bundlesdata" )
+    {
+
+      atlasInfoPathOss << ".bundles" ;
+
+    }
+    else if ( format == ".trk" || format == ".tck" )
+    {
+
+      atlasInfoPathOss << ".minf" ;
+
+    }
     std::string atlasInfoPath = atlasInfoPathOss.str() ;
     float thrDistanceBetweenMedialPointsBundle =
                                                 thrDistanceBetweenMedialPoints ;
+
     if ( !index_thrDBMP )
     {
 
       thrDistanceBetweenMedialPointsBundle =
-                        getAverageDistanceBetweenMedialPoints( atlasInfoPath ) ;
+                  getAverageDistanceBetweenMedialPoints( atlasInfoPath ) / 2.0 ;
       thrDistanceBetweenMedialPointsBundle *= ( 1 +
                                         toleranceDistanceBetweenMedialPoints ) ;
 
@@ -3739,20 +2918,42 @@ int main( int argc, char* argv[] )
                       << "-tolMinShapeAng " << toleranceMinShapeAngle << " "
                       << "-tolMaxShapeAng " << toleranceMaxShapeAngle << " "
                       << "-tolLenght " << toleranceLenght << " "
-                      << "-tolDBMP " << toleranceDistanceBetweenMedialPoints
-                                                                          << " "
                       << "-thrAdj " << adjacencyForCompareBundles << " "
                       << "-cb "
+                      << "-nbThreads " << nbThreads << " "
                       << "-v 1" ;
     std::string projectCommand = projectCommandOss.str() ;
 
     std::ostringstream extractedBundlePathOss ;
-    extractedBundlePathOss << outputDirectory << bundleName << ".bundles" ;
+    extractedBundlePathOss << outputDirectory << bundleName ;
+    if ( format == ".bundles" || format == ".bundlesdata" )
+    {
+
+      extractedBundlePathOss << ".bundles" ;
+
+    }
+    else if ( format == ".trk" || format == ".tck" )
+    {
+
+      extractedBundlePathOss << ".minf" ;
+
+    }
     std::string extractedBundlePath = extractedBundlePathOss.str() ;
 
     std::ostringstream extractedBundleDataPathOss ;
-    extractedBundleDataPathOss << outputDirectory << bundleName
-                                                             << ".bundlesdata" ;
+    extractedBundleDataPathOss << outputDirectory << bundleName ;
+    if ( format == ".bundles" || format == ".bundlesdata" )
+    {
+
+      extractedBundleDataPathOss << ".bundlesdata" ;
+
+    }
+    else if ( format == ".trk" || format == ".tck" )
+    {
+
+      extractedBundleDataPathOss << format ;
+
+    }
     std::string extractedBundleDataPath = extractedBundleDataPathOss.str() ;
 
     std::ostringstream extractedBundleLabelsPathOss ;
@@ -3806,12 +3007,12 @@ int main( int argc, char* argv[] )
                 << bundleName << "got exit code " << isProjectAtlasFail
                 << " for command : \n" << projectCommand << std::endl ;
 
-      if ( is_dir( outputDirectory ) )
-      {
-
-        rmdir( outputDirectory ) ;
-
-      }
+      // if ( is_dir( outputDirectory ) )
+      // {
+      //
+      //   rmdir( outputDirectory ) ;
+      //
+      // }
       exit( 1 ) ;
 
     }
@@ -3918,16 +3119,12 @@ int main( int argc, char* argv[] )
       std::vector<std::vector<int16_t>> labelsRecognized ;
       readingPredictedLabels( labelsRecognizedPath.c_str(),
                               labelsRecognized,
-                              outputDirectory,
-                              nbFibersMovedTracotgramNeighborhood,
-                              1 ) ;
+                              nbFibersMovedTracotgramNeighborhood ) ;
 
       std::vector<int64_t> indexInTractogram ;
       readIndexInTractogram( neighborhoodTractogramBinPath.c_str(),
                              indexInTractogram,
-                             outputDirectory,
-                             nbFibersMovedTracotgramNeighborhood,
-                             1 ) ;
+                             nbFibersMovedTracotgramNeighborhood ) ;
 
       int _tmpCounter = 0 ;
       for ( int _label = 0 ; _label < nbBundles ; _label++ )
@@ -4007,22 +3204,6 @@ int main( int argc, char* argv[] )
   }
 
 
-  //////////////////
-  // std::ostringstream labelsDictClassicPathOss ;
-  // labelsDictClassicPathOss << outputDirectory << "labelsClassic.dict" ;
-  // std::string labelsDictClassicPath = labelsDictClassicPathOss.str() ;
-  // saveLabelsDict( labelsDictClassicPath.c_str(),
-  //                 labelsDictClassic,
-  //                 outputDirectory ) ;
-  //
-  // std::ostringstream labelsTxtClassicPathOss ;
-  // labelsTxtClassicPathOss << outputDirectory << "labelsClassic.txt" ;
-  // std::string labelsTxtClassicPath = labelsTxtClassicPathOss.str() ;
-  // saveLabels( labelsTxtClassicPath.c_str(),
-  //             labelsClassic,
-  //                  const std::string& outputDirectory ) ;
-  //////////////////
-
   for ( int _fiberIndex = 0 ; _fiberIndex < nbFibersTractogram ; _fiberIndex++ )
   {
 
@@ -4059,83 +3240,127 @@ int main( int argc, char* argv[] )
   std::cout << "#########################################################\n" ;
   const auto start_time_sbr = std::chrono::system_clock::now() ;
 
+  // Launching dipy service
+  std::cout << "Launching dipy service... " ;
+
+  std::ostringstream serverLogFilePathOss ;
+  serverLogFilePathOss << outputDirectory << "dipyServiceLog.txt" ;
+  std::string serverLogFilePath = serverLogFilePathOss.str() ;
+
+
+  std::ostringstream launchDipyServiceOss ;
+  launchDipyServiceOss << "python3 " << openDipyServerClientFile << " "
+                       << "-lf " << serverLogFilePath << " " ;
+  std::string launchDipyService = launchDipyServiceOss.str() ;
+
+
+  boost::process::ipstream out ; // To not pipe output in main process
+  boost::process::ipstream err ; // To not pipe error in main process
+
+  boost::process::child c( launchDipyService.c_str(),
+                                            boost::process::std_out > out,
+                                            boost::process::std_err > err ) ;
+
+  std::cout << "" << std::flush ;
+
+  while ( !is_file( serverLogFilePath ) ){}
+
+  int portDipyServer = getPortNumberDipyService( serverLogFilePath ) ;
+
+  std::cout << "Using port " << portDipyServer << std::endl ;
+  std::cout << "" << std::flush ;
+
   std::vector<std::vector<int16_t>> labels ;
   labels.resize( nbFibersTractogram ) ;
-  int countProcessSubjects = 1 ;
-  if ( nbThreads )
+  int nbBundlesProcessed = 1 ;
+  while ( c.running() )
   {
 
     omp_set_num_threads( nbThreads ) ;
-
-  }
-  #pragma omp parallel for
-  for ( int i = 0 ; i < nbBundles ; i++ )
-  {
-
-    std::string atlasBundleDirectory = atlasBundleDirectories[ i ] ;
-    std::string movedTractogramNeighborhood = neighborhoodFilenames[ i ] ;
-    std::string atlasNeighborhoodFile ;
-    if ( isAtlasNeighborhoodCentroids )
+    #pragma omp parallel for schedule(dynamic)
+    for ( int i = 0 ; i < nbBundles ; i++ )
     {
 
-      atlasNeighborhoodFile = atlasNeighborhoodCentroidsPaths[ i ] ;
+      std::string atlasBundleDirectory = atlasBundleDirectories[ i ] ;
+      std::string movedTractogramNeighborhood = neighborhoodFilenames[ i ] ;
+      std::string atlasNeighborhoodFile ;
+      if ( isAtlasNeighborhood )
+      {
 
+        atlasNeighborhoodFile = atlasNeighborhoodPaths[ i ] ;
+
+
+      }
+      else
+      {
+
+        atlasNeighborhoodFile = neighborhoodAtlasFilenames[ i ] ;
+
+      }
+
+      std::string atlasNeighborhoodCentroidsFile ;
+      if ( isAtlasNeighborhoodCentroids )
+      {
+
+        atlasNeighborhoodCentroidsFile = atlasNeighborhoodCentroidsPaths[ i ] ;
+
+
+      }
+      else
+      {
+
+        atlasNeighborhoodCentroidsFile = "" ;
+
+      }
+
+      if ( endswith( atlasNeighborhoodFile, ".minf" ) )
+      {
+
+        atlasNeighborhoodFile = replaceExtension( atlasNeighborhoodFile,
+                                                                      format ) ;
+
+      }
+
+      applyRecoBundles( movedTractogramNeighborhood,
+                        atlasBundleDirectory,
+                        atlasNeighborhoodFile,
+                        atlasNeighborhoodCentroidsFile,
+                        outputDirectory,
+                        referenceFilename,
+                        format,
+                        nbPointsPerFiber,
+                        portDipyServer,
+                        verbose ) ;
+
+      #pragma omp critical
+      {
+
+        printf( "\rNumber of bundles processed : [ %d  /  %d ]",
+                                               nbBundlesProcessed, nbBundles ) ;
+        std::cout << "" << std::flush ;
+        nbBundlesProcessed++ ;
+
+      }
 
     }
-    else
+
+
+
+    // Closing dipy service
+    std::cout << "\n" ;
+    closeDipyServer( portDipyServer ) ;
+    /*
+    try
     {
 
-      atlasNeighborhoodFile = neighborhoodAtlasFilenames[ i ] ;
+      c.terminate() ;
 
     }
+    catch(...){}
+    */
+    std::cout << "Done" << std::endl ;
 
-    applyRecoBundles( movedTractogramNeighborhood,
-                      atlasBundleDirectory,
-                      atlasNeighborhoodFile,
-                      outputDirectory,
-                      referenceFilename,
-                      nbPointsPerFiber,
-                      verbose ) ;
-
-    // Ensure that the section {} will be only access by a thread at the time
-    // #pragma omp critical
-    // {
-    //
-    //   if ( verbose > 1 )
-    //   {
-    //
-    //     std::cout << "-----------------------------------------------------\n" ;
-    //
-    //   }
-    //
-    //   if ( verbose == 1 )
-    //   {
-    //
-    //     printf( "\rProjecting atlas bundles with SBR : [ %d  /  %d ]",
-    //                                          countProcessSubjects, nbBundles ) ;
-    //     std::cout << "" << std::flush ;
-    //
-    //   }
-    //   else if ( verbose > 1 )
-    //   {
-    //
-    //     printf( "Projecting atlas bundles with SBR : [ %d / %d ]\n",
-    //                                          countProcessSubjects, nbBundles ) ;
-    //
-    //   }
-    //
-    //   if ( verbose > 1 )
-    //   {
-    //
-    //     std::cout << "-----------------------------------------------------\n" ;
-    //
-    //   }
-    //
-    //   countProcessSubjects++ ;
-    //
-    // }
-
-
+    break ;
 
   }
 
@@ -4151,7 +3376,6 @@ int main( int argc, char* argv[] )
     std::cout << "Done" << std::endl ;
 
   }
-
 
   // Getting labels
   std::cout << "#########################################################\n" ;
@@ -4221,16 +3445,12 @@ int main( int argc, char* argv[] )
       std::vector<std::vector<int16_t>> labelsRecognizedSBR ;
       readingPredictedLabels( labelsRecognizedSBRPath.c_str(),
                               labelsRecognizedSBR,
-                              outputDirectory,
-                              nbFibersMovedTracotgramNeighborhood,
-                              1 ) ;
+                              nbFibersMovedTracotgramNeighborhood ) ;
 
       std::vector<int64_t> indexInTractogram ;
       readIndexInTractogram( neighborhoodTractogramBinPath.c_str(),
                              indexInTractogram,
-                             outputDirectory,
-                             nbFibersMovedTracotgramNeighborhood,
-                             1 ) ;
+                             nbFibersMovedTracotgramNeighborhood ) ;
 
       int _tmpCounter = 0 ;
       for ( int _label = 0 ; _label < nbBundles ; _label++ )
@@ -4354,8 +3574,7 @@ int main( int argc, char* argv[] )
   labelsDictPathOss << outputDirectory << "labels.dict" ;
   std::string labelsDictPath = labelsDictPathOss.str() ;
   saveLabelsDict( labelsDictPath.c_str(),
-                  labelsDictClassic,
-                  outputDirectory ) ;
+                  labelsDictClassic ) ;
 
 
   for ( int i = 0 ; i < nbFibersTractogram ; i++ )
@@ -4373,7 +3592,7 @@ int main( int argc, char* argv[] )
   std::ostringstream labelsTxtPathOss ;
   labelsTxtPathOss << outputDirectory << "labels.txt" ;
   std::string labelsTxtPath = labelsTxtPathOss.str() ;
-  saveLabels( labelsTxtPath.c_str(), labels, outputDirectory ) ;
+  saveLabels( labelsTxtPath.c_str(), labels ) ;
 
 
 
@@ -4407,6 +3626,7 @@ int main( int argc, char* argv[] )
   std::vector<int32_t> pointsPerTrackSBR ;
   int curves_countSBR = 0 ;
   int _bundleLabel = 0 ;
+  // #pragma omp parallel for
   for ( int _bundleIndex = 0 ; _bundleIndex < nbBundles ; _bundleIndex++ )
   {
 
@@ -4444,11 +3664,35 @@ int main( int argc, char* argv[] )
 
 
     std::ostringstream recognizedBundleOss ;
-    recognizedBundleOss << outputDirectory << bundleName << ".bundles" ;
+    recognizedBundleOss << outputDirectory << bundleName ;
+    if ( format == ".bundles" || format == ".bundlesdata" )
+    {
+
+      recognizedBundleOss << ".bundles" ;
+
+    }
+    else if ( format == ".trk" || format == ".tck" )
+    {
+
+      recognizedBundleOss << ".minf" ;
+
+    }
     std::string recognizedBundlePath = recognizedBundleOss.str() ;
 
     std::ostringstream recognizedBundledataOss ;
-    recognizedBundledataOss << outputDirectory << bundleName << ".bundlesdata" ;
+    recognizedBundledataOss << outputDirectory << bundleName ;
+    if ( format == ".bundles" || format == ".bundlesdata" )
+    {
+
+      recognizedBundledataOss << ".bundlesdata" ;
+
+    }
+    else if ( format == ".trk" || format == ".tck" )
+    {
+
+      recognizedBundledataOss << format ;
+
+    }
     std::string recognizedBundledataPath = recognizedBundledataOss.str() ;
 
     if ( !is_file( recognizedBundlePath )  ||
@@ -4459,9 +3703,8 @@ int main( int argc, char* argv[] )
 
     }
 
-    BundlesDataFormat recognizedBundlesData( recognizedBundledataPath.c_str(),
-                                             recognizedBundlePath.c_str(),
-                                             0  ) ;
+    BundlesData recognizedBundlesData( recognizedBundledataPath.c_str() ) ;
+
     std::vector<float>& recognizedMatrixTracks =
                                             recognizedBundlesData.matrixTracks ;
     std::vector<int32_t>& recognizedPointsPerTrack =
@@ -4532,51 +3775,133 @@ int main( int argc, char* argv[] )
   //#########################################################################//
   //#########################################################################//
   //#########################################################################//
-  saveComparisonMeasuresWithAtlas( coveragesBundles,
-                                   adjacencyBundles,
-                                   overlapBundles,
-                                   labelsDictSBR,
-                                   comparisonWithAtlasRecognizedSBRPath.c_str(),
-                                   outputDirectory ) ;
+  saveComparisonMeasuresWithAtlas(
+                                coveragesBundles,
+                                adjacencyBundles,
+                                overlapBundles,
+                                labelsDictSBR,
+                                comparisonWithAtlasRecognizedSBRPath.c_str() ) ;
 
   saveLabelsDict( labelsDictRecognizedSBRPath.c_str(),
-                  labelsDictSBR,
-                  outputDirectory ) ;
+                  labelsDictSBR ) ;
 
   saveLabels( labelsRecognizedSBRPath.c_str(),
-              labelsSBR,
-              outputDirectory ) ;
+              labelsSBR ) ;
 
 
-  BundlesDataFormat regroupedRecognizedBundlesData( matrixTracksSBR,
-                                                    pointsPerTrackSBR,
-                                                    curves_countSBR ) ;
+  BundlesMinf regroupedRecognizedBundles( movedTractogram.c_str() ) ;
+  std::ostringstream regroupedRecognizedBundleOss ;
+  regroupedRecognizedBundleOss << outputDirectory << "regroupedRecognized" ;
+  if ( format == ".bundles" || format == ".bundlesdata" )
+  {
+
+    regroupedRecognizedBundleOss << ".bundles" ;
+
+  }
+  else if ( format == ".trk" || format == ".tck" )
+  {
+
+    regroupedRecognizedBundleOss << ".minf" ;
+
+  }
+  regroupedRecognizedBundles.curves_count = curves_countSBR ;
+
+
+  std::vector<int64_t> fibersWithNans ;
+  std::vector<std::vector<float>> tracksScalars ;
+  std::vector<std::vector<float>> tracksProperties ;
+
+
+  bool isBundles = false ;
+  bool isTrk = false ;
+  bool isTck = false ;
+  if ( format == ".bundles" || format == ".bundlesdata" )
+  {
+
+    isBundles = true ;
+
+  }
+  else if ( format == ".trk" )
+  {
+
+    isTrk = true ;
+
+  }
+  else if ( format == ".tck" )
+  {
+
+    isTck = true ;
+
+  }
+  else
+  {
+
+    std::stringstream outMessageOss ;
+    outMessageOss << "ERROR : the only format supported are .bundles/.trk/.tck"
+                  << std::endl ;
+    std::string outMessage = outMessageOss.str() ;
+    throw( std::invalid_argument( outMessage ) ) ;
+
+  }
+
+
+
+  BundlesData regroupedRecognizedBundlesData( matrixTracksSBR,
+                                              pointsPerTrackSBR,
+                                              fibersWithNans,
+                                              tracksScalars,
+                                              tracksProperties,
+                                              curves_countSBR,
+                                              isBundles,
+                                              isTrk,
+                                              isTck ) ;
   std::ostringstream regroupedRecognizedBundledataOss ;
-  regroupedRecognizedBundledataOss << outputDirectory
-                                   << "regroupedRecognized.bundlesdata" ;
+  regroupedRecognizedBundledataOss << outputDirectory << "regroupedRecognized" ;
+  if ( format == ".bundles" || format == ".bundlesdata" )
+  {
+
+    regroupedRecognizedBundledataOss << ".bundlesdata" ;
+
+  }
+  else if ( format == ".trk" || format == ".tck" )
+  {
+
+    regroupedRecognizedBundledataOss << format ;
+
+  }
+
+
   std::string regroupedRecognizedBundledataPath =
                                       regroupedRecognizedBundledataOss.str() ;
-  regroupedRecognizedBundlesData.bundlesdataWriting(
+  regroupedRecognizedBundlesData.write(
                                     regroupedRecognizedBundledataPath.c_str(),
-                                    0 ) ;
+                                    regroupedRecognizedBundles ) ;
 
 
-  BundlesFormat regroupedRecognizedBundles( movedTractogram.c_str(), 0 ) ;
-  std::ostringstream regroupedRecognizedBundleOss ;
-  regroupedRecognizedBundleOss << outputDirectory
-                                   << "regroupedRecognized.bundles" ;
-  std::string regroupedRecognizedBundlePath =
-                                      regroupedRecognizedBundleOss.str() ;
-  regroupedRecognizedBundles.curves_count = curves_countSBR ;
-  regroupedRecognizedBundles.bundlesWriting(
-                                        regroupedRecognizedBundlePath.c_str(),
-                                        0 ) ;
+  if ( keepTmpFiles )
+  {
 
+    const std::chrono::duration< double > duration =
+                                std::chrono::system_clock::now() - start_time ;
 
+    if ( verbose )
+    {
+
+      std::cout << "Duration : " << duration.count() << std::endl ;
+
+    }
+
+  }
   std::cout << "Done" << std::endl ;
 
 
   ////////////////////////////////// Cleaning //////////////////////////////////
+  if ( keepTmpFiles )
+  {
+
+    return 0 ;
+
+  }
   std::cout << "#########################################################\n" ;
   std::cout << "################## Cleaning temp files ##################"
                                                                   << std::endl ;

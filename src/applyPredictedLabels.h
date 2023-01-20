@@ -38,10 +38,6 @@ std::vector<std::vector<int16_t>> predictedLabels ;
 
 
 ////////////////////////////////////////////////////////////////////////////////
-void fillArrayPointer( float* array,
-                       int64_t nbElements,
-                       float x ) ;
-
 void readingPredictedLabels( const char* predictedLabelsFilename,
                              std::vector<std::vector<int16_t>>& predictedLabels,
                              int nbFibers,

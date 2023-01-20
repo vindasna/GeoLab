@@ -22,7 +22,7 @@
 #include <omp.h>
 #include <experimental/filesystem>
 
-#include "RecognizedBundles.h"
+#include "AtlasBundles.h"
 
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -40,11 +40,15 @@ bool isTRKFormat = false ;
 // int minNbCurvesNeighborhood = 50 ;
 int minNbCurvesNeighborhood = 500 ;
 
+int nbCores = 0 ;
+int nbThreads = 0 ;
+int nbThreadsUsed ;
+
 ////////////////////////////////////////////////////////////////////////////////
 int getFlagPosition( int argc, char* argv[], const std::string& flag ) ;
 
 void saveIndexInTractogram( const char* labelsBinaryFilename,
-                                          const std::vector<int64_t>& labels ) ;
+                            const std::vector<int64_t>& labels ) ;
 
 void readIndexInTractogram( const char* predictedLabelsFilename,
                              std::vector<int64_t>& predictedLabels,
@@ -52,5 +56,5 @@ void readIndexInTractogram( const char* predictedLabelsFilename,
                              int verbose ) ;
 
 
-float computeDistanceFiberToBundle( BundlesDataFormat& atlasBundleData,
+float computeDistanceFiberToBundle( BundlesData& atlasBundleData,
                                     const std::vector<float>& fiber ) ;

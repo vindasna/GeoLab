@@ -23,6 +23,7 @@
 #include <experimental/filesystem>
 
 #include "AtlasBundles.h"
+#include "ioWrapper.h"
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -32,22 +33,29 @@ AtlasBundles::AtlasBundles(){}
 
 AtlasBundles::AtlasBundles( const char* atlasDirectory,
                             bool isBundlesFormat,
-                            bool isTRKFormat,
+                            bool isTrkFormat,
+                            bool isTckFormat,
                             int verbose )
 {
 
-  atlasReading( atlasDirectory, isBundlesFormat, isTRKFormat, verbose ) ;
+  read( atlasDirectory, isBundlesFormat, isTrkFormat, isTckFormat, verbose ) ;
 
 }
 
-AtlasBundles::AtlasBundles( std::vector< BundlesFormat > bundles,
-                            std::vector< BundlesDataFormat > bundlesData,
-                            std::vector< std::string > bundlesNames )
+AtlasBundles::AtlasBundles( std::vector< BundlesMinf > bundlesMinf,
+                            std::vector< BundlesData > bundlesData,
+                            std::vector< std::string > bundlesNames,
+                            bool isBundlesFormat,
+                            bool isTrkFormat,
+                            bool isTckFormat )
 {
 
-  this->bundles = bundles ;
+  this->bundlesMinf = bundlesMinf ;
   this->bundlesData = bundlesData ;
   this->bundlesNames = bundlesNames ;
+  this->isBundles = isBundlesFormat ;
+  this->isTrk = isTrkFormat ;
+  this->isTck = isTckFormat ;
 
 }
 
@@ -59,287 +67,195 @@ AtlasBundles::~AtlasBundles(){}
 ////////////////////////////////////////////////////////////////////////////////
 /////////////////////////////////// Methods ////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
-void AtlasBundles::atlasReading( const char* atlasDirectory,
-                                 bool isBundlesFormat,
-                                 bool isTRKFormat,
-                                 int verbose )
+void AtlasBundles::read( const char* atlasDirectory,
+                         bool isBundlesFormat,
+                         bool isTrkFormat,
+                         bool isTckFormat,
+                         int verbose )
 {
 
-  int sizeBytesFullAtlas = 0 ;
-  std::vector< std::string > atlasTRKFilenames ;
-  std::vector< std::string > atlasBundlesFilenames ;
-  std::vector< std::string > atlasBundlesDataFilenames ;
+  if ( ( !isBundlesFormat && !isTrkFormat && !isTckFormat ) ||
+       ( isBundlesFormat && isTrkFormat ) ||
+       ( isBundlesFormat && isTckFormat ) ||
+       ( isTckFormat && isTrkFormat ) )
+  {
+
+    std::stringstream outMessageOss ;
+    outMessageOss << "AtlasBundles::read : in input parameters isBundlesFormat,"
+                  << "isTrkFormat and isTckFormat, one and only one must be "
+                  << "true while the other false" << std::endl ;
+
+    std::string outMessage = outMessageOss.str() ;
+
+    throw( std::invalid_argument( outMessage ) ) ;
+
+  }
+
+  this->isBundles = isBundlesFormat ;
+  this->isTrk = isTrkFormat ;
+  this->isTck = isTckFormat ;
+
+  std::string atlasDirectoryStr = atlasDirectory ;
+  std::vector<std::string> atlasBundlesDataFilenames ;
 
   if ( isBundlesFormat )
   {
 
-    for ( const auto & file : std::experimental::filesystem::directory_iterator(
-                                                              atlasDirectory ) )
-    {
-
-      std::string tmpBundlesDataFilename ;
-      std::string tmpBundlesFilename ;
-
-      tmpBundlesDataFilename = file.path() ;
-      tmpBundlesFilename = tmpBundlesDataFilename ;
-      std::string key (".bundlesdata") ;
-
-      if ( tmpBundlesDataFilename.find( ".bundlesdata" ) != std::string::npos )
-      {
-
-        std::size_t found = tmpBundlesFilename.rfind( key ) ;
-        tmpBundlesFilename.replace( found, key.length(), ".bundles" ) ;
-
-        atlasBundlesDataFilenames.push_back( tmpBundlesDataFilename ) ;
-        atlasBundlesFilenames.push_back( tmpBundlesFilename ) ;
-
-      }
-      else if ( tmpBundlesDataFilename.find( ".trk" ) != std::string::npos )
-      {
-
-        std::cout << "Format error : Input tractogram is .bundles but .trk "
-                  << "files found in the atlas directory. Projection between "
-                  << "different formats is not supported yet \n" ;
-        exit( 1 ) ;
-
-      }
-
-    }
-
-    int nbBundlesDataFiles = atlasBundlesDataFilenames.size() ;
-    int nbBundlesFiles = atlasBundlesFilenames.size() ;
-
-    if ( nbBundlesDataFiles != nbBundlesFiles )
-    {
-
-      std::cout << "There has to be a .bundles file for each .bundlesdata : \n"
-                << "Number of .bundles files : " << nbBundlesFiles
-                << "\nNumber of .bundlesdata files : " << nbBundlesDataFiles
-                << std::endl ;
-      exit( 1 ) ;
-
-    }
-
-    this->bundles.resize( nbBundlesFiles ) ;
-    this->bundlesData.resize( nbBundlesFiles ) ;
-    this->bundlesNames.resize( nbBundlesFiles ) ;
-
-    if ( verbose )
-    {
-
-      std::cout << "Reading atlas : " << atlasDirectory << std::endl ;
-
-    }
-
-    for ( int k = 0 ; k < nbBundlesFiles ; k++ )
-    {
-
-      if ( verbose )
-      {
-
-        printf("\rReading bundle [ %d / %d ]", k + 1 , nbBundlesFiles ) ;
-        std::cout << "" << std::flush ;
-
-      }
-
-      std::string bundlesFilename = atlasBundlesFilenames[ k ] ;
-      std::string bundlesdataFilename = atlasBundlesDataFilenames[ k ] ;
-
-      if ( verbose > 1 )
-      {
-
-        std::cout << "\nReading : " << bundlesFilename << std::endl ;
-
-      }
-
-
-      BundlesFormat bundleInfo( bundlesFilename.c_str(), verbose ) ;
-
-      // this->bundles.push_back( bundleInfo ) ;
-      this->bundles[ k ] = bundleInfo ;
-
-      if ( verbose > 1 )
-      {
-
-        std::cout << "Reading : " << bundlesdataFilename << std::endl ;
-
-      }
-
-
-      BundlesDataFormat bundleData( bundlesdataFilename.c_str(),
-                                    bundlesFilename.c_str(),
-                                    verbose - 1 ) ;
-
-
-      // this->bundlesData.push_back( bundleData ) ;
-      this->bundlesData[ k ] = bundleData  ;
-
-      for ( int fiber = 0 ; fiber < this->bundlesData[ k ].curves_count ;
-                                                                       fiber++ )
-      {
-
-        sizeBytesFullAtlas +=
-                         3 * this->bundlesData[ k ].pointsPerTrack[ fiber ] *
-                                                               sizeof( float ) ;
-
-      }
-
-      this->bundlesNames[ k ] = getFilenameNoExtension( bundlesFilename ) ;
-
-    }
-
-    if ( verbose == 1 )
-    {
-
-      std::cout << "\n" ;
-
-    }
+    checkAtlasDirectory( atlasDirectoryStr, ".bundles" ) ;
+    atlasBundlesDataFilenames = getFilesInDirectoryWithExtension(
+                                                          atlasDirectoryStr,
+                                                                  ".bundles" ) ;
 
   }
-  else if ( isTRKFormat )
+  else if ( isTrkFormat )
   {
 
-    std::string tmpTRKFilename ;
-
-    for ( const auto & file : std::experimental::filesystem::directory_iterator(
-                                                              atlasDirectory ) )
-    {
-
-      tmpTRKFilename = file.path() ;
-
-      if ( tmpTRKFilename.find( ".trk" ) != std::string::npos )
-      {
-
-        atlasTRKFilenames.push_back( tmpTRKFilename ) ;
-
-      }
-
-    }
-
-
-    int nbTRKFiles = atlasTRKFilenames.size() ;
-
-    if ( nbTRKFiles == 0 )
-    {
-
-      std::cout << "ERROR : problem reading TRK atlas, no .trk files found \n" ;
-      exit( 1 ) ;
-
-    }
-
-
-    this->bundles.resize( nbTRKFiles ) ;
-    this->bundlesData.resize( nbTRKFiles ) ;
-    this->bundlesNames.resize( nbTRKFiles ) ;
-
-    if ( verbose )
-    {
-
-      std::cout << "Reading atlas : " << atlasDirectory << std::endl ;
-    }
-
-
-    for ( int k = 0 ; k < nbTRKFiles ; k++ )
-    {
-
-      if ( verbose )
-      {
-
-        printf("\rReading bundle [ %d / %d ]", k + 1 , nbTRKFiles ) ;
-        std::cout << "" << std::flush ;
-
-      }
-
-      std::string trkFilename = atlasTRKFilenames[ k ] ;
-
-      if ( verbose > 1 )
-      {
-
-        std::cout << "\nReading : " << trkFilename << std::endl ;
-
-      }
-
-
-      TrkFormat trkData( trkFilename.c_str(), verbose ) ;
-
-      trkData.toBundles( this->bundles[ k ], this->bundlesData[ k ] ) ;
-
-      for ( int fiber = 0 ; fiber < this->bundlesData[ k ].curves_count ;
-                                                                      fiber++ )
-      {
-
-        sizeBytesFullAtlas +=
-                        3 * this->bundlesData[ k ].pointsPerTrack[ fiber ] *
-                                                               sizeof( float ) ;
-
-      }
-
-      this->bundlesNames[ k ] = getFilenameNoExtension( trkFilename ) ;
-
-    }
-
-    if ( verbose == 1 )
-    {
-
-      std::cout << "\n" ;
-
-    }
+    checkAtlasDirectory( atlasDirectoryStr, ".trk" ) ;
+    atlasBundlesDataFilenames = getFilesInDirectoryWithExtension(
+                                                              atlasDirectoryStr,
+                                                                      ".trk" ) ;
 
   }
+  else if ( isTckFormat )
+  {
+
+    checkAtlasDirectory( atlasDirectoryStr, ".tck" ) ;
+    atlasBundlesDataFilenames = getFilesInDirectoryWithExtension(
+                                                              atlasDirectoryStr,
+                                                                      ".tck" ) ;
+
+
+  }
+
+  this->bundlesMinf.resize( atlasBundlesDataFilenames.size() ) ;
+  this->bundlesData.resize( atlasBundlesDataFilenames.size() ) ;
+  this->bundlesNames.resize( atlasBundlesDataFilenames.size() ) ;
+
+  for ( int i = 0 ; i < atlasBundlesDataFilenames.size() ; i++ )
+  {
+
+    this->bundlesNames[ i ] = getFilenameNoExtension(
+                                              atlasBundlesDataFilenames[ i ] ) ;
+
+    this->bundlesMinf[ i ].read( atlasBundlesDataFilenames[ i ].c_str() ) ;
+    this->bundlesData[ i ].read( atlasBundlesDataFilenames[ i ].c_str() ) ;
+
+
+  }
+
 
 }
 
 
 ////////////////////////////////////////////////////////////////////////////////
-void AtlasBundles::atlasWriting( const char* outDirectory,
-                                 bool isBundlesFormat,
-                                 bool isTRKFormat,
-                                 int verbose )
+void AtlasBundles::write( const char* outDirectory,
+                          bool isBundlesFormat,
+                          bool isTrkFormat,
+                          bool isTckFormat,
+                          int verbose ) const
 {
 
-  char lastChar = outDirectory[
-                                 ( ( std::string )outDirectory ).size()  - 1 ] ;
+  if ( ( !isBundlesFormat && !isTrkFormat && !isTckFormat ) ||
+       ( isBundlesFormat && isTrkFormat ) ||
+       ( isBundlesFormat && isTckFormat ) ||
+       ( isTckFormat && isTrkFormat ) )
+  {
 
-  int sizeAtlas = bundles.size() ;
+    std::stringstream outMessageOss ;
+    outMessageOss << "AtlasBundles::write : in input parameters isBundlesFormat,"
+                  << "isTrkFormat and isTckFormat, one and only one must be "
+                  << "true while the other false" << std::endl ;
+
+    std::string outMessage = outMessageOss.str() ;
+
+    throw( std::invalid_argument( outMessage ) ) ;
+
+  }
+
+  if ( !is_dir( (std::string)(outDirectory) ) )
+  {
+
+    mkdir( (std::string)(outDirectory) ) ;
+
+  }
+
+  std::string format ;
+  if ( isBundlesFormat )
+  {
+
+    format = ".bundles" ;
+
+  }
+  else if ( isTrkFormat )
+  {
+
+    format = ".trk" ;
+
+  }
+  else if ( isTrkFormat )
+  {
+
+    format = ".tck" ;
+
+  }
+
+  char lastChar = outDirectory[ ( ( std::string )outDirectory ).size()  - 1 ] ;
+
+  int sizeAtlas = bundlesData.size() ;
 
   std::cout << "Saving atlas in " << outDirectory << std::endl ;
 
   for ( int i = 0 ; i < sizeAtlas ; i++ )
   {
 
-    if ( isBundlesFormat )
-    {
+    printf( "\rSaving bundles [ %d / %d ]", i + 1, sizeAtlas ) ;
 
-      printf( "\rSaving bundles [ %d / %d ]", i + 1, sizeAtlas ) ;
+    std::stringstream bundlesOutFileOss ;
+    bundlesOutFileOss << outDirectory << "/" << this->bundlesNames[ i ]
+                                                                     << format ;
 
-      std::string bundlesOutFile = outDirectory ;
-      std::string bundlesDataOutFile = outDirectory ;
-
-      if ( lastChar != '/' )
-      {
-
-        bundlesOutFile += "/" ;
-        bundlesDataOutFile += "/" ;
-
-      }
-
-      bundlesOutFile += bundlesNames[ i ] + ".bundles" ;
-      bundlesDataOutFile += bundlesNames[ i ] + ".bundlesdata" ;
-
-      bundles[ i ].bundlesWriting( bundlesOutFile.c_str(), verbose ) ;
-      bundlesData[ i ].bundlesdataWriting( bundlesDataOutFile.c_str(), verbose ) ;
-
-    }
-    else if ( isTRKFormat )
-    {
-
-      // TO DO
-      std::cout << "Writing .trk atlas is not supported yet" << std::endl ;
-
-    }
+    std::string bundlesOutFile = bundlesOutFileOss.str() ;
+    this->bundlesData[ i ].write( bundlesOutFile.c_str(),
+                                                      this->bundlesMinf[ i ] ) ;
 
   }
   std::cout << "\nDone" << std::endl ;
+
+}
+
+
+////////////////////////////////////////////////////////////////////////////////
+std::string AtlasBundles::getFormat() const
+{
+
+  if ( this->isBundles )
+  {
+
+    return( ".bundles" ) ;
+
+  }
+  else if ( this->isTrk )
+  {
+
+    return( ".trk" ) ;
+
+  }
+  else if ( this->isTck )
+  {
+
+    return( ".tck" ) ;
+
+  }
+  else
+  {
+
+    std::string outMessage = "BundlesData::getFormat : attributes isBundles, " \
+                             "isTrk and isTck are all set to false, not " \
+                             "supported format found \n" ;
+
+    throw( std::invalid_argument( outMessage ) ) ;
+
+  }
 
 }
 
@@ -356,7 +272,7 @@ void AtlasBundles::analysisWriting(
                          int nbFibersAtlasBundle,
                          int numberDisimilaritiesAtlasBundle,
                          int numberDistancesBetweenMedialPoints,
-                         int verbose )
+                         int verbose ) const
 {
 
   if ( verbose > 1 )
@@ -371,9 +287,13 @@ void AtlasBundles::analysisWriting(
   if ( file.fail() )
   {
 
-    std::cout << "Problem opening file to write : " << analysisFilename <<
+    std::stringstream outMessageOss ;
+    outMessageOss << "Problem opening file to write : " << analysisFilename <<
                                                                      std::endl ;
-    exit( 1 ) ;
+
+    std::string outMessage = outMessageOss.str() ;
+
+    throw( std::invalid_argument( outMessage ) ) ;
 
   }
 
@@ -459,12 +379,26 @@ void AtlasBundles::analysisWriting(
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-void AtlasBundles::buildFullAtlas( BundlesFormat& bundlesFullAtlas,
-                                   BundlesDataFormat& bundlesDataFullAtlas )
+void AtlasBundles::buildFullAtlas( BundlesMinf& bundlesFullAtlas,
+                                   BundlesData& bundlesDataFullAtlas ) const
 {
 
+  std::string format = this->getFormat() ;
+
+  if ( ( format != ".bundles" ) && ( format != ".bundlesdata") &&
+       ( format != ".tck") && ( format != ".trk") )
+  {
+
+    std::string outMessage = "AtlasBundles::buildFullAtlas : the only " \
+                             "supported formats are .bundles/.bundlesdata, "\
+                             ".trk, .tck\n" ;
+
+    throw( std::invalid_argument( outMessage ) ) ;
+
+  }
+
   int64_t sizeFullAtlas = 0 ;
-  int sizeAtlas = this->bundles.size() ;
+  int sizeAtlas = this->bundlesMinf.size() ;
 
   bundlesDataFullAtlas.curves_count = 0 ;
 
@@ -514,19 +448,13 @@ void AtlasBundles::buildFullAtlas( BundlesFormat& bundlesFullAtlas,
 
   }
 
-  bundlesFullAtlas.binary = this->bundles[ 0 ].binary ;
-  bundlesFullAtlas.byte_order = this->bundles[ 0 ].byte_order ;
-  bundlesFullAtlas.data_file_name = this->bundles[ 0 ].data_file_name ;
-  bundlesFullAtlas.format = this->bundles[ 0 ].format ;
-  bundlesFullAtlas.object_type = this->bundles[ 0 ].object_type ;
-  bundlesFullAtlas.space_dimension = this->bundles[ 0 ].space_dimension ;
-  bundlesFullAtlas.bundles = ( std::string )"[ 'Full_Atlas', 0 ]" ;
+  bundlesFullAtlas = this->bundlesMinf[ 0 ] ;
   bundlesFullAtlas.curves_count = bundlesDataFullAtlas.curves_count ;
-  for ( int i = 0 ; i < 3 ; i++ )
+
+  if ( format == ".tck " )
   {
 
-    bundlesFullAtlas.resolution[ i ] = this->bundles[ 0 ].resolution[ i ] ;
-    bundlesFullAtlas.size[ i ] = this->bundles[ 0 ].size[ i ] ;
+    bundlesFullAtlas.computeTckOffsetBinary() ;
 
   }
 
@@ -534,16 +462,16 @@ void AtlasBundles::buildFullAtlas( BundlesFormat& bundlesFullAtlas,
 
 ////////////////////////////////////////////////////////////////////////////////
 void AtlasBundles::computeLengthsAtlasBundleFibers(
-                                  BundlesDataFormat& atlasBundleData,
-                                  int nbPoints,
-                                  std::vector<float>& lengthsAtlasBundleFibers )
+                            const BundlesData& atlasBundleData,
+                            int nbPoints,
+                            std::vector<float>& lengthsAtlasBundleFibers ) const
 {
 
   int nbFibersAtlasBundle = atlasBundleData.curves_count ;
 
   for ( int atlasBundleFiberIndex = 0 ;
                              atlasBundleFiberIndex < nbFibersAtlasBundle ;
-                                                      atlasBundleFiberIndex++ )
+                                                       atlasBundleFiberIndex++ )
   {
 
 
@@ -560,10 +488,10 @@ void AtlasBundles::computeLengthsAtlasBundleFibers(
 
 ////////////////////////////////////////////////////////////////////////////////
 void AtlasBundles::findCenterBundle(
-                              BundlesDataFormat& atlasBundleData,
-                              int nbPoints,
-                              std::vector<float>& medialPointAtlasBundle,
-                              std::vector<float>& medialPointAtlasBundleFibers )
+                        const BundlesData& atlasBundleData,
+                        int nbPoints,
+                        std::vector<float>& medialPointAtlasBundle,
+                        std::vector<float>& medialPointAtlasBundleFibers ) const
 {
 
   int nbFibersAtlasBundle = atlasBundleData.curves_count ;
@@ -600,17 +528,16 @@ void AtlasBundles::findCenterBundle(
 
 // -------------------------------------------------------------------------- //
 void AtlasBundles::findCenterBundle(
-                              int bundleIndex,
-                              std::vector<float>& medialPointAtlasBundle,
-                              std::vector<float>& medialPointAtlasBundleFibers )
+                        int bundleIndex,
+                        std::vector<float>& medialPointAtlasBundle,
+                        std::vector<float>& medialPointAtlasBundleFibers ) const
 {
 
 
     int nbFibersAtlasBundle = this->bundlesData[ bundleIndex ].curves_count ;
-    BundlesDataFormat& atlasBundleData = this->bundlesData[ bundleIndex ] ;
     int nbPoints = this->bundlesData[ bundleIndex ].pointsPerTrack[ 0 ] ;
 
-    findCenterBundle( atlasBundleData,
+    findCenterBundle( this->bundlesData[ bundleIndex ],
                       nbPoints,
                       medialPointAtlasBundle,
                       medialPointAtlasBundleFibers ) ;
@@ -619,10 +546,10 @@ void AtlasBundles::findCenterBundle(
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 void AtlasBundles::computeNormalVectorFibersAtlasBundle(
-                         BundlesDataFormat& atlasBundleData,
+                         const BundlesData& atlasBundleData,
                          int nbPoints,
                          const std::vector<float>& medialPointAtlasBundleFibers,
-                         std::vector<float>& normalVectors )
+                         std::vector<float>& normalVectors ) const
 {
 
   int nbFibersAtlasBundle = atlasBundleData.curves_count ;
@@ -659,11 +586,11 @@ void AtlasBundles::computeNormalVectorFibersAtlasBundle(
 
 ////////////////////////////////////////////////////////////////////////////////
 void AtlasBundles::computeDirectionVectorFibersAtlasBundle(
-                        BundlesDataFormat& atlasBundleData,
+                        const BundlesData& atlasBundleData,
                         const std::vector<float>& normalVectorsAtlasBundle,
                         int nbPoints,
                         const std::vector<float>& medialPointAtlasBundleFibers,
-                        std::vector<float>& directionVectors )
+                        std::vector<float>& directionVectors ) const
 {
 
   int nbFibersAtlasBundle = atlasBundleData.curves_count ;
@@ -703,10 +630,10 @@ void AtlasBundles::computeDirectionVectorFibersAtlasBundle(
 }
 ////////////////////////////////////////////////////////////////////////////////
 double AtlasBundles::compareDisimilarityBundles(
-                         BundlesDataFormat& bundle1,
-                         BundlesDataFormat& bundle2,
+                         const BundlesData& bundle1,
+                         const BundlesData& bundle2,
                          const std::vector<float>& medialPointAtlasBundleFibers,
-                         int nbPoints )
+                         int nbPoints ) const
 {
 
   int nbFibersBundle1 = bundle1.curves_count ;
@@ -744,8 +671,7 @@ double AtlasBundles::compareDisimilarityBundles(
                              fiberIndex2,
                              nbPoints,
                              fiber2Tofiber1,
-                             newNormalVectorFiber2,
-                             verbose ) ;
+                             newNormalVectorFiber2 ) ;
 
 
       // Computing MDA when distance between middle points is below threshold
@@ -778,9 +704,9 @@ double AtlasBundles::compareDisimilarityBundles(
 }
 
 ///                           ###################                            ///
-double AtlasBundles::compareDisimilarityBundles( BundlesDataFormat& bundle1,
-                                                 BundlesDataFormat& bundle2,
-                                                 int nbPoints )
+double AtlasBundles::compareDisimilarityBundles( const BundlesData& bundle1,
+                                                 const BundlesData& bundle2,
+                                                 int nbPoints ) const
 {
 
   int nbFibersBundle1 = bundle1.curves_count ;
@@ -814,8 +740,7 @@ double AtlasBundles::compareDisimilarityBundles( BundlesDataFormat& bundle1,
                              fiberIndex2,
                              nbPoints,
                              fiber2Tofiber1,
-                             newNormalVectorFiber2,
-                             verbose ) ;
+                             newNormalVectorFiber2 ) ;
 
       // Computing MDA when distance between middle points is below threshold
       // float dMDA = bundle1.computeMDADBetweenTwoFibers( bundle1.matrixTracks,
@@ -847,11 +772,11 @@ double AtlasBundles::compareDisimilarityBundles( BundlesDataFormat& bundle1,
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-double AtlasBundles::distanceBetweenBundles( BundlesDataFormat& bundle1,
-                                             BundlesDataFormat& bundle2,
+double AtlasBundles::distanceBetweenBundles( const BundlesData& bundle1,
+                                             const BundlesData& bundle2,
                                              int nbFibersBundle1,
                                              int nbFibersBundle2,
-                                             int nbPoints )
+                                             int nbPoints ) const
 {
 
   double disimilarity_1 = compareDisimilarityBundles( bundle1,
@@ -883,12 +808,11 @@ double AtlasBundles::distanceBetweenBundles( BundlesDataFormat& bundle1,
 
 ///                           ###################                            ///
 double AtlasBundles::distanceBetweenBundles( int bundleIndex,
-                                             BundlesDataFormat& bundle,
+                                             const BundlesData& bundle,
                                              int nbFibersBundle,
-                                             int nbPoints )
+                                             int nbPoints ) const
 {
 
-  BundlesDataFormat& bundle1 = this->bundlesData[ bundleIndex ] ;
   int nbFibersBundle1 = this->bundlesData[ bundleIndex ].curves_count ;
   int nbPoints1 = this->bundlesData[ bundleIndex ].pointsPerTrack[ 0 ] ;
 
@@ -901,11 +825,10 @@ double AtlasBundles::distanceBetweenBundles( int bundleIndex,
 
   }
 
-  BundlesDataFormat& bundle2 = bundle ;
   int nbFibersBundle2 = nbFibersBundle ;
 
-  double disimilarity = distanceBetweenBundles( bundle1,
-                                                bundle2,
+  double disimilarity = distanceBetweenBundles( this->bundlesData[ bundleIndex ],
+                                                bundle,
                                                 nbFibersBundle1,
                                                 nbFibersBundle2,
                                                 nbPoints ) ;
@@ -917,13 +840,13 @@ double AtlasBundles::distanceBetweenBundles( int bundleIndex,
 
 ////////////////////////////////////////////////////////////////////////////////
 void AtlasBundles::computeNumberAdjacentFibersBundle1ToBundle2(
-                                      const std::vector<float>& bundle1,
-                                      const std::vector<float>& bundle2,
-                                      int nbFibersBundle1,
-                                      int nbFibersBundle2,
-                                      int nbPoints, // Same for 2 bundles
-                                      float threshold,
-                                      std::vector<int>& nbAdjacentFibersBundle )
+                                const std::vector<float>& bundle1,
+                                const std::vector<float>& bundle2,
+                                int nbFibersBundle1,
+                                int nbFibersBundle2,
+                                int nbPoints, // Same for 2 bundles
+                                float threshold,
+                                std::vector<int>& nbAdjacentFibersBundle ) const
 {
 
   if ( threshold <= 0 )
@@ -1007,10 +930,10 @@ void AtlasBundles::computeNumberAdjacentFibersBundle1ToBundle2(
 
 ////////////////////////////////////////////////////////////////////////////////
 void AtlasBundles::computeNumberAdjacentFibersRecognizedToAtlasBundles(
-                                      BundlesDataFormat& bundle,
-                                      std::string bundleName,
-                                      float threshold,
-                                      std::vector<int>& nbAdjacentFibersBundle )
+                                const BundlesData& bundle,
+                                std::string bundleName,
+                                float threshold,
+                                std::vector<int>& nbAdjacentFibersBundle ) const
 {
 
   if ( threshold <= 0 )
@@ -1036,11 +959,10 @@ void AtlasBundles::computeNumberAdjacentFibersRecognizedToAtlasBundles(
 
   }
 
-  BundlesDataFormat& bundle1 = bundle ;
   int nbFibersBundle1 = bundle.curves_count ;
   int nbPoints1 = bundle.pointsPerTrack[ 0 ] ;
 
-  BundlesDataFormat& bundle2 = this->bundlesData[ indexBundleAtlas ] ;
+
   int nbFibersBundle2 = this->bundlesData[ indexBundleAtlas ].curves_count ;
   int nbPoints2 = this->bundlesData[ indexBundleAtlas ].pointsPerTrack[ 0 ] ;
 
@@ -1055,22 +977,23 @@ void AtlasBundles::computeNumberAdjacentFibersRecognizedToAtlasBundles(
 
   int nbPoints = nbPoints1 ;
 
-  computeNumberAdjacentFibersBundle1ToBundle2( bundle1.matrixTracks,
-                                               bundle2.matrixTracks,
-                                               nbFibersBundle1,
-                                               nbFibersBundle2,
-                                               nbPoints,
-                                               threshold,
-                                               nbAdjacentFibersBundle ) ;
+  computeNumberAdjacentFibersBundle1ToBundle2(
+                             bundle.matrixTracks,
+                             this->bundlesData[ indexBundleAtlas ].matrixTracks,
+                             nbFibersBundle1,
+                             nbFibersBundle2,
+                             nbPoints,
+                             threshold,
+                             nbAdjacentFibersBundle ) ;
 
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 void AtlasBundles::computeNumberAdjacentFibersAtlasToRecognizedBundles(
-                                      BundlesDataFormat& bundle,
-                                      std::string bundleName,
-                                      float threshold,
-                                      std::vector<int>& nbAdjacentFibersBundle )
+                                const BundlesData& bundle,
+                                std::string bundleName,
+                                float threshold,
+                                std::vector<int>& nbAdjacentFibersBundle ) const
 {
 
   if ( threshold <= 0 )
@@ -1094,12 +1017,10 @@ void AtlasBundles::computeNumberAdjacentFibersAtlasToRecognizedBundles(
 
   }
 
-  BundlesDataFormat& bundle1 =
-                            this->bundlesData[ indexBundleAtlas ] ;
+
   int nbFibersBundle1 = this->bundlesData[ indexBundleAtlas ].curves_count ;
   int nbPoints1 = this->bundlesData[ indexBundleAtlas ].pointsPerTrack[ 0 ] ;
 
-  BundlesDataFormat& bundle2 = bundle ;
   int nbFibersBundle2 = bundle.curves_count ;
   int nbPoints2 = bundle.pointsPerTrack[ 0 ] ;
 
@@ -1114,8 +1035,8 @@ void AtlasBundles::computeNumberAdjacentFibersAtlasToRecognizedBundles(
 
   int nbPoints = nbPoints1 ;
 
-  computeNumberAdjacentFibersBundle1ToBundle2( bundle1.matrixTracks,
-                                               bundle2.matrixTracks,
+  computeNumberAdjacentFibersBundle1ToBundle2( this->bundlesData[ indexBundleAtlas ].matrixTracks,
+                                               bundle.matrixTracks,
                                                nbFibersBundle1,
                                                nbFibersBundle2,
                                                nbPoints,
@@ -1133,7 +1054,7 @@ float AtlasBundles::coverageBundle1ToBundle2(
                                              int nbFibersBundle2,
                                              int nbPoints, // Same for 2 bundles
                                              float threshold,
-                                             int verbose )
+                                             int verbose ) const
 {
 
 
@@ -1168,7 +1089,7 @@ float AtlasBundles::coverageBundle1ToBundle2(
 
 //----------------------------------------------------------------------------//
 float AtlasBundles::coverageBundle1ToBundle2(
-                      const std::vector<int>& nbAdjacentFibersBundle1ToBundle2 )
+                const std::vector<int>& nbAdjacentFibersBundle1ToBundle2 ) const
 {
 
   int nbFibersBundle1 = nbAdjacentFibersBundle1ToBundle2.size() ;
@@ -1193,10 +1114,10 @@ float AtlasBundles::coverageBundle1ToBundle2(
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-float AtlasBundles::coverageRecognizedToAtlasBundles( BundlesDataFormat& bundle,
+float AtlasBundles::coverageRecognizedToAtlasBundles( const BundlesData& bundle,
                                                       std::string bundleName,
                                                       float threshold,
-                                                      int verbose )
+                                                      int verbose ) const
 {
 
   int nbFibersBundle = bundle.curves_count ;
@@ -1231,7 +1152,7 @@ float AtlasBundles::coverageRecognizedToAtlasBundles( BundlesDataFormat& bundle,
 //----------------------------------------------------------------------------//
 
 float AtlasBundles::coverageRecognizedToAtlasBundles(
-              const std::vector<int>& nbAdjacentFibersRecognizedToAtlasBundles )
+        const std::vector<int>& nbAdjacentFibersRecognizedToAtlasBundles ) const
 {
 
   int nbFibersBundle = nbAdjacentFibersRecognizedToAtlasBundles.size() ;
@@ -1257,10 +1178,10 @@ float AtlasBundles::coverageRecognizedToAtlasBundles(
 
 
 ////////////////////////////////////////////////////////////////////////////////
-float AtlasBundles::coverageAtlasToRecognizedBundles( BundlesDataFormat& bundle,
+float AtlasBundles::coverageAtlasToRecognizedBundles( const BundlesData& bundle,
                                                       std::string bundleName,
                                                       float threshold,
-                                                      int verbose )
+                                                      int verbose ) const
 {
 
   int indexBundleAtlas = this->findBundleIndexByName( bundleName ) ;
@@ -1296,7 +1217,7 @@ float AtlasBundles::coverageAtlasToRecognizedBundles( BundlesDataFormat& bundle,
 //----------------------------------------------------------------------------//
 
 float AtlasBundles::coverageAtlasToRecognizedBundles(
-              const std::vector<int>& nbAdjacentFibersAtlasToRecognizedBundles )
+        const std::vector<int>& nbAdjacentFibersAtlasToRecognizedBundles ) const
 {
 
   int nbFibersBundle = nbAdjacentFibersAtlasToRecognizedBundles.size() ;
@@ -1328,7 +1249,7 @@ float AtlasBundles::overlapBundle1ToBundle2(
                                              int nbFibersBundle2,
                                              int nbPoints, // Same for 2 bundles
                                              float threshold,
-                                             int verbose )
+                                             int verbose ) const
 {
 
   std::vector<int> nbAdjacentFibersBundle( nbFibersBundle1, 0 ) ;
@@ -1383,7 +1304,7 @@ float AtlasBundles::overlapBundle1ToBundle2(
 //----------------------------------------------------------------------------//
 
 float AtlasBundles::overlapBundle1ToBundle2(
-                      const std::vector<int>& nbAdjacentFibersBundle1ToBundle2 )
+                const std::vector<int>& nbAdjacentFibersBundle1ToBundle2 ) const
 {
 
   int nbFibersBundle1 = nbAdjacentFibersBundle1ToBundle2.size() ;
@@ -1426,10 +1347,10 @@ float AtlasBundles::overlapBundle1ToBundle2(
 
 
 ////////////////////////////////////////////////////////////////////////////////
-float AtlasBundles::overlapRecognizedToAtlasBundles( BundlesDataFormat& bundle,
+float AtlasBundles::overlapRecognizedToAtlasBundles( const BundlesData& bundle,
                                                      std::string bundleName,
                                                      float threshold,
-                                                     int verbose )
+                                                     int verbose ) const
 {
 
   int nbFibersBundle = bundle.curves_count ;
@@ -1485,7 +1406,7 @@ float AtlasBundles::overlapRecognizedToAtlasBundles( BundlesDataFormat& bundle,
 
 
 float AtlasBundles::overlapRecognizedToAtlasBundles(
-              const std::vector<int>& nbAdjacentFibersRecognizedToAtlasBundles )
+        const std::vector<int>& nbAdjacentFibersRecognizedToAtlasBundles ) const
 {
 
   int nbFibersBundle = nbAdjacentFibersRecognizedToAtlasBundles.size() ;
@@ -1529,10 +1450,10 @@ float AtlasBundles::overlapRecognizedToAtlasBundles(
 
 
 ////////////////////////////////////////////////////////////////////////////////
-float AtlasBundles::overlapAtlasToRecognizedBundles( BundlesDataFormat& bundle,
+float AtlasBundles::overlapAtlasToRecognizedBundles( const BundlesData& bundle,
                                                      std::string bundleName,
                                                      float threshold,
-                                                     int verbose )
+                                                     int verbose ) const
 {
 
   int indexBundleAtlas = this->findBundleIndexByName( bundleName ) ;
@@ -1589,7 +1510,7 @@ float AtlasBundles::overlapAtlasToRecognizedBundles( BundlesDataFormat& bundle,
 
 
 float AtlasBundles::overlapAtlasToRecognizedBundles(
-              const std::vector<int>& nbAdjacentFibersAtlasToRecognizedBundles )
+        const std::vector<int>& nbAdjacentFibersAtlasToRecognizedBundles ) const
 {
 
   int nbFibersBundle = nbAdjacentFibersAtlasToRecognizedBundles.size() ;
@@ -1638,7 +1559,7 @@ float AtlasBundles::bundlesAdjacency( const std::vector<float>& bundle1,
                                       int nbFibersBundle2,
                                       int nbPoints, // Same for 2 bundles
                                       float threshold,
-                                      int verbose )
+                                      int verbose ) const
 {
 
   float coverageRecognizedToAtlasBundlesMeasure =
@@ -1670,10 +1591,10 @@ float AtlasBundles::bundlesAdjacency( const std::vector<float>& bundle1,
 //----------------------------------------------------------------------------//
 
 
-float AtlasBundles::bundlesAdjacency(  BundlesDataFormat& bundle,
-                                       std::string bundleName,
-                                       float threshold,
-                                       int verbose )
+float AtlasBundles::bundlesAdjacency( const BundlesData& bundle,
+                                      std::string bundleName,
+                                      float threshold,
+                                      int verbose ) const
 {
 
   float coverageRecognizedToAtlasBundlesMeasure =
@@ -1700,8 +1621,8 @@ float AtlasBundles::bundlesAdjacency(  BundlesDataFormat& bundle,
 
 
 float AtlasBundles::bundlesAdjacency(
-                                 float coverageRecognizedToAtlasBundlesMeasure,
-                                 float coverageAtlasToRecognizedBundlesMeasure )
+                           float coverageRecognizedToAtlasBundlesMeasure,
+                           float coverageAtlasToRecognizedBundlesMeasure ) const
 {
 
   float bundlesAdjacencyMeasure = ( coverageRecognizedToAtlasBundlesMeasure +
@@ -1713,10 +1634,10 @@ float AtlasBundles::bundlesAdjacency(
 
 
 ////////////////////////////////////////////////////////////////////////////////
-int AtlasBundles::findBundleIndexByName( std::string bundleName )
+int AtlasBundles::findBundleIndexByName( std::string bundleName ) const
 {
 
-  int nbBundlesAtlas = this->bundles.size() ;
+  int nbBundlesAtlas = this->bundlesMinf.size() ;
 
   for ( int i = 0 ; i < nbBundlesAtlas ; i++ )
   {
@@ -1731,34 +1652,5 @@ int AtlasBundles::findBundleIndexByName( std::string bundleName )
   }
 
   return -1 ;
-
-}
-
-
-////////////////////////////////////////////////////////////////////////////////
-////////////////// Function to get filename without extension  /////////////////
-////////////////////////////////////////////////////////////////////////////////
-std::string getFilenameNoExtension( std::string path )
-{
-
-  size_t sep = path.find_last_of( "\\/" ) ;
-  std::string filename ;
-  if ( sep != std::string::npos )
-  {
-
-    filename = path.substr( sep + 1, path.size() - sep - 1 ) ;
-
-  }
-
-  size_t dot = filename.find_last_of( "." ) ;
-
-  if ( dot != std::string::npos )
-  {
-
-    filename = filename.substr( 0, dot ) ;
-
-  }
-
-  return filename ;
 
 }

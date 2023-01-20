@@ -23,6 +23,7 @@
 #include <experimental/filesystem>
 
 #include "analyseAtlasBundle.h"
+#include "ioWrapper.h"
 
 ////////////////////////////////////////////////////////////////////////////////
 ////////// Function to get flag position when parsing arguments ////////////////
@@ -57,7 +58,7 @@ int getFlagPosition( int argc, char* argv[], const std::string& flag )
 //-------------------------- Find radius of bundle ---------------------------//
 //----------------------------------------------------------------------------//
 void computeCenterAtlasBundleFibers(
-                             BundlesDataFormat& atlasBundleData,
+                             BundlesData& atlasBundleData,
                              std::vector<float>& medialPointsAtlasBundleFibers )
 {
 
@@ -91,7 +92,7 @@ void computeCenterAtlasBundleFibers(
 //----------------------- Compute average fiber bundle -----------------------//
 //----------------------------------------------------------------------------//
 void computeAverageFiberBundle(
-                        BundlesDataFormat& atlasBundleData,
+                        BundlesData& atlasBundleData,
                         const std::vector<float>& medialPointsAtlasBundleFibers,
                         int nbPoints,
                         std::vector<float>& averageFiber,
@@ -206,7 +207,7 @@ void computeAverageFiberBundle(
 //--------------------- Compute gravity center of bundle ---------------------//
 //----------------------------------------------------------------------------//
 void computeGravityCenterAtlasBundle(
-                                  BundlesDataFormat& atlasBundleData,
+                                  BundlesData& atlasBundleData,
                                   int nbPoints,
                                   std::vector<float>& gravityCenterAtlasBundle )
 {
@@ -291,7 +292,7 @@ void computeDistancesToCenterBundle(
 //------------- Compute normal vector of fibers in atlas bundle --------------//
 //----------------------------------------------------------------------------//
 void computeNormalVectorFibersAtlasBundle(
-                                       BundlesDataFormat& atlasBundleData,
+                                       BundlesData& atlasBundleData,
                                        std::vector<float>& normalVectorsBundle )
 {
 
@@ -321,7 +322,7 @@ void computeNormalVectorFibersAtlasBundle(
 //--------- Compute distances between medial points fibers in bundle ---------//
 //----------------------------------------------------------------------------//
 void computeDistancesBetweenMedialPointsBundle(
-                        BundlesDataFormat& atlasBundleData,
+                        BundlesData& atlasBundleData,
                         const std::vector<float>& medialPointsAtlasBundleFibers,
                         std::vector<float>& distancesBetweenMedialPointsBundle )
 {
@@ -401,7 +402,7 @@ void computeDistancesBetweenMedialPointsBundle(
 //----------------------------------------------------------------------------//
 //--------------------------- Compute angle bundle ---------------------------//
 //----------------------------------------------------------------------------//
-void computeAnglesBundle( BundlesDataFormat& atlasBundleData,
+void computeAnglesBundle( BundlesData& atlasBundleData,
                           const std::vector<float>& normalVectorsBundle,
                           std::vector<float>& anglesAtlasBundle )
 {
@@ -478,9 +479,8 @@ void computeAnglesBundle( BundlesDataFormat& atlasBundleData,
 //----------------------------------------------------------------------------//
 // --------------------- Compute direction angles bundle -------------------- //
 //----------------------------------------------------------------------------//
-
 void computeDirectionAnglesBundle(
-                                BundlesDataFormat& atlasBundleData,
+                                BundlesData& atlasBundleData,
                                 const std::vector<float>& normalVectorsBundle,
                                 int nbPoints,
                                 std::vector<float>& directionAnglesAtlasBundle )
@@ -506,18 +506,15 @@ void computeDirectionAnglesBundle(
     }
 
     std::vector<float> fiber1( 3 * nbPoints, 0 ) ;
-    std::vector<float> newNormalVectorFiber1( 3, 0 ) ;
-    atlasBundleData.putFiberInPlaneXY( normalVector1,
-                                       atlasBundleData.matrixTracks,
-                                       atlasBundleFiberIndex_1,
-                                       nbPoints,
-                                       fiber1,
-                                       newNormalVectorFiber1 ) ;
+    atlasBundleData.getFiberFromTractogram( atlasBundleData.matrixTracks,
+                                            atlasBundleFiberIndex_1,
+                                            nbPoints,
+                                            fiber1 ) ;
 
     std::vector<float> directionVectorFiber1( 3, 0 ) ;
     atlasBundleData.computeDirectionVectorFiberTractogram(
                                                        fiber1,
-                                                       newNormalVectorFiber1,
+                                                       normalVector1,
                                                        directionVectorFiber1 ) ;
 
 
@@ -542,33 +539,16 @@ void computeDirectionAnglesBundle(
           }
 
           std::vector<float> fiber2( 3 * nbPoints, 0 ) ;
-          std::vector<float> newNormalVectorFiber2( 3, 0 ) ;
-          atlasBundleData.putFiberInPlaneXY( normalVector2,
-                                             atlasBundleData.matrixTracks,
-                                             atlasBundleFiberIndex_2,
-                                             nbPoints,
-                                             fiber2,
-                                             newNormalVectorFiber2 ) ;
+          atlasBundleData.getFiberFromTractogram( atlasBundleData.matrixTracks,
+                                                  atlasBundleFiberIndex_2,
+                                                  nbPoints,
+                                                  fiber2 ) ;
 
           std::vector<float> directionVectorFiber2( 3, 0 ) ;
           atlasBundleData.computeDirectionVectorFiberTractogram(
                                                        fiber2,
-                                                       newNormalVectorFiber2,
+                                                       normalVector2,
                                                        directionVectorFiber2 ) ;
-
-
-          float angleBetweenPlanes = atlasBundleData.computeAngleBetweenPlanes(
-                                                       newNormalVectorFiber1,
-                                                       newNormalVectorFiber2 ) ;
-
-          if ( angleBetweenPlanes > 5 )
-          {
-
-            std::cout << "\nERROR : could not align fibers, got minimum angle "
-                      << "between planes of " << angleBetweenPlanes << "\n" ;
-            exit( 1 ) ;
-
-          }
 
 
 
@@ -606,7 +586,7 @@ void computeDirectionAnglesBundle(
 //--------------------- Compute direction angles bundle ----------------------//
 //----------------------------------------------------------------------------//
 void computeShapeAnglesBundle(
-                        BundlesDataFormat& atlasBundleData,
+                        BundlesData& atlasBundleData,
                         int nbPoints,
                         const std::vector<float>& medialPointsAtlasBundleFibers,
                         std::vector<float>& shapeAnglesAtlasBundle )
@@ -654,7 +634,7 @@ void computeShapeAnglesBundle(
 //------------------- Compute min similarity measure (dMDA) ------------------//
 //----------------------------------------------------------------------------//
 void computeAverageDisimilarity(
-                        BundlesDataFormat& atlasBundleData,
+                        BundlesData& atlasBundleData,
                         const std::vector<float>& normalVectorsBundle,
                         const std::vector<float>& medialPointsAtlasBundleFibers,
                         int nbPoints,
@@ -698,8 +678,7 @@ void computeAverageDisimilarity(
                             atlasBundleFiberIndex_1,
                             nbPoints,
                             fiber1,
-                            newNormalVectorFiber1,
-                            0 ) ;
+                            newNormalVectorFiber1 ) ;
 
 
     if ( atlasBundleFiberIndex_1 + 1 < nbFibersAtlasBundle )
@@ -737,8 +716,7 @@ void computeAverageDisimilarity(
                                 atlasBundleFiberIndex_2,
                                 nbPoints,
                                 fiber2,
-                                newNormalVectorFiber2,
-                                0 ) ;
+                                newNormalVectorFiber2 ) ;
 
 
 
@@ -773,7 +751,7 @@ void computeAverageDisimilarity(
 //------------------- Compute min similarity measure (MDF) ------------------//
 //----------------------------------------------------------------------------//
 void computeAverageDisimilarityMDF(
-                        BundlesDataFormat& atlasBundleData,
+                        BundlesData& atlasBundleData,
                         const std::vector<float>& normalVectorsBundle,
                         const std::vector<float>& medialPointsAtlasBundleFibers,
                         int nbPoints,
@@ -850,9 +828,11 @@ void computeAverageDisimilarityMDF(
 int main( int argc, char* argv[] )
 {
 
-  int index_atlas, index_outDir, index_useMDF, index_verbose, index_help ;
+  int index_atlas, index_outDir, index_format, index_useMDF, index_verbose,
+                                                                    index_help ;
   index_atlas =   getFlagPosition( argc, argv, "-a") ;
   index_outDir = getFlagPosition( argc, argv, "-o") ;
+  index_format = getFlagPosition( argc, argv, "-f") ;
   index_useMDF = getFlagPosition( argc, argv, "-useMDF") ;
   index_verbose =   getFlagPosition( argc, argv, "-v") ;
   index_help =   getFlagPosition( argc, argv, "-h") ;
@@ -863,6 +843,8 @@ int main( int argc, char* argv[] )
     std::cout << "Function to convert bundles format : \n"
               << "-a : Directory with the atlas (one file per bundle) \n"
               << "-o : Output directory where to save the analysis \n"
+              << "-f : Format of atlas bundles ( optios = [ .bundles, .trk, "
+              << ".tck ] ) \n"
               << "[-useMDF] : analyse using MDF \n"
               << "[-v] : set verbosity level at 1 \n"
               << "[-h] : Show this message " << std::endl ;
@@ -915,6 +897,30 @@ int main( int argc, char* argv[] )
 
   }
 
+  std::string format ;
+  if ( index_format )
+  {
+
+    format = argv[ index_format + 1 ] ;
+
+    if ( format != ".bundles" && format != ".trk" && format != ".tck" )
+    {
+
+      std::cout << "The only supported formats for the atlas bundles are "
+                << ".bundles, .trk and .tck" << std::endl ;
+      exit( 1 ) ;
+
+    }
+
+  }
+  else
+  {
+
+    std::cout << "-f argument required..." << std::endl ;
+    exit( 1 ) ;
+
+  }
+
   if ( index_useMDF )
   {
 
@@ -944,46 +950,54 @@ int main( int argc, char* argv[] )
   //   xxxxxxxxxxxxxxxxxxxxxxxxxx Reading Atlas xxxxxxxxxxxxxxxxxxxxxxxxxx   //
 
   std::vector< std::string > atlasBundlesFilenames ;
-  std::vector< std::string > atlasBundlesDataFilenames ;
-  std::string tmpBundlesDataFilename ;
   std::string tmpBundlesFilename ;
 
   for ( const auto & file : std::experimental::filesystem::directory_iterator(
                                                     atlasDirectory.c_str() ) )
   {
 
-    tmpBundlesDataFilename = file.path() ;
-    tmpBundlesFilename = tmpBundlesDataFilename ;
-    std::string key (".bundlesdata") ;
+    tmpBundlesFilename = file.path() ;
 
-    if ( tmpBundlesDataFilename.find( ".bundlesdata" ) != std::string::npos )
+    if ( endswith( tmpBundlesFilename, format) )
     {
-
-      std::size_t found = tmpBundlesFilename.rfind( key ) ;
-      tmpBundlesFilename.replace( found, key.length(), ".bundles" ) ;
-
-      atlasBundlesDataFilenames.push_back( tmpBundlesDataFilename ) ;
+;
       atlasBundlesFilenames.push_back( tmpBundlesFilename ) ;
-
-    }
-    else if ( tmpBundlesDataFilename.find( ".trk" ) != std::string::npos )
-    {
-
-      std::cout << "Format error : Input tractogram is .bundles but .trk "
-                << "files found in the atlas directory. Projection between "
-                << "different formats is not supported yet \n" ;
-      exit( 1 ) ;
 
     }
 
   }
 
+  bool isBundles = false ;
+  bool isTrk = false ;
+  bool isTck = false ;
+
+  if ( format == ".bundles" )
+  {
+
+    isBundles = true ;
+
+  }
+  else if ( format == ".trk" )
+  {
+
+    isTrk = true ;
+
+  }
+  else
+  {
+
+    isTck = true ;
+
+  }
+
+
 
   bool isBundlesFormat = true ;
   bool isTRKFormat = false ;
   AtlasBundles atlasData( atlasDirectory.c_str(),
-                          isBundlesFormat,
-                          isTRKFormat,
+                          isBundles,
+                          isTrk,
+                          isTck,
                           verbose ) ;
 
 
@@ -998,8 +1012,7 @@ int main( int argc, char* argv[] )
                                                       atlasBundleIndex++ )
   {
 
-    BundlesDataFormat& atlasBundleData = atlasData.bundlesData[
-                                                            atlasBundleIndex ] ;
+    BundlesData& atlasBundleData = atlasData.bundlesData[ atlasBundleIndex ] ;
 
     if ( verbose )
     {

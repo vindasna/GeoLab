@@ -23,6 +23,7 @@
 #include <experimental/filesystem>
 
 #include "separateFibersBundle.h"
+#include "ioWrapper.h"
 
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -130,35 +131,65 @@ int main( int argc, char* argv[] )
 
   }
 
+  if ( !( is_dir( outputDirectory ) ) )
+  {
+
+    mkdir( outputDirectory ) ;
+
+  }
+
 
   //   xxxxxxxxxxxxxxxxxxxxxxx Reading input bundle xxxxxxxxxxxxxxxxxxxxxxx   //
 
   std::string inputBundlesFilename ;
   std::string inputBundlesDataFilename ;
   bool isBundlesFormat = false ;
+  bool isTrk = false ;
+  bool isTck = false ;
 
-  if ( inputFilename.find( ".bundlesdata" ) != std::string::npos )
+  if ( endswith( inputFilename, ".bundlesdata" ) )
   {
 
     inputBundlesDataFilename = inputFilename ;
 
-    inputBundlesFilename = inputFilename ;
-    size_t index = inputFilename.find( ".bundlesdata" ) ;
-    inputBundlesFilename.replace( index, 12, ".bundles") ;
+    inputBundlesFilename = replaceExtension( inputFilename, ".bundles" ) ;
 
     isBundlesFormat = true ;
+    format = ".bundles" ;
 
   }
-  else if ( inputFilename.find( ".bundles" ) != std::string::npos )
+  else if ( endswith( inputFilename, ".bundles" ) )
   {
 
     inputBundlesFilename = inputFilename ;
 
-    inputBundlesDataFilename = inputFilename ;
-    size_t index = inputFilename.find( ".bundles" ) ;
-    inputBundlesDataFilename.replace( index, 8, ".bundlesdata") ;
+    inputBundlesDataFilename = replaceExtension( inputFilename,
+                                                              ".bundlesdata" ) ;
 
     isBundlesFormat = true ;
+    format = ".bundles" ;
+
+  }
+  else if ( endswith( inputFilename, ".trk" ) )
+  {
+
+    inputBundlesDataFilename = inputFilename ;
+
+    inputBundlesFilename = replaceExtension( inputFilename, ".minf" ) ;
+
+    isTrk = true ;
+    format = ".trk" ;
+
+  }
+  else if ( endswith( inputFilename, ".tck" ) )
+  {
+
+    inputBundlesDataFilename = inputFilename ;
+
+    inputBundlesFilename = replaceExtension( inputFilename, ".minf" ) ;
+
+    isTck = true ;
+    format = ".tck" ;
 
   }
   else
@@ -171,36 +202,9 @@ int main( int argc, char* argv[] )
   }
 
 
-  BundlesDataFormat inputBundlesData ;
-  BundlesFormat inputBundleInfo ;
+  BundlesData inputBundlesData( inputBundlesDataFilename.c_str() ) ;
+  BundlesMinf inputBundleInfo( inputBundlesFilename.c_str() ) ;
 
-
-
-  if ( isBundlesFormat )
-  {
-
-    if ( verbose )
-    {
-
-      std::cout << "Reading : " << inputBundlesFilename << std::endl ;
-
-    }
-
-    inputBundleInfo.bundlesReading( inputBundlesFilename.c_str(),
-                                        verbose ) ;
-
-
-    if ( verbose )
-    {
-
-      std::cout << "Reading : " << inputBundlesDataFilename << std::endl ;
-
-    }
-    inputBundlesData.bundlesdataReading( inputBundlesDataFilename.c_str(),
-                                        inputBundlesFilename.c_str(),
-                                        verbose ) ;
-
-  }
 
   // Sanity checks //
   int nbPoints = inputBundlesData.pointsPerTrack[ 0 ] ;
@@ -224,8 +228,8 @@ int main( int argc, char* argv[] )
 
   // Extract fibers
   std::vector<float>& tractogramFibers = inputBundlesData.matrixTracks ;
-  std::vector<BundlesDataFormat> separatedFibers ;
-  std::vector<BundlesFormat> separatedFibersInfo ;
+  std::vector<BundlesData> separatedFibers ;
+  std::vector<BundlesMinf> separatedFibersInfo ;
   for ( int fiberIndex = 0 ; fiberIndex < nbCurves ; fiberIndex++ )
   {
 
@@ -234,10 +238,23 @@ int main( int argc, char* argv[] )
                                                              nbPoints, fiber ) ;
 
     std::vector<int32_t> fiberPointsPerTrack( 1, nbPoints ) ;
-    BundlesDataFormat fiberBundlesDataFormat( fiber, fiberPointsPerTrack, 1 ) ;
+    BundlesData fiberBundlesDataFormat = inputBundlesData ;
+    fiberBundlesDataFormat.matrixTracks = fiber ;
+    fiberBundlesDataFormat.pointsPerTrack = fiberPointsPerTrack ;
+    fiberBundlesDataFormat.curves_count = 1 ;
+
+    if ( format == ".trk" )
+    {
+
+      fiberBundlesDataFormat.tracksScalars.resize( 1 ) ;
+      fiberBundlesDataFormat.tracksProperties.resize( 1 ) ;
+
+
+    }
+
     separatedFibers.push_back( fiberBundlesDataFormat ) ;
 
-    BundlesFormat fiberBundlesFormat( inputBundleInfo ) ;
+    BundlesMinf fiberBundlesFormat( inputBundleInfo ) ;
     fiberBundlesFormat.curves_count = 1 ;
     separatedFibersInfo.push_back( fiberBundlesFormat ) ;
 
@@ -248,10 +265,11 @@ int main( int argc, char* argv[] )
   for ( int fiberIndex = 0 ; fiberIndex < nbCurves ; fiberIndex++ )
   {
 
-    std::string outputBundlesFilename = outputDirectory + "fiber" +
-                                     std::to_string( fiberIndex ) + ".bundles" ;
-    std::string outputBundlesDataFilename = outputDirectory + "fiber" +
-                                 std::to_string( fiberIndex ) + ".bundlesdata" ;
+    std::stringstream outputBundlesFilenameOss ;
+    outputBundlesFilenameOss << outputDirectory << "fiber" << fiberIndex
+                                                                     << format ;
+    std::string outputBundlesFilename = outputBundlesFilenameOss.str() ;
+
 
     if ( verbose > 1 )
     {
@@ -259,17 +277,8 @@ int main( int argc, char* argv[] )
       std::cout << "Saving file : " << outputBundlesFilename << std::endl ;
 
     }
-    separatedFibersInfo[ fiberIndex ].bundlesWriting(
-                                      outputBundlesFilename.c_str(), verbose ) ;
-
-    if ( verbose > 1 )
-    {
-
-      std::cout << "Saving file : " << outputBundlesDataFilename << std::endl ;
-
-    }
-    separatedFibers[ fiberIndex ].bundlesdataWriting(
-                                  outputBundlesDataFilename.c_str(), verbose ) ;
+    separatedFibers[ fiberIndex ].write( outputBundlesFilename.c_str(),
+                                           separatedFibersInfo[ fiberIndex ] ) ;
 
 
   }

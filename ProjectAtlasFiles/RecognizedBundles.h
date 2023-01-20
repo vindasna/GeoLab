@@ -72,6 +72,8 @@ class RecognizedBundles : public AtlasBundles
   bool saveUnlabeled = false ;
   bool useAvgThr = false ;
 
+  int nbThreads = -1 ;
+
   //////////////////////////////// Constructors ////////////////////////////////
   RecognizedBundles() ;
 
@@ -111,15 +113,16 @@ class RecognizedBundles : public AtlasBundles
                      bool useDefaultMaxLen,
                      bool saveExtractedBundles,
                      bool saveUnlabeled,
-		                 bool useAvgThr ) ;
+		                 bool useAvgThr,
+                     int nbThreads ) ;
 
   //////////////////////////////// Destructors /////////////////////////////////
   virtual ~RecognizedBundles() ;
 
 
   ////////////////////////////////// Mehtods ///////////////////////////////////
-  void MDADLabeling( BundlesDataFormat& atlasBundleData,
-                     BundlesDataFormat& subjectBundlesData,
+  void MDADLabeling( BundlesData& atlasBundleData,
+                     BundlesData& subjectBundlesData,
                      int atlasBundleIndex,
                      const std::vector<float>& medialPointAtlasBundle,
                      const std::vector<float>& medialPointAtlasBundleFibers,
@@ -131,8 +134,8 @@ class RecognizedBundles : public AtlasBundles
 
 
   void MDADLabelingSimple(
-                         BundlesDataFormat& atlasBundleData,
-                         BundlesDataFormat& subjectBundlesData,
+                         BundlesData& atlasBundleData,
+                         BundlesData& subjectBundlesData,
                          int atlasBundleIndex,
                          const std::vector<float>& medialPointAtlasBundle,
                          const std::vector<float>& medialPointAtlasBundleFibers,
@@ -141,8 +144,8 @@ class RecognizedBundles : public AtlasBundles
                          std::vector<std::vector<int16_t>>& labels ) ;
 
   //
-  void MDFLabeling( BundlesDataFormat& atlasBundleData,
-                    BundlesDataFormat& subjectBundlesData,
+  void MDFLabeling( BundlesData& atlasBundleData,
+                    BundlesData& subjectBundlesData,
                     int atlasBundleIndex,
                     const std::vector<float>& medialPointAtlasBundle,
                     const std::vector<float>& medialPointAtlasBundleFibers,
@@ -153,8 +156,8 @@ class RecognizedBundles : public AtlasBundles
                     std::vector<std::vector<int16_t>>& labels ) ;
 
   void MDFLabelingSimple(
-                         BundlesDataFormat& atlasBundleData,
-                         BundlesDataFormat& subjectBundlesData,
+                         BundlesData& atlasBundleData,
+                         BundlesData& subjectBundlesData,
                          int atlasBundleIndex,
                          const std::vector<float>& medialPointAtlasBundle,
                          const std::vector<float>& medialPointAtlasBundleFibers,
@@ -172,10 +175,8 @@ class RecognizedBundles : public AtlasBundles
 
 
   void projectAtlas( AtlasBundles& atlasData,
-                     BundlesDataFormat& subjectBundlesData,
+                     BundlesData& subjectBundlesData,
                      float thresholdAdjacency,
-                     bool isBundlesFormat,
-                     bool isTRKFormat,
                      std::string outputDirectory,
                      std::string labelsName ) ;
 
