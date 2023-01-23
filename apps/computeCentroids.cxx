@@ -25,8 +25,7 @@
 #include <boost/process.hpp>
 
 #include "computeCentroids.h"
-// #include "ioWrapper.h"
-#include "./tools/ioWrapper.h"
+#include "ioWrapper.h"
 
 
 ///////////////////////////////////////////////////////////////////////////////
