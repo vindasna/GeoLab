@@ -88,13 +88,35 @@ If yout atlas is in .tck/.trk format you'll need to create a ".minf" file for ea
 
 You'll need to analyse your atlas to get the bundle-specific thresholds :
 
-    `$ analyseAtlasBundle.py -i atlasDir -f ${format} -r mni_icbm152_t1_tal_nlin_asym_09c_brain.nii`
+    `$ analyseAtlasBundle.py -i atlasDir -f ${format} -r referenceImage.nii`
 
-* atlasDir : Path to your atlas directory.
 * Replace ${format} with {.trk, .tck, .bundles} according to your tractogram format.
-* mni_icbm152_t1_tal_nlin_asym_09c_brain.nii : path to the reference image mni_icbm152_t1_tal_nlin_asym_09c_brain.nii
+* atlasDir : Path to your atlas directory.
+* referenceImage.nii : path to the reference .nii where the atlas is
+
+
+You'll also need to precompute the full atlas (all bundles in one single file), the atlas neighborhood and the atlas centroids :
+
+    `// Compute full atlas`
+    `& fuseAtlas -i atlasDir -o outDirFullAtlas -f ${format}`
+    `& `
+    `// Compute atlas neighborhood`
+    `& computeNeighborhood -i outDirFullAtlas/fullAtlas${format} -o outDirNeighborhoodAtlas -r referenceImage.nii`
+    `& `
+    `// Compute atlas centroids`
+    `& computeCentroids -i outDirNeighborhoodAtlas -o outDirCentroidsAtlas -r referenceImage.nii -cc clientComputeCentroids.py --rb clientRegisterBundles.py -ods dipyServer.py -cds clientCloseServer.py -f ${format}`
+    
+* Replace ${format} with {.trk, .tck, .bundles} according to your tractogram format.
+* atlasDir : Path to your atlas directory.
+* outDirFullAtlas : output directory of command fuseAtlas.
+* outDirNeighborhoodAtlas : output directory of command computeNeighborhood.
+* outDirCentroidsAtlas : output directory of command computeCentroids.
+* clientComputeCentroids.py : found in dipyServiceClient folder.
+* clientRegisterBundles.py : found in dipyServiceClient folder.
+* dipyServer.py : found in dipyServiceClient folder.
+* clientCloseServer.py : found in ./dipyServiceClient folder.
 
 
 
 
-
+    
