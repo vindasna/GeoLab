@@ -163,7 +163,7 @@ def computeCentroids( input_filename, output_filename, reference_anatomy,
     bundleName = os.path.basename( input_filename ).replace( ".bundles", "" )
     tmp_dir = os.path.join( os.path.dirname( output_filename ),
                                                         f"tmpDir_{bundleName}" )
-    if not os.path.isdir( tmp_dir ) :
+    if not os.path.isdir( tmp_dir ) and input_filename.endswith( ".bundles" )  :
         os.mkdir( tmp_dir )
 
 
@@ -298,6 +298,17 @@ def computeCentroids( input_filename, output_filename, reference_anatomy,
 
         if os.path.isdir( tmp_dir ) :
             shutil.rmtree( tmp_dir )
+
+    else :
+        if ( output_trk.endswith( ".trk" ) ) :
+            output_trk_minf = output_trk.replace( ".trk", ".minf" )
+        else :
+            output_trk_minf = output_trkreplace( ".tck", ".minf" )
+        if ( tractogram_trk_minf_path != output_trk_minf
+                              and os.path.isfile( tractogram_trk_minf_path ) ) :
+            shutil.copy2( tractogram_trk_minf_path, output_trk_minf )
+
+
 
     print( f"Closing connection {conn}" )
     # conn.shutdown()
