@@ -25,7 +25,24 @@ The contents of this repository are released under Apache-2.0 license.
 - Numpy >= 1.19.5
 - Setproctitle >= 1.2.3
 
-## 
+## Quick install
+
+1. Install dependencies.
+2. Clone Git repository and compile:
+3. 
+   `$ git clone https://github.com/vindasna/GeoLab`
+   `$ cd GeoLab`
+   `$ mkdir build`
+   `$ cd build`
+   `$ cmake ..`
+   `$ make`
+
+4. Configure PATH :
+   Edit the startup ~/.bashrc or /etc/bash.bashrc file manually by adding this line :
+   `$ export PATH=/<edit as appropriate>/GeoLab/build/bin:$PATH`
+
+5. Check installation :
+   `$ ProjectAtlasGeoLab -h`
 
 
 
