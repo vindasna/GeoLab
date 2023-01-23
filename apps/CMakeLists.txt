@@ -16,4 +16,4 @@ foreach(f ${LIB_SOURCE})
     install(PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/${sourceName}
             DESTINATION bin)
 endforeach(f)
-configure_file(analyseAtlasBundle.py ${CMAKE_BINARY_DIR}/bin/analyseAtlasBundle.py COPYONLY)
+configure_file(analyseAtlasBundle.py ${CMAKE_BINARY_DIR}/bin/analyseAtlasBundle.py COPYONLY FILE_PERMISSIONS OWNER_EXECUTE OWNER_WRITE OWNER_READ )
