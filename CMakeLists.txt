@@ -40,6 +40,6 @@ endif()
 ######### LBFGSpp #########
 add_subdirectory(LBFGSpp-master)
 ###########################
-add_subdirectory(ProjectAtlasFiles)
 add_subdirectory(src)
+add_subdirectory(apps)
 add_subdirectory(doc)
