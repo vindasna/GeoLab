@@ -84,6 +84,8 @@ Then use the ProjectAtlasGeoLab command :
 
 ## Usage example on other atlas
 
+First, you'll need to resample your atlas to a fixed number of points per fiber, if your atlas is in .tck format you can use MRTrix's command tckreample.
+
 If yout atlas is in .tck/.trk format you'll need to create a ".minf" file for each of the ".tck/.trk" files in your atlas. You can use the createMinf command as in the example ***Usage example on ESBA atlas***.
 
 You'll need to analyse your atlas to get the bundle-specific thresholds :
@@ -104,7 +106,7 @@ You'll also need to precompute the full atlas (all bundles in one single file), 
     `& computeNeighborhood -i outDirFullAtlas/fullAtlas${format} -o outDirNeighborhoodAtlas -r referenceImage.nii`
 
     `// Compute atlas centroids`
-    `& computeCentroids -i outDirNeighborhoodAtlas -o outDirCentroidsAtlas -r referenceImage.nii -cc clientComputeCentroids.py --rb clientRegisterBundles.py -ods dipyServer.py -cds clientCloseServer.py -f ${format}`
+    `& computeCentroids -i outDirNeighborhoodAtlas -o outDirCentroidsAtlas -r referenceImage.nii -cc clientComputeCentroids.py --ods dipyServer.py -cds clientCloseServer.py -nbPoints ${nbPoints} -nbThreads ${nbThreads} -f ${format}`
     
 * Replace ${format} with {.trk, .tck, .bundles} according to your tractogram format.
 * atlasDir : Path to your atlas directory.
@@ -112,9 +114,9 @@ You'll also need to precompute the full atlas (all bundles in one single file), 
 * outDirNeighborhoodAtlas : output directory of command computeNeighborhood.
 * outDirCentroidsAtlas : output directory of command computeCentroids.
 * clientComputeCentroids.py : found in dipyServiceClient folder.
-* clientRegisterBundles.py : found in dipyServiceClient folder.
 * dipyServer.py : found in dipyServiceClient folder.
 * clientCloseServer.py : found in ./dipyServiceClient folder.
+* ${nbThreads} : number of threads to use for OpenMP.
 
 
 
