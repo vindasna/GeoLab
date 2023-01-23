@@ -119,6 +119,13 @@ You'll also need to precompute the full atlas (all bundles in one single file), 
 * ${nbThreads} : number of threads to use for OpenMP.
 
 
+Then create the ".minf" file for your input if necessary and use the ProjectAtlasGeoLab command :
+
+    `// Do if ".minf` for input does not exists
+    `$ createMinf -o {path to tractogram without extension}.minf -f ${format}`
+    `// Parcellation`
+    `$ ProjectAtlasGeoLab -i input${format} -a atlasDir -ref mni_icbm152_t1_tal_nlin_asym_09c_brain.nii -o outputDir -cc clientComputeCentroids.py --rb clientRegisterBundles.py -ods dipyServer.py -cds clientCloseServer.py -nbPoints 15 -an Neigborhood${format2} -anc Centroids${format2} -nbThreads ${nbThreads}` 
+
 
 
     
