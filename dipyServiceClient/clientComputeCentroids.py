@@ -125,6 +125,18 @@ def get_cmd_line_args():
 
     return kwargs, verbose
 
+
+def printInLog( inputString, logFilePath ) :
+    if ( logFilePath ) :
+        logFile =  open( logFilePath, "a" )
+    else :
+        logFile = sys.stdout
+
+    print( inputString, file = logFile )
+
+    if ( logFilePath ) :
+        logFile.close()
+
 def client_program() :
     t_init = time.time()
     """
@@ -165,17 +177,6 @@ def client_program() :
         sys.exit()
 
     # Sanity checks
-    """
-    if not input_filename.endswith( ".bundles" ) :
-        print( f"{bcolors.FAIL}ERROR : {bcolors.ENDC} the only supported input "
-                                                          "format is .bundles" )
-        sys.exit( 1 )
-
-    if not output_filename.endswith( ".bundles" ) :
-        print( f"{bcolors.FAIL}ERROR : {bcolors.ENDC} the only supported output"
-                                                         " format is .bundles" )
-        sys.exit()
-    """
     argsToSend = [ input_filename, output_filename, reference_anatomy,
                                         qb_threshold, nbPoints, max_nb_clusters,
                                                          convert_bundle_format ]
@@ -188,18 +189,17 @@ def client_program() :
 
     ################################## Client ##################################
     host = socket.gethostname()  # as both code is running on same pc
-    port = 5000  # socket server port number
 
     client_socket = socket.socket()  # instantiate
-    print( "Connecting to server... ", end = "" )
+    printInLog( "Connecting to server... ", logFilePath )
     client_socket.connect( ( host, port ) )  # connect to the server
-    print( "Done" )
+    printInLog( "Done", logFilePath )
 
     maxBytesReceive = 1024
     closeClient = False
-    print( "Sending message to server... ", end = "" )
+    printInLog( f"Sending message to server port {port}... ", logFilePath )
     client_socket.send( "\t".join( argsToSend ).encode() )  # send message
-    print( "Done" )
+    printInLog( "Done", logFilePath )
     timeOut = 50 # In s
     duration = 0
     t1 = time.time()
@@ -219,7 +219,7 @@ def client_program() :
         duration = time.time() - t1
 
     if ( data == "0" ) :
-        print( "Connection closed by client" )
+        printInLog( "Connection closed by client", logFilePath )
 
     executionTime = time.time() - t_init
     if ( logFilePath ) :
@@ -229,8 +229,8 @@ def client_program() :
 
     # print( " ".join( argsToSend ) + f"\nDuration : {executionTime} s\n",
     #                                                             file = logFile )
-    print( " ".join( argsToSend ) + f"\nDuration : {duration} s\n",
-                                                                file = logFile )
+    printInLog( " ".join( argsToSend ) + f"\nDuration : {duration} s\n",
+                                                                   logFilePath )
 
     if ( logFilePath ) :
         logFile.close()

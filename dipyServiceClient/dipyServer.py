@@ -160,23 +160,28 @@ def computeCentroids( input_filename, output_filename, reference_anatomy,
 
     print( "Computing centroids" )
     # Converting .bundles to .trk
-    bundleName = os.path.basename( input_filename ).replace( ".bundles", "")
+    bundleName = os.path.basename( input_filename ).replace( ".bundles", "" )
     tmp_dir = os.path.join( os.path.dirname( output_filename ),
                                                         f"tmpDir_{bundleName}" )
     if not os.path.isdir( tmp_dir ) :
         os.mkdir( tmp_dir )
+
 
     if ( input_filename.endswith( ".bundles" ) ) :
         tractogram_trk_path = os.path.join( tmp_dir,  os.path.basename(
                                 input_filename ).replace( ".bundles", ".trk" ) )
         tractogram_trk_minf_path = os.path.join( tmp_dir,  os.path.basename(
                                input_filename ).replace( ".bundles", ".minf" ) )
+
         convert_bundles_command = [ convert_bundle_format,
                                     "-i", input_filename,
                                     "-r", reference_anatomy,
                                     "-o", tractogram_trk_path ]
+
         run_sh_process( cmd = convert_bundles_command, shell = True )
-    elif ( input_filename.endswith( ".trk" ) or input_filename.endswith( ".tck" ) ) :
+
+    elif ( input_filename.endswith( ".trk" ) or input_filename.endswith(
+                                                                    ".tck" ) ) :
         tractogram_trk_path = input_filename
         if input_filename.endswith( ".trk" ) :
             tractogram_trk_minf_path = input_filename.replace( ".trk", ".minf" )
@@ -242,6 +247,7 @@ def computeCentroids( input_filename, output_filename, reference_anatomy,
         output_trk = os.path.join( tmp_dir,
                  os.path.basename( output_filename ).replace( ".bundles",
                                                                       ".trk" ) )
+
     else :
         output_trk = output_filename
     # save_trk( tractogram_trk, output_trk, bbox_valid_check = False )
@@ -262,6 +268,24 @@ def computeCentroids( input_filename, output_filename, reference_anatomy,
         if ( tractogram_trk_minf_path != output_trk_minf
                               and os.path.isfile( tractogram_trk_minf_path ) ) :
             shutil.copy2( tractogram_trk_minf_path, output_trk_minf )
+            convert_bundles_command = [ convert_bundle_format,
+                                        "-i", output_trk,
+                                        "-r", reference_anatomy,
+                                        "-o", output_filename ]
+            run_sh_process( cmd = convert_bundles_command, shell = True )
+            if not os.path.isfile( output_filename ) :
+                print( f"{bcolors.FAIL}ERROR : {bcolors.ENDC} could not convert"
+                                           " output tractogram to .trk format" )
+        elif ( tractogram_trk_minf_path == output_trk_minf
+                              and os.path.isfile( tractogram_trk_minf_path ) ) :
+            convert_bundles_command = [ convert_bundle_format,
+                                        "-i", output_trk,
+                                        "-r", reference_anatomy,
+                                        "-o", output_filename ]
+            run_sh_process( cmd = convert_bundles_command, shell = True )
+            if not os.path.isfile( output_filename ) :
+                print( f"{bcolors.FAIL}ERROR : {bcolors.ENDC} could not convert"
+                                           " output tractogram to .trk format" )
         else :
             print( f"{bcolors.FAIL}ERROR : {bcolors.ENDC} file "
                    f"{tractogram_trk_minf_path} does not exists" )
@@ -271,14 +295,6 @@ def computeCentroids( input_filename, output_filename, reference_anatomy,
             conn.send( "-1".encode() )
             conn.close()
             sys.exit( 1 )
-        convert_bundles_command = [ convert_bundle_format,
-                                    "-i", output_trk,
-                                    "-r", reference_anatomy,
-                                    "-o", output_filename ]
-        run_sh_process( cmd = convert_bundles_command, shell = True )
-        if not os.path.isfile( output_filename ) :
-            print( f"{bcolors.FAIL}ERROR : {bcolors.ENDC} could not convert "
-                "output tractogram to .trk format" )
 
         if os.path.isdir( tmp_dir ) :
             shutil.rmtree( tmp_dir )

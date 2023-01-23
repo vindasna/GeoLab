@@ -79,10 +79,9 @@ def client_program() :
     if port < 5000 :
         print( f"The port must be greater or equal to 5000, got port {port}" )
         sys.exit()
-        
+
     ################################## Client ##################################
     host = socket.gethostname()  # as both code is running on same pc
-    port = 5000  # socket server port number
 
     client_socket = socket.socket()  # instantiate
     client_socket.connect( ( host, port ) )  # connect to the server
