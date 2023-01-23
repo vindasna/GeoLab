@@ -83,7 +83,7 @@ float toleranceThrComputeNeighborhood = 1.5 ;
 
 float adjacencyForCompareBundles = 5 ; // In mm
 
-bool doClassical = false ;
+bool doClassical = true ;
 
 bool keepTmpFiles = false ;
 
