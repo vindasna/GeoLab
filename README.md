@@ -99,10 +99,10 @@ You'll also need to precompute the full atlas (all bundles in one single file), 
 
     `// Compute full atlas`
     `& fuseAtlas -i atlasDir -o outDirFullAtlas -f ${format}`
-    `& `
+
     `// Compute atlas neighborhood`
     `& computeNeighborhood -i outDirFullAtlas/fullAtlas${format} -o outDirNeighborhoodAtlas -r referenceImage.nii`
-    `& `
+
     `// Compute atlas centroids`
     `& computeCentroids -i outDirNeighborhoodAtlas -o outDirCentroidsAtlas -r referenceImage.nii -cc clientComputeCentroids.py --rb clientRegisterBundles.py -ods dipyServer.py -cds clientCloseServer.py -f ${format}`
     
