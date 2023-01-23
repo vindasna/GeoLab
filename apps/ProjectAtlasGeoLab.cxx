@@ -1344,9 +1344,9 @@ int main( int argc, char* argv[] )
               << "[-tolLenght] : Tolerance for parameter lenght (for advanced "
               << "users, default = 0) \n"
               << "[-tolThrCN] : tolerance for computeNeighborhood threshold "
-              << "(default = 1.5) \n"
+              << "(default = 2.0) \n"
               << "[-tolDBMP] : Tolerance for distance between medial points "
-              << "(for advanced users, default = 0) \n"
+              << "(for advanced users, default = 1.0) \n"
               << "[thrAdj] : keep bundle with adjacency greater than given value"
               << " (default : 0 -> keep all bundles ) \n"
               << "[-minNbFibers] : Minimum number of fiber to consider a bundle"
@@ -2008,6 +2008,12 @@ int main( int argc, char* argv[] )
     }
 
   }
+  else
+  {
+
+    toleranceThrComputeNeighborhood = 2.0 ;
+	  
+  }
 
   if ( index_tolDistBetMedPts )
   {
@@ -2026,6 +2032,12 @@ int main( int argc, char* argv[] )
 
     }
 
+  }
+  else
+  {
+
+    toleranceDistanceBetweenMedialPoints = 1.0 ;
+	  
   }
 
 
@@ -2064,6 +2076,12 @@ int main( int argc, char* argv[] )
     }
 
   }
+  else
+  {
+
+    thrPercentageSimilarity = 0.00001 ;
+	  
+  }
 
   /////////////////////////// Minimum number of fibers /////////////////////////
   if ( index_adjCB )
@@ -2081,6 +2099,12 @@ int main( int argc, char* argv[] )
 
     }
 
+  }
+  else
+  {
+
+    adjacencyForCompareBundles = 5.0 ;
+	  
   }
 
 
