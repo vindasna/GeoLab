@@ -61,5 +61,26 @@ The contents of this repository are released under Apache-2.0 license.
 
 ## Usage example on ESBA atlas
 
+To extract the bundles of the ESBA atlas from a subject you first need to compute the tractogram (.tck/.trk/.bundles), register it to MNI space (recommended : image-based with ANTs) and resample it to 15 points per fiber. If you use .tck/.trk you need to create a ".minf" for the file :
+
+createMinf -o {path to tractogram without extension}.minf -f ${format}
+
+Then use the ProjectAtlasGeoLab command :
+
+ProjectAtlasGeoLab -i input${format} -a atlasDir -ref mni_icbm152_t1_tal_nlin_asym_09c_brain.nii -o outputDir -cc clientComputeCentroids.py --rb clientRegisterBundles.py -ods dipyServer.py -cds clientCloseServer.py -nbPoints 15 -an Neigborhood${FORMAT} -anc Centroids${FORMAT} -nbThreads ${nbThreads} 
+
+* Replace ${format} for {.trk, .tck, .bundles}
+* Replace ${FORMAT} for {Trk, Tck, Bundles} according to ${format}
+* mni_icbm152_t1_tal_nlin_asym_09c_brain.nii : path to the reference image mni_icbm152_t1_tal_nlin_asym_09c_brain.nii
+* outDir : directory where to save the results.
+* clientComputeCentroids.py : found in dipyServiceClient folder.
+* clientRegisterBundles.py : found in dipyServiceClient folder.
+* dipyServer.py : found in dipyServiceClient folder.
+* clientCloseServer.py : found in ./dipyServiceClient folder.
+* Neigborhood${FORMAT} : found in ./Atlas/*.zip
+* Centroids${FORMAT} : found in ./Atlas/*.zip
+* ${nbThreads} : number of threads to use for OpenMP.
+
+
 
 
