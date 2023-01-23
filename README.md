@@ -84,7 +84,7 @@ Then use the ProjectAtlasGeoLab command :
 
 ## Usage example on other atlas
 
-If yout atlas is in .tck/.trk format you'll need to create a ".minf" file for each of the ".tck/.trk" files in your atlas. You can use the createMinf command as in the example ###Usage example on ESBA atlas
+If yout atlas is in .tck/.trk format you'll need to create a ".minf" file for each of the ".tck/.trk" files in your atlas. You can use the createMinf command as in the example ### Usage example on ESBA atlas
 
 
 
