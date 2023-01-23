@@ -25,7 +25,8 @@
 #include <boost/process.hpp>
 
 #include "computeCentroids.h"
-#include "ioWrapper.h"
+// #include "ioWrapper.h"
+#include "./tools/ioWrapper.h"
 
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -729,11 +730,25 @@ int main( int argc, char* argv[] )
                                                                      << format ;
     std::string outputCentroidsPath = outputCentroidsPathOss.str() ;
 
+    std::stringstream inputBundlePath ;
+    if ( format == ".bundles" || format == ".bundlesdata" )
+    {
+
+      inputBundlePath = atlasBundlesInfoPaths [ i ] ;
+
+    }
+    else
+    {
+
+      inputBundlePath = atlasBundlesDataPaths[ i ] ;
+
+    }
+
 
     std::stringstream computeCentroidsCommandOss ;
     computeCentroidsCommandOss << "python3 " << computeCentroidsClientFilename
                                                                           << " "
-                               << "-i " << atlasBundlesInfoPaths[ i ] << " "
+                               << "-i " << inputBundlePath << " "
                                << "-o " << outputCentroidsPath << " "
                                << "-r " << referenceFilename << " "
                                << "-thr " << tmpThr << " "
@@ -808,7 +823,7 @@ int main( int argc, char* argv[] )
           std::stringstream tmpComputeCentroidsCommandOss ;
           tmpComputeCentroidsCommandOss
                           << "python3 " << computeCentroidsClientFilename << " "
-                          << "-i " << atlasBundlesInfoPaths[ i ] << " "
+                          << "-i " << inputBundlePath << " "
                           << "-o " << outputCentroidsPath << " "
                           << "-r " << referenceFilename << " "
                           << "-thr " << tmpThr / 2.0 << " "
