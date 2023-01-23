@@ -25,7 +25,8 @@
 #include <boost/process.hpp>
 
 #include "computeCentroids.h"
-#include "ioWrapper.h"
+// #include "ioWrapper.h"
+#include "./tools/ioWrapper.h"
 
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -729,7 +730,7 @@ int main( int argc, char* argv[] )
                                                                      << format ;
     std::string outputCentroidsPath = outputCentroidsPathOss.str() ;
 
-    std::stringstream inputBundlePath ;
+    std::string inputBundlePath ;
     if ( format == ".bundles" || format == ".bundlesdata" )
     {
 
