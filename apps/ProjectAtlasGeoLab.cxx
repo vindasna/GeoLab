@@ -1361,7 +1361,7 @@ int main( int argc, char* argv[] )
               << "[-cn] : Path to the computeNeighborhood file \n"
               << "[-slr] : Do global SLR step (default : false)\n"
               << "[-cp] : Do first a classical projection without SBR (default "
-	            << ": false)\n"
+	            << ": true)\n"
               << "[-sp] : Save recognized bundles separetly (default : true)\n"
               << "[-force] : Force to overwrite files (default = false) \n"
               << "[-nbThreads] : Sets the value of omp_set_num_threads "
