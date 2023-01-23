@@ -43,14 +43,21 @@ The contents of this repository are released under Apache-2.0 license.
    `$ make`
    
 
-4. Configure PATH :
+3. Configure PATH :
    Edit the startup ~/.bashrc or /etc/bash.bashrc file manually by adding this line :
    
    `$ export PATH=/<edit as appropriate>/GeoLab/build/bin:$PATH`
 
-5. Check installation :
-6. 
+4. Check installation :
+ 
    `$ ProjectAtlasGeoLab -h`
+
+5. If you are using a virtual environment for python, change the first line in {GeoLab Path}/build/bin/analyseAtlasBundle.py :
+   
+   `$ #!/usr/bin/python3 (original line)`    --->    `$ #!{your python binary}`     
+ 
+
+## Usage example on ESBA atlas
 
 
 
