@@ -1,4 +1,4 @@
-include_directories ( ${CMAKE_SOURCE_DIR}/ProjectAtlasFiles)
+include_directories ( ${CMAKE_SOURCE_DIR}/src)
 
 file( GLOB LIB_SOURCE *.cxx)
 
