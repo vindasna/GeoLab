@@ -90,7 +90,7 @@ First, you'll need to resample your atlas to a fixed number of points per fiber,
 
 If yout atlas is in .tck/.trk format you'll need to create a ".minf" file for each of the ".tck/.trk" files in your atlas. You can use the createMinf command as in the example ***Usage example on ESBA atlas***.
 
-You'll need to analyse your atlas to get the bundle-specific thresholds :
+You'll need to analyse your atlas to get the bundle-specific thresholds **this step can be done only once** :
 
     `$ analyseAtlasBundle.py -i atlasDir -f ${format} -r referenceImage.nii`
 
@@ -127,20 +127,20 @@ Then create the ".minf" file for your input if necessary and use the ProjectAtla
     `// Do if ".minf` for input does not exists
     `$ createMinf -o {path to tractogram without extension}.minf -f ${format}`
     `// Parcellation`
-    `$ ProjectAtlasGeoLab -i input${format} -a atlasDir -ref referenceImage.nii -o outputDir -cc clientComputeCentroids.py --rb clientRegisterBundles.py -ods dipyServer.py -cds clientCloseServer.py -nbPoints 15 -an Neigborhood${format2} -anc Centroids${format2} -nbThreads ${nbThreads}` 
+    `$ ProjectAtlasGeoLab -i input${format} -a atlasDir -ref referenceImage.nii -o outputDir -cc clientComputeCentroids.py --rb clientRegisterBundles.py -ods dipyServer.py -cds clientCloseServer.py -nbPoints 15 -an Neigborhood -anc Centroids -nbThreads ${nbThreads}` 
 
 
 * Replace ${format} with {.trk, .tck, .bundles} according to your tractogram format.
 * Replace ${format2} with {Trk, Tck, Bundles} according to your tractogram format.
 * input${format} : subject's tractogram (.tck/.trk/.bundles)
-* atlasDir : Path to your atlas directory.
+* atlasDir : Path to your atlas directory (after analysing it with analyseAtlasBundle).
 * referenceImage.nii : path to the reference .nii where the atlas is
 * outputDir : directory where to save the results.
 * clientComputeCentroids.py : found in dipyServiceClient folder.
 * clientRegisterBundles.py : found in dipyServiceClient folder.
 * dipyServer.py : found in dipyServiceClient folder.
 * clientCloseServer.py : found in ./dipyServiceClient folder.
-* Neigborhood${format2} : found in ./Atlas/*.zip.
-* Centroids${format2} : found in ./Atlas/*.zip.
+* NeigborhoodAtlas : outDirNeighborhoodAtlas.
+* CentroidsAtlas : outDirCentroidsAtlas.
 * ${nbThreads} : number of threads to use for OpenMP.
     
