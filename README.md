@@ -67,18 +67,18 @@ To extract the bundles of the ESBA atlas from a subject you first need to comput
 
 Then use the ProjectAtlasGeoLab command :
 
-    `ProjectAtlasGeoLab -i input${format} -a atlasDir -ref mni_icbm152_t1_tal_nlin_asym_09c_brain.nii -o outputDir -cc clientComputeCentroids.py --rb clientRegisterBundles.py -ods dipyServer.py -cds clientCloseServer.py -nbPoints 15 -an Neigborhood${FORMAT} -anc Centroids${FORMAT} -nbThreads ${nbThreads}` 
+    `ProjectAtlasGeoLab -i input${format} -a atlasDir -ref mni_icbm152_t1_tal_nlin_asym_09c_brain.nii -o outputDir -cc clientComputeCentroids.py --rb clientRegisterBundles.py -ods dipyServer.py -cds clientCloseServer.py -nbPoints 15 -an Neigborhood${format2} -anc Centroids${format2} -nbThreads ${nbThreads}` 
 
-* Replace ${format} with {.trk, .tck, .bundles}.
-* Replace ${Format} with {Trk, Tck, Bundles} according to ${format}.
+* Replace ${format} with {.trk, .tck, .bundles} according to your tractogram format.
+* Replace ${format2} with {Trk, Tck, Bundles} according to ${format}.
 * mni_icbm152_t1_tal_nlin_asym_09c_brain.nii : path to the reference image mni_icbm152_t1_tal_nlin_asym_09c_brain.nii
 * outDir : directory where to save the results.
 * clientComputeCentroids.py : found in dipyServiceClient folder.
 * clientRegisterBundles.py : found in dipyServiceClient folder.
 * dipyServer.py : found in dipyServiceClient folder.
 * clientCloseServer.py : found in ./dipyServiceClient folder.
-* Neigborhood${FORMAT} : found in ./Atlas/*.zip.
-* Centroids${FORMAT} : found in ./Atlas/*.zip.
+* Neigborhood${format2} : found in ./Atlas/*.zip.
+* Centroids${format2} : found in ./Atlas/*.zip.
 * ${nbThreads} : number of threads to use for OpenMP.
 
 
