@@ -84,7 +84,17 @@ Then use the ProjectAtlasGeoLab command :
 
 ## Usage example on other atlas
 
-If yout atlas is in .tck/.trk format you'll need to create a ".minf" file for each of the ".tck/.trk" files in your atlas. You can use the createMinf command as in the example ### Usage example on ESBA atlas
+If yout atlas is in .tck/.trk format you'll need to create a ".minf" file for each of the ".tck/.trk" files in your atlas. You can use the createMinf command as in the example ***Usage example on ESBA atlas***.
+
+You'll need to analyse your atlas to get the bundle-specific thresholds :
+
+    `$ analyseAtlasBundle.py -i atlasDir -f ${format} -r mni_icbm152_t1_tal_nlin_asym_09c_brain.nii`
+
+* atlasDir : Path to your atlas directory.
+* Replace ${format} with {.trk, .tck, .bundles} according to your tractogram format.
+* mni_icbm152_t1_tal_nlin_asym_09c_brain.nii : path to the reference image mni_icbm152_t1_tal_nlin_asym_09c_brain.nii
+
+
 
 
 
