@@ -25,7 +25,8 @@
 #include <boost/process.hpp>
 
 #include "computeCentroids.h"
-#include "ioWrapper.h"
+// #include "ioWrapper.h"
+#include "./tools/ioWrapper.h"
 
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -691,12 +692,12 @@ int main( int argc, char* argv[] )
   clientLogFilePathOss << outputDirectory << "clientDipyLog.txt" ;
   std::string clientLogFilePath = clientLogFilePathOss.str() ;
 
-  int bundleCounter = 1 ;
+  int bundleCounter = 0 ;
   #pragma omp parallel for schedule(dynamic)
   for ( int i = 0 ; i < nbBundles ; i++ )
   {
 
-    #pragma critical
+    #pragma omp critical
     {
 
       printf( "\rNumber of bundles processed : [ %d  /  %d ]",
