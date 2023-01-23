@@ -24,6 +24,8 @@ The contents of this repository are released under Apache-2.0 license.
 - Dipy >= 1.5
 - Numpy >= 1.19.5
 - Setproctitle >= 1.2.3
+- fitter >= 1.5.1
+- nibabel >= 3.2.2
 
 ## Quick install
 
