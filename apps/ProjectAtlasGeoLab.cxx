@@ -1353,7 +1353,7 @@ int main( int argc, char* argv[] )
               << " recognized ( default : 20 )\n"
               << "[-thrSim] : Threshold for percentage of similarity in "
               << "projection i.e nbAtlasBundleFibersSimilar / "
-              << "nbFibersAtlasBundle (Range [ 0 ; 1 ], default = 0.05) \n"
+              << "nbFibersAtlasBundle (Range [ 0 ; 1 ], default = 0.00001) \n"
               << "[-adjCB] : adjacency for computing comparison with atlas "
               << "(default = 5 mm) \n"
               << "[-pa] : Path to the ProjectAtlas file \n"
