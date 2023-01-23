@@ -303,7 +303,7 @@ def computeCentroids( input_filename, output_filename, reference_anatomy,
         if ( output_trk.endswith( ".trk" ) ) :
             output_trk_minf = output_trk.replace( ".trk", ".minf" )
         else :
-            output_trk_minf = output_trkreplace( ".tck", ".minf" )
+            output_trk_minf = output_trk.replace( ".tck", ".minf" )
         if ( tractogram_trk_minf_path != output_trk_minf
                               and os.path.isfile( tractogram_trk_minf_path ) ) :
             shutil.copy2( tractogram_trk_minf_path, output_trk_minf )
