@@ -71,8 +71,10 @@ Then use the ProjectAtlasGeoLab command :
 
 * Replace ${format} with {.trk, .tck, .bundles} according to your tractogram format.
 * Replace ${format2} with {Trk, Tck, Bundles} according to your tractogram format.
+* input${format} : subject's tractogram (.tck/.trk/.bundles)
+* atlasDir : Path to your atlas directory.
 * mni_icbm152_t1_tal_nlin_asym_09c_brain.nii : path to the reference image mni_icbm152_t1_tal_nlin_asym_09c_brain.nii
-* outDir : directory where to save the results.
+* outputDir : directory where to save the results.
 * clientComputeCentroids.py : found in dipyServiceClient folder.
 * clientRegisterBundles.py : found in dipyServiceClient folder.
 * dipyServer.py : found in dipyServiceClient folder.
@@ -94,7 +96,7 @@ You'll need to analyse your atlas to get the bundle-specific thresholds :
 
 * Replace ${format} with {.trk, .tck, .bundles} according to your tractogram format.
 * atlasDir : Path to your atlas directory.
-* referenceImage.nii : path to the reference .nii where the atlas is
+* referenceImage.nii : path to the reference .nii where the atlas is.
 
 
 You'll also need to precompute the full atlas (all bundles in one single file), the atlas neighborhood and the atlas centroids :
@@ -111,6 +113,7 @@ You'll also need to precompute the full atlas (all bundles in one single file), 
 * Replace ${format} with {.trk, .tck, .bundles} according to your tractogram format.
 * atlasDir : Path to your atlas directory.
 * outDirFullAtlas : output directory of command fuseAtlas.
+* referenceImage.nii : path to the reference .nii where the atlas is
 * outDirNeighborhoodAtlas : output directory of command computeNeighborhood.
 * outDirCentroidsAtlas : output directory of command computeCentroids.
 * clientComputeCentroids.py : found in dipyServiceClient folder.
@@ -124,8 +127,20 @@ Then create the ".minf" file for your input if necessary and use the ProjectAtla
     `// Do if ".minf` for input does not exists
     `$ createMinf -o {path to tractogram without extension}.minf -f ${format}`
     `// Parcellation`
-    `$ ProjectAtlasGeoLab -i input${format} -a atlasDir -ref mni_icbm152_t1_tal_nlin_asym_09c_brain.nii -o outputDir -cc clientComputeCentroids.py --rb clientRegisterBundles.py -ods dipyServer.py -cds clientCloseServer.py -nbPoints 15 -an Neigborhood${format2} -anc Centroids${format2} -nbThreads ${nbThreads}` 
+    `$ ProjectAtlasGeoLab -i input${format} -a atlasDir -ref referenceImage.nii -o outputDir -cc clientComputeCentroids.py --rb clientRegisterBundles.py -ods dipyServer.py -cds clientCloseServer.py -nbPoints 15 -an Neigborhood${format2} -anc Centroids${format2} -nbThreads ${nbThreads}` 
 
 
-
+* Replace ${format} with {.trk, .tck, .bundles} according to your tractogram format.
+* Replace ${format2} with {Trk, Tck, Bundles} according to your tractogram format.
+* input${format} : subject's tractogram (.tck/.trk/.bundles)
+* atlasDir : Path to your atlas directory.
+* referenceImage.nii : path to the reference .nii where the atlas is
+* outputDir : directory where to save the results.
+* clientComputeCentroids.py : found in dipyServiceClient folder.
+* clientRegisterBundles.py : found in dipyServiceClient folder.
+* dipyServer.py : found in dipyServiceClient folder.
+* clientCloseServer.py : found in ./dipyServiceClient folder.
+* Neigborhood${format2} : found in ./Atlas/*.zip.
+* Centroids${format2} : found in ./Atlas/*.zip.
+* ${nbThreads} : number of threads to use for OpenMP.
     
