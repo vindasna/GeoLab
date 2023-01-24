@@ -41,10 +41,18 @@ bool rmdir( const std::string& path ) ;
 bool copy( const std::string& source,
            const std::string& destination ) ;
 //
+bool copytree( const std::string& source,
+                      const std::string& destination,
+                      bool forceOverride ) ;
+//
 bool rename( const std::string& source,
                     const std::string& destination ) ;
 //
 std::string dirname( const std::string& path ) ;
+//
+std::string basename( const std::string& path ) ;
+//
+std::string basenameNoExtension( const std::string& path ) ;
 //
 std::string replaceExtension( const std::string& path,
                               const std::string& newExtension ) ;
@@ -59,6 +67,9 @@ int countFilesDirectory( const std::string& path ) ;
 std::vector<std::string> getFilesInDirectoryWithExtension(
                                                 const std::string& path,
                                                 const std::string& extension ) ;
+//
+void listDir( const std::string& path,
+              std::vector<std::string>& dirList ) ;
 //
 void checkAtlasDirectory( const std::string& path,
                           const std::string& format ) ;

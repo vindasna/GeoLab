@@ -126,6 +126,62 @@ bool copy( const std::string& source,
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+/////////////////////// Function to copy directory /////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+bool copytree( const std::string& source,
+               const std::string& destination,
+               bool forceOverride )
+{
+
+  if ( !is_dir( source ) )
+  {
+
+    std::cout << "ERROR : in copytree(), source " << source
+              << " is not a directoy " << std::endl ;
+    exit( 1 ) ;
+
+  }
+
+  if ( is_dir( destination ) && !forceOverride )
+  {
+
+    std::cout << "ERROR : in copytree(), destination " << destination
+              << " already exists and forceOverride is set to false"
+              << std::endl ;
+    exit( 1 ) ;
+
+  }
+
+
+  std::experimental::filesystem::copy( source, destination ) ;
+
+  if ( !is_dir( destination ) )
+  {
+
+    return( false ) ;
+
+  }
+  else
+  {
+
+    if ( countFilesDirectory( source ) != countFilesDirectory( destination ) )
+    {
+
+      return( false ) ;
+
+    }
+    else
+    {
+
+      return( true ) ;
+
+    }
+
+  }
+
+}
+
+////////////////////////////////////////////////////////////////////////////////
 ///////////////////////// Function to rename file //////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 bool rename( const std::string& source, const std::string& destination )
@@ -183,6 +239,63 @@ std::string dirname( const std::string& path )
   return( dirname ) ;
 
 }
+
+
+////////////////////////////////////////////////////////////////////////////////
+/////////////////////// Function to get basename of path ///////////////////////
+////////////////////////////////////////////////////////////////////////////////
+std::string basename( const std::string& path )
+{
+
+  std::string tmpString = path ;
+  char lastChar = tmpString[ tmpString.size() - 1 ] ;
+  if ( lastChar == '/' )
+  {
+
+    tmpString = tmpString.substr( 0, tmpString.size() - 1 ) ;
+
+  }
+
+  std::experimental::filesystem::path p( tmpString ) ;
+
+  std::ostringstream _tmpOss ;
+  _tmpOss << p.filename() ;
+  std::string _tmp = _tmpOss.str() ;
+  _tmp = _tmp.substr( 1, _tmp.size() ) ;
+  _tmp = _tmp.substr( 0, _tmp.size() - 1 ) ;
+
+  return( _tmp ) ;
+
+}
+
+
+////////////////////////////////////////////////////////////////////////////////
+////////////// Function to get basename of path without extension //////////////
+////////////////////////////////////////////////////////////////////////////////
+std::string basenameNoExtension( const std::string& path )
+{
+
+  std::string tmpString = path ;
+  char lastChar = tmpString[ tmpString.size() - 1 ] ;
+  if ( lastChar == '/' )
+  {
+
+    tmpString = tmpString.substr( 0, tmpString.size() - 1 ) ;
+
+  }
+
+  std::experimental::filesystem::path p( tmpString ) ;
+
+  std::ostringstream _tmpOss ;
+  _tmpOss << p.stem() ;
+  std::string _tmp = _tmpOss.str() ;
+  _tmp = _tmp.substr( 1, _tmp.size() ) ;
+  _tmp = _tmp.substr( 0, _tmp.size() - 1 ) ;
+
+  return( _tmp ) ;
+
+}
+
 
 ////////////////////////////////////////////////////////////////////////////////
 //////////////////// Function to replace extension file ////////////////////////
@@ -356,6 +469,41 @@ std::vector<std::string> getFilesInDirectoryWithExtension(
   }
 
   return( outFiles ) ;
+
+}
+
+
+////////////////////////////////////////////////////////////////////////////////
+//////////////////// Function to get files in directoy /////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+void listDir( const std::string& path,
+              std::vector<std::string>& dirList )
+{
+
+  if ( !is_dir( path ) )
+  {
+
+    std::cout << "ERROR : in listDir, directoy " << path << "does not exists"
+                                                         << std::endl ;
+
+    exit( 1 ) ;
+
+  }
+
+  for ( const auto & file : std::experimental::filesystem::directory_iterator(
+                                                                        path ) )
+  {
+
+    std::ostringstream fileNameOss ;
+    fileNameOss << file ;
+    std::string fileName = fileNameOss.str() ;
+    fileName = fileName.substr( 1, fileName.size() ) ;
+    fileName = fileName.substr( 0, fileName.size() - 1 ) ;
+
+    dirList.push_back( fileName ) ;
+
+  }
+
 
 }
 
@@ -1278,7 +1426,7 @@ void saveComparisonMeasuresWithAtlas(
                                                       << _overlap << std::endl ;
 
       _bundle += 1 ;
-      
+
     }
 
   }
