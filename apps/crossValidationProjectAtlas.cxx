@@ -193,7 +193,7 @@ bool generateTrueWithXprobability( float probability )
 int getNbFibers( const std::string& bundleFilename )
 {
 
-  BundlesMinf bundle( bundleFilename.c_str(), 0 ) ;
+  BundlesMinf bundle( bundleFilename.c_str() ) ;
   if ( bundle.curves_count <= 0 )
   {
 
@@ -228,8 +228,8 @@ int main( int argc, char* argv[] )
   index_output = getFlagPosition( argc, argv, "-o") ;
   index_cc = getFlagPosition( argc, argv, "-cc") ;
   index_rb = getFlagPosition( argc, argv, "-rb") ;
-  index_rb = getFlagPosition( argc, argv, "-ods") ;
-  index_rb = getFlagPosition( argc, argv, "-cds") ;
+  index_ods = getFlagPosition( argc, argv, "-ods") ;
+  index_cds = getFlagPosition( argc, argv, "-cds") ;
   index_ana = getFlagPosition( argc, argv, "-ana") ;
   index_nbPoints = getFlagPosition( argc, argv, "-nbPoints") ;
   index_k = getFlagPosition( argc, argv, "-k") ;
@@ -946,30 +946,6 @@ int main( int argc, char* argv[] )
 
   }
 
-  ////////////////////////// computeNeighborhood file //////////////////////////
-  if ( index_rb )
-  {
-
-    std::string tmpFile( argv[ index_rb + 1 ] ) ;
-    if ( !is_file( tmpFile ) )
-    {
-
-      std::cout << "ERROR : registerBunldes file " << tmpFile
-                << " does not exists " << std::endl ;
-
-      if ( is_dir( outputDirectory ) )
-      {
-
-        rmdir( outputDirectory ) ;
-
-      }
-      exit( 1 ) ;
-
-    }
-
-    registerBundlesFile = tmpFile ;
-
-  }
 
   /////////////////////////////////// Do SLR ///////////////////////////////////
   if ( index_slr )
@@ -1157,8 +1133,7 @@ int main( int argc, char* argv[] )
   std::vector< std::vector<int16_t>> fullAtlasLabels ;
   readingPredictedLabels( fullAtlasLabelsFilename.c_str(),
                           fullAtlasLabels,
-                          nbFibers,
-                          0 ) ;
+                          nbFibers ) ;
   std::vector<std::string> fullAtlasLabelsDict ;
   readLabelsDict( fullAtlasLabelsDictFilename.c_str(),
                   fullAtlasLabelsDict ) ;
@@ -1168,8 +1143,7 @@ int main( int argc, char* argv[] )
   std::vector< std::vector<int16_t>> fullAtlasMultiLabels ;
   readingPredictedLabels( fullAtlasMultiLabelsFilename.c_str(),
                           fullAtlasMultiLabels,
-                          nbFibers,
-                          0 ) ;
+                          nbFibers ) ;
   std::vector<std::string> fullAtlasMultiLabelsDict ;
   readLabelsDict( fullAtlasMultiLabelsDictFilename.c_str(),
                   fullAtlasMultiLabelsDict ) ;
@@ -1237,7 +1211,7 @@ int main( int argc, char* argv[] )
 
     }
 
-    BundlesMinf& tmpBundles = atlasData.bundles[ bundleIndex ] ;
+    BundlesMinf& tmpBundles = atlasData.bundlesMinf[ bundleIndex ] ;
     BundlesData& tmpBundlesData = atlasData.bundlesData[ bundleIndex ] ;
     std::string bundleName = atlasData.bundlesNames[ bundleIndex ] ;
 
@@ -1594,7 +1568,7 @@ int main( int argc, char* argv[] )
       BundlesData testBundleBundlesData( tmpBundlesData ) ;
       testBundleBundlesData.matrixTracks = testMatrixTracks,
       testBundleBundlesData.pointsPerTrack = testPointsPerTracks,
-      testBundleBundlesData.curves_count = curvesCountTest ) ;
+      testBundleBundlesData.curves_count = curvesCountTest ;
       testBundleBundlesData.write( bundlesDataTest.c_str(),
                                                            testBundleBundles ) ;
 
@@ -1842,8 +1816,7 @@ int main( int argc, char* argv[] )
           std::vector<std::vector<int16_t>> _tmpLabelsBundle ;
           readingPredictedLabels( _tmpLabelsBundlePath.c_str(),
                                   _tmpLabelsBundle,
-                                  _tmpBundlesData.curves_count,
-                                  0 ) ;
+                                  _tmpBundlesData.curves_count ) ;
 
 
           for ( int i = 0 ; i < _tmpBundlesData.curves_count ; i++ )
@@ -2036,7 +2009,7 @@ int main( int argc, char* argv[] )
       for ( int16_t bundleIndex = 0 ; bundleIndex < nbBundles ; bundleIndex++ )
       {
 
-        BundlesMinf& tmpBundles = testAtlasData.bundles[ bundleIndex ] ;
+        BundlesMinf& tmpBundles = testAtlasData.bundlesMinf[ bundleIndex ] ;
         BundlesData& tmpBundlesData = testAtlasData.bundlesData[ bundleIndex ] ;
         std::string bundleName = testAtlasData.bundlesNames[ bundleIndex ] ;
         std::vector<float>& tmpMatrixTracks = tmpBundlesData.matrixTracks ;
@@ -2052,8 +2025,7 @@ int main( int argc, char* argv[] )
         std::vector<std::vector<int16_t>> multiLabelsBundle ;
         readingPredictedLabels( bundlesTestMultiLabels.c_str(),
                                 multiLabelsBundle,
-                                nbFibersBundleTest,
-                                0 ) ;
+                                nbFibersBundleTest ) ;
 
         for ( int fiberIndex = 0 ; fiberIndex < nbFibersBundleTest ;
                                                                   fiberIndex++ )
@@ -2252,8 +2224,7 @@ int main( int argc, char* argv[] )
     std::vector<std::vector<int16_t>> labelsRecognizedTest ;
     readingPredictedLabels( labelsRecognizedTestPath.c_str(),
                             labelsRecognizedTest,
-                            curves_countFullTest,
-                            0 ) ;
+                            curves_countFullTest ) ;
 
 
     if ( verbose > 1 )
@@ -2280,8 +2251,7 @@ int main( int argc, char* argv[] )
     std::vector<std::vector<int16_t>> labelsFullTest ;
     readingPredictedLabels( fullTestLabelsPath.c_str(),
                             labelsFullTest,
-                            curves_countFullTest,
-                            0 ) ;
+                            curves_countFullTest ) ;
 
 
     if ( verbose > 1 )
