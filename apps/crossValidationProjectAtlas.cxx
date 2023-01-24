@@ -2055,13 +2055,13 @@ int main( int argc, char* argv[] )
 
       curves_countFullTest = fullTestPointsPerTrack.size() ;
 
-      BundlesMinf fullTestBundles( tmpBundles ) ;
+      BundlesMinf fullTestBundles( testAtlasData.bundlesMinf[ 0 ] ) ;
       fullTestBundles.curves_count = curves_countFullTest ;
       // fullTestBundles.bundles = "[ '255', 0 ]" ;
       fullTestBundles.write( fullTestBundlesPath.c_str() ) ;
 
 
-      BundlesData fullTestdBundlesData( tmpBundlesData ) ;
+      BundlesData fullTestdBundlesData( testAtlasData.bundlesData[ 0 ] ) ;
       fullTestdBundlesData.matrixTracks = fullTestMatrixTracks ;
       fullTestdBundlesData.pointsPerTrack = fullTestPointsPerTrack ;
       fullTestdBundlesData.curves_count = curves_countFullTest ;
@@ -2467,11 +2467,12 @@ int main( int argc, char* argv[] )
     /////////////////////// Computing weights per bundle ///////////////////////
     ////////////////////////////////////////////////////////////////////////////
     AtlasBundles trainAtlasData( trainDir.c_str(),
-                                true,
-                                false,
-                                0 ) ;
+                                 isBundles,
+                                 isTrk,
+                                 isTck,
+                                 0 ) ;
 
-    int nbBundlesTrain = trainAtlasData.bundles.size() ;
+    int nbBundlesTrain = trainAtlasData.bundlesMinf.size() ;
     int64_t totalNbFibersTrain = 0 ;
     std::vector<float> weightsBundles( nbBundlesTrain, 0 ) ;
     // Same order as recognized bundles
@@ -2508,7 +2509,8 @@ int main( int argc, char* argv[] )
 
       }
 
-      BundlesMinf& _bundleTrain = trainAtlasData.bundles[ _bundleTrainIndex ] ;
+      BundlesMinf& _bundleTrain = trainAtlasData.bundlesMinf[
+                                                           _bundleTrainIndex ] ;
       int tmpNbFibers = _bundleTrain.curves_count ;
       totalNbFibersTrain += tmpNbFibers ;
       weightsBundles[ _indexInRecognized ] = ( float )tmpNbFibers ;
