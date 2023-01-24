@@ -181,13 +181,13 @@ int main( int argc, char* argv[] )
               << "-i : Path to the input tractogram \n"
               << "-ref : Path to the reference image where the tractogram is \n"
               << "-o : Path to the output directory \n"
-              << "-cc : Path to the clientComputeCentroids.py file \n"
-              << "-ods : Path to the dipyServer.py file \n"
-              << "-cds : Path to the clientCloseServer.py file \n"
               << "-nbPoints : Number of points per fiber (same number for all "
               << "fibers) \n"
               << "-format : Format of bundles in directory (.tck/.trk/.bundles)"
                                                                     << std::endl
+              << "[-cc] : Path to the clientComputeCentroids.py file \n"
+              << "[-ods] : Path to the dipyServer.py file \n"
+              << "[-cds] : Path to the clientCloseServer.py file \n"
               << "[-nbThreads] : Sets the value of omp_set_num_threads "
               << "(default : number of cores ) \n"
               << "[-thr] : threshold for QuickBundles (default : based on .minf"
@@ -219,31 +219,6 @@ int main( int argc, char* argv[] )
   {
 
     std::cout << "-o argument required ..." << std::endl ;
-    exit( 1 ) ;
-
-  }
-
-  if ( !index_cc )
-  {
-
-    std::cout << "-cc argument required ..." << std::endl ;
-    exit( 1 ) ;
-
-  }
-
-
-  if ( !index_ods )
-  {
-
-    std::cout << "-ods argument required ..." << std::endl ;
-    exit( 1 ) ;
-
-  }
-
-  if ( !index_cds )
-  {
-
-    std::cout << "-cds argument required ..." << std::endl ;
     exit( 1 ) ;
 
   }
@@ -439,96 +414,110 @@ int main( int argc, char* argv[] )
 
 
   ////////////////////////// Compute centorids command /////////////////////////
-  computeCentroidsClientFilename = argv[ index_cc + 1 ] ;
-  lastChar = computeCentroidsClientFilename[
-                                   computeCentroidsClientFilename.size() - 1 ] ;
-  if ( lastChar == '/' )
+  if ( index_cc )
   {
 
-    computeCentroidsClientFilename = computeCentroidsClientFilename.substr( 0,
+    computeCentroidsClientFilename = argv[ index_cc + 1 ] ;
+    lastChar = computeCentroidsClientFilename[
+                                   computeCentroidsClientFilename.size() - 1 ] ;
+    if ( lastChar == '/' )
+    {
+
+      computeCentroidsClientFilename = computeCentroidsClientFilename.substr( 0,
                                    computeCentroidsClientFilename.size() - 1 ) ;
 
-  }
-  if ( !is_file( computeCentroidsClientFilename ) )
-  {
+    }
+    if ( !is_file( computeCentroidsClientFilename ) )
+    {
 
-    std::stringstream outMessageOss ;
-    outMessageOss << "ERROR : clientComputeCentroids.py file "
-                  << computeCentroidsClientFilename << " does not exists "
+      std::stringstream outMessageOss ;
+      outMessageOss << "ERROR : clientComputeCentroids.py file "
+                    << computeCentroidsClientFilename << " does not exists "
                                                                   << std::endl ;
-    std::string outMessage = outMessageOss.str() ;
-    throw( std::invalid_argument( outMessage ) ) ;
+      std::string outMessage = outMessageOss.str() ;
+      throw( std::invalid_argument( outMessage ) ) ;
 
+      exit( 1 ) ;
 
-    // if ( is_dir( outputDirectory ) )
-    // {
-    //
-    //   rmdir( outputDirectory ) ;
-    //
-    // }
-    exit( 1 ) ;
+    }
+
+  }
+  else
+  {
+
+    computeCentroidsClientFilename = "clientComputeCentroids.py" ;
 
   }
 
 
-  //////////////////////////// Open server command ////////////////////////////
-  openDipyServerClientFile = argv[ index_ods + 1 ] ;
-  lastChar = openDipyServerClientFile[ openDipyServerClientFile.size() - 1 ] ;
-  if ( lastChar == '/' )
+
+  //////////////////////////// Open server command /////////////////////////////
+  if ( index_ods )
   {
 
-    openDipyServerClientFile = openDipyServerClientFile.substr( 0,
+    openDipyServerClientFile = argv[ index_ods + 1 ] ;
+    lastChar = openDipyServerClientFile[ openDipyServerClientFile.size() - 1 ] ;
+    if ( lastChar == '/' )
+    {
+
+      openDipyServerClientFile = openDipyServerClientFile.substr( 0,
                                          openDipyServerClientFile.size() - 1 ) ;
 
+    }
+    if ( !is_file( openDipyServerClientFile ) )
+    {
+
+      std::stringstream outMessageOss ;
+      outMessageOss << "ERROR : dipyServer.py file "
+               << openDipyServerClientFile << " does not exists " << std::endl ;
+      std::string outMessage = outMessageOss.str() ;
+      throw( std::invalid_argument( outMessage ) ) ;
+
+      exit( 1 ) ;
+
+    }
+
   }
-  if ( !is_file( openDipyServerClientFile ) )
+  else
   {
 
-    std::stringstream outMessageOss ;
-    outMessageOss << "ERROR : dipyServer.py file "
-              << openDipyServerClientFile << " does not exists " << std::endl ;
-    std::string outMessage = outMessageOss.str() ;
-    throw( std::invalid_argument( outMessage ) ) ;
-
-    // if ( is_dir( outputDirectory ) )
-    // {
-    //
-    //   rmdir( outputDirectory ) ;
-    //
-    //
-    // }
-    exit( 1 ) ;
+    openDipyServerClientFile = "dipyServer.py" ;
 
   }
 
   //////////////////////////// Close server command ////////////////////////////
-  closeDipyServerClientFile = argv[ index_cds + 1 ] ;
-  lastChar = closeDipyServerClientFile[ closeDipyServerClientFile.size() - 1 ] ;
-  if ( lastChar == '/' )
+  if ( index_cds )
   {
 
-    closeDipyServerClientFile = closeDipyServerClientFile.substr( 0,
+    closeDipyServerClientFile = argv[ index_cds + 1 ] ;
+    lastChar = closeDipyServerClientFile[ closeDipyServerClientFile.size()
+                                                                         - 1 ] ;
+    if ( lastChar == '/' )
+    {
+
+      closeDipyServerClientFile = closeDipyServerClientFile.substr( 0,
                                         closeDipyServerClientFile.size() - 1 ) ;
 
+    }
+    if ( !is_file( closeDipyServerClientFile ) )
+    {
+
+      std::stringstream outMessageOss ;
+      outMessageOss << "ERROR : clientCloseServer.py file "
+              << closeDipyServerClientFile << " does not exists " << std::endl ;
+      std::string outMessage = outMessageOss.str() ;
+      throw( std::invalid_argument( outMessage ) ) ;
+
+      exit( 1 ) ;
+
+    }
+
+
   }
-  if ( !is_file( closeDipyServerClientFile ) )
+  else
   {
 
-    std::stringstream outMessageOss ;
-    outMessageOss << "ERROR : clientCloseServer.py file "
-              << closeDipyServerClientFile << " does not exists " << std::endl ;
-    std::string outMessage = outMessageOss.str() ;
-    throw( std::invalid_argument( outMessage ) ) ;
-
-
-    // if ( is_dir( outputDirectory ) )
-    // {
-    //
-    //   rmdir( outputDirectory ) ;
-    //
-    //
-    // }
-    exit( 1 ) ;
+    closeDipyServerClientFile = "clientCloseServer.py" ;
 
   }
 
