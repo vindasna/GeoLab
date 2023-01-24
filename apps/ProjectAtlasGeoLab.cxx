@@ -322,16 +322,29 @@ void applyRecoBundles( const std::string& movedTractogramNeighborhood,
     }
 
     std::ostringstream computeCentroidsCommandClientOss ;
-    computeCentroidsCommandClientOss << "python3 "
-                               << computeCentroidsClientFilename << " "
-                               << "-i " << atlasNeighborhood << " "
-                               << "-o " << atlasNeighborhoodCentroids << " "
-                               << "-r " << referenceImage << " "
-                               << "-thr " << averageRadius << " "
-                               << "-nbPoints " << nbPointsPerFiber << " "
-                               << "-lf " << clientsLogFilePath << " "
-                               << "-p " << portDipyServer << " "
-                               << "-v 1 " ;
+    if ( index_cc )
+    {
+
+      computeCentroidsCommandClientOss << "python3 "
+                                      << computeCentroidsClientFilename << " " ;
+
+    }
+    else
+    {
+
+      computeCentroidsCommandClientOss << computeCentroidsClientFilename
+                                                                        << " " ;
+
+    }
+    computeCentroidsCommandClientOss
+                                   << "-i " << atlasNeighborhood << " "
+                                   << "-o " << atlasNeighborhoodCentroids << " "
+                                   << "-r " << referenceImage << " "
+                                   << "-thr " << averageRadius << " "
+                                   << "-nbPoints " << nbPointsPerFiber << " "
+                                   << "-lf " << clientsLogFilePath << " "
+                                   << "-p " << portDipyServer << " "
+                                   << "-v 1 " ;
     std::string computeCentroidsCommandClient =
                                         computeCentroidsCommandClientOss.str() ;
     int isFailCentroids = 0 ;
@@ -439,8 +452,20 @@ void applyRecoBundles( const std::string& movedTractogramNeighborhood,
   }
 
   std::ostringstream computeCentroidsCommandClient2Oss ;
-  computeCentroidsCommandClient2Oss << "python3 "
-                         << computeCentroidsClientFilename << " "
+  if ( index_cc )
+  {
+
+    computeCentroidsCommandClient2Oss << "python3 "
+                                      << computeCentroidsClientFilename << " " ;
+
+  }
+  else
+  {
+
+    computeCentroidsCommandClient2Oss << computeCentroidsClientFilename << " " ;
+
+  }
+  computeCentroidsCommandClient2Oss
                          << "-i " << movedTractogramNeighborhood << " "
                          << "-o " << movedTractogramNeighborhoodCentroids << " "
                          << "-r " << referenceImage << " "
@@ -548,8 +573,20 @@ void applyRecoBundles( const std::string& movedTractogramNeighborhood,
   }
 
   std::ostringstream registerBundlesClientCommadOss ;
-  registerBundlesClientCommadOss << "python3 "
-                         << registerBundlesClientFile << " "
+  if ( index_rb )
+  {
+
+    registerBundlesClientCommadOss << "python3 "
+                                           << registerBundlesClientFile << " " ;
+
+  }
+  else
+  {
+
+    registerBundlesClientCommadOss << registerBundlesClientFile << " " ;
+
+  }
+  registerBundlesClientCommadOss
                          << "-s " << replaceExtension(
                                      atlasNeighborhoodCentroids, format ) << " "
                          << "-m " << replaceExtension(
@@ -1167,8 +1204,20 @@ void closeDipyServer( int portDipyServer )
 
   std::cout << "Closing dipy service... " ;
   std::ostringstream closeDipyServiceOss ;
-  closeDipyServiceOss << "python3 " << closeDipyServerClientFile << " "
-                      << "-p " << portDipyServer << " " ;
+  if ( index_cds )
+  {
+
+    closeDipyServiceOss << "python3 " << closeDipyServerClientFile
+                                                                      << " " ;
+
+  }
+  else
+  {
+
+    closeDipyServiceOss << closeDipyServerClientFile << " " ;
+
+  }
+  closeDipyServiceOss << "-p " << portDipyServer << " " ;
   std::string closeDipyService = closeDipyServiceOss.str() ;
 
   int isCloseServerFail = run_sh_process( closeDipyService ) ;
@@ -3258,8 +3307,19 @@ int main( int argc, char* argv[] )
 
 
   std::ostringstream launchDipyServiceOss ;
-  launchDipyServiceOss << "python3 " << openDipyServerClientFile << " "
-                       << "-lf " << serverLogFilePath << " " ;
+  if ( index_ods )
+  {
+
+    launchDipyServiceOss << "python3 " << openDipyServerClientFile << " " ;
+
+  }
+  else
+  {
+
+    launchDipyServiceOss << openDipyServerClientFile << " " ;
+
+  }
+  launchDipyServiceOss << "-lf " << serverLogFilePath << " " ;
   std::string launchDipyService = launchDipyServiceOss.str() ;
 
 

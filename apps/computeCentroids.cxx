@@ -61,8 +61,20 @@ void closeDipyServer( int portDipyServer )
 
   std::cout << "Closing dipy service... " ;
   std::ostringstream closeDipyServiceOss ;
-  closeDipyServiceOss << "python3 " << closeDipyServerClientFile << " "
-                      << "-p " << portDipyServer << " " ;
+  if ( index_cds )
+  {
+
+    closeDipyServiceOss << "python3 " << closeDipyServerClientFile
+                                                                      << " " ;
+
+  }
+  else
+  {
+
+    closeDipyServiceOss << closeDipyServerClientFile << " " ;
+
+  }
+  closeDipyServiceOss << "-p " << portDipyServer << " " ;
   std::string closeDipyService = closeDipyServiceOss.str() ;
 
   int isCloseServerFail = run_sh_process( closeDipyService ) ;
@@ -640,8 +652,20 @@ int main( int argc, char* argv[] )
 
 
   std::ostringstream launchDipyServiceOss ;
-  launchDipyServiceOss << "python3 " << openDipyServerClientFile << " "
-                       << "-lf " << serverLogFilePath << " " ;
+  if ( index_ods )
+  {
+
+    launchDipyServiceOss << "python3 " << openDipyServerClientFile
+                                                                      << " " ;
+
+  }
+  else
+  {
+
+    launchDipyServiceOss << openDipyServerClientFile << " " ;
+
+  }
+  launchDipyServiceOss << "-lf " << serverLogFilePath << " " ;
   std::string launchDipyService = launchDipyServiceOss.str() ;
 
 
@@ -734,9 +758,21 @@ int main( int argc, char* argv[] )
 
 
     std::stringstream computeCentroidsCommandOss ;
-    computeCentroidsCommandOss << "python3 " << computeCentroidsClientFilename
-                                                                          << " "
-                               << "-i " << inputBundlePath << " "
+    if ( index_cc )
+    {
+
+      computeCentroidsCommandOss << "python3 " << computeCentroidsClientFilename
+                                                                        << " " ;
+
+    }
+    else
+    {
+
+      computeCentroidsCommandOss << computeCentroidsClientFilename << " " ;
+
+    }
+
+    computeCentroidsCommandOss << "-i " << inputBundlePath << " "
                                << "-o " << outputCentroidsPath << " "
                                << "-r " << referenceFilename << " "
                                << "-thr " << tmpThr << " "
@@ -809,16 +845,29 @@ int main( int argc, char* argv[] )
           rmfile( outputCentroidsPath ) ;
 
           std::stringstream tmpComputeCentroidsCommandOss ;
+          if ( index_cc )
+          {
+
+            tmpComputeCentroidsCommandOss << "python3 "
+                                      << computeCentroidsClientFilename << " " ;
+
+          }
+          else
+          {
+
+            tmpComputeCentroidsCommandOss << computeCentroidsClientFilename
+                                                                        << " " ;
+
+          }
           tmpComputeCentroidsCommandOss
-                          << "python3 " << computeCentroidsClientFilename << " "
-                          << "-i " << inputBundlePath << " "
-                          << "-o " << outputCentroidsPath << " "
-                          << "-r " << referenceFilename << " "
-                          << "-thr " << tmpThr / 2.0 << " "
-                          << "-nbPoints " << nbPointsPerFiber << " "
-                          << "-lf " << clientLogFilePath << " "
-                          << "-p " << portDipyServer << " "
-                          << "-v 1 " ;
+                                      << "-i " << inputBundlePath << " "
+                                      << "-o " << outputCentroidsPath << " "
+                                      << "-r " << referenceFilename << " "
+                                      << "-thr " << tmpThr / 2.0 << " "
+                                      << "-nbPoints " << nbPointsPerFiber << " "
+                                      << "-lf " << clientLogFilePath << " "
+                                      << "-p " << portDipyServer << " "
+                                      << "-v 1 " ;
           std::string tmpComputeCentroidsCommand =
                                            tmpComputeCentroidsCommandOss.str() ;
 
