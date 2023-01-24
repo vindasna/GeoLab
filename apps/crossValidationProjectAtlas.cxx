@@ -187,26 +187,6 @@ bool generateTrueWithXprobability( float probability )
 
 }
 
-////////////////////////////////////////////////////////////////////////////////
-//////////////// Function to get number of fibers atlas bundle /////////////////
-////////////////////////////////////////////////////////////////////////////////
-int getNbFibers( const std::string& bundleFilename )
-{
-
-  BundlesMinf bundle( bundleFilename.c_str() ) ;
-  if ( bundle.curves_count <= 0 )
-  {
-
-    std::cout << "ERROR : got invalid fiber count of " << bundle.curves_count
-                                                       << std::endl ;
-    exit( 1 ) ;
-
-  }
-  return( bundle.curves_count ) ;
-
-}
-
-
 
 
 ////////////////////////////////////////////////////////////////////////////////
