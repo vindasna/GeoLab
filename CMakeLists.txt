@@ -15,6 +15,10 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 # Configure a header file to pass the version number to the source code
 configure_file(ProjectAtlasConfig.h.in ProjectAtlasConfig.h)
 
+# Set PYTHONPATH
+set(ENV{PYTHONPATH} "PATH_TO_YOUR_PYTHON_MODULES")
+
+
 
 ######### Boost #########
 find_package(Boost REQUIRED)
