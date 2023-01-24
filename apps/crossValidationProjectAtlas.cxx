@@ -244,7 +244,7 @@ int main( int argc, char* argv[] )
               << "-nbPoints : Number of points per fiber (same number for all "
               << "fibers) \n"
               << "-k : Value of k for k-fold cross-validation \n"
-              << "-format : format used among .tck/.trk/.bundles \n :"
+              << "-format : format used among .tck/.trk/.bundles \n"
               << "[-cc] : Path to the clientComputeCentroids.py file \n"
               << "[-rb] : Path to the clientRegisterBundles.py file \n"
               << "[-ods] : Path to the dipyServer.py file \n"
