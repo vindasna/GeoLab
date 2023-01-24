@@ -30,7 +30,8 @@ The contents of this repository are released under Apache-2.0 license.
 ## Quick install
 
 1. Install dependencies.
-2. Clone Git repository and compile:
+2. In ./GeoLab/CMakeLists.txt change in line 19 ("set(ENV{PYTHONPATH} "PATH_TO_YOUR_PYTHON_MODULES")") PATH_TO_YOUR_PYTHON_MODULES to the path with your python modules (for default python in ubuntu you can delete the line or change for : /home/nv264568/.local/lib/python3.6/site-packages)
+3. Clone Git repository and compile:
 
    `$ git clone https://github.com/vindasna/GeoLab`
    
@@ -45,16 +46,16 @@ The contents of this repository are released under Apache-2.0 license.
    `$ make`
    
 
-3. Configure PATH :
+4. Configure PATH :
    Edit the startup ~/.bashrc or /etc/bash.bashrc file manually by adding this line :
    
    `$ export PATH=/<edit as appropriate>/GeoLab/build/bin:$PATH`
 
-4. Check installation :
+5. Check installation :
  
    `$ ProjectAtlasGeoLab -h`
 
-5. If you are using a virtual environment for python, change the first line in {GeoLab Path}/build/bin/analyseAtlasBundle.py :
+6. If you are using a virtual environment for python, change the first line in {GeoLab Path}/build/bin/analyseAtlasBundle.py :
    
    `$ #!/usr/bin/python3 (original line)`    --->    `$ #!{your python binary}`     
  
