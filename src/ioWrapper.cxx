@@ -930,10 +930,147 @@ void saveLabelsDict( const char* labelsDictFilename,
 
   file.close() ;
 
+}
+
+
+////////////////////////////////////////////////////////////////////////////////
+////// Function to read labels into a list of vecotr of bundles names //////////
+////////////////////////////////////////////////////////////////////////////////
+void readLabelsWithDict( const char* labelsDictFilename,
+                         const char* labelsBinaryFilename,
+                         std::vector<std::vector<std::string>>& labelsByName,
+                         int nbFibers )
+{
+
+  // Read dictionary
+  std::vector<std::string> bundlesNames ;
+
+  const char delim = ':' ;
+  std::string line ;
+  std::ifstream dictFile ;
+  dictFile.open( labelsDictFilename ) ;
+  if ( dictFile.fail() )
+  {
+
+    std::cout << "Problem reading file : " << labelsDictFilename
+                                           << std::endl ;
+
+    exit( 1 ) ;
+
+  }
+  while ( std::getline( dictFile, line ) )
+  {
+
+    std::vector< std::string > out ;
+    std::stringstream ss( line ) ;
+    std::string s ;
+    while ( std::getline( ss, s, delim ) )
+    {
+
+      s.erase( std::remove( s.begin(), s.end(), ' ' ), s.end() ) ;
+      out.push_back( s ) ;
+
+    }
+
+    bundlesNames.push_back( out[ 0 ] ) ;
+
+  }
+
+  dictFile.close() ;
+
+  // Read predicted labels
+  labelsByName.resize( nbFibers, std::vector<std::string> ) ;
+
+  const char delim = ':' ;
+  std::string line ;
+  std::ifstream labelsFile ;
+  labelsFile.open( predictedLabelsFilename ) ;
+  if ( labelsFile.fail() )
+  {
+
+    std::cout << "Problem reading file : " << predictedLabelsFilename
+                                           << std::endl ;
+
+    exit( 1 ) ;
+
+  }
+  while ( std::getline( labelsFile, line ) )
+  {
+
+    std::vector< std::string > out ;
+    std::stringstream ss( line ) ;
+    std::string s ;
+    while ( std::getline( ss, s, delim ) )
+    {
+
+      s.erase( std::remove( s.begin(), s.end(), ' ' ), s.end() ) ;
+      out.push_back( s ) ;
+
+    }
+
+    int labelFiber = stoi( out[ 1 ] ) ;
+
+    if ( labelFiber > bundlesNames.size() )
+    {
+
+      std::stringstream outMessageOss ;
+      outMessageOss << "ioWrapper->readLabelsWithDict : labelFiber = "
+                    << labelFiber << " is greater than the labels in the "
+                    << "dictionary = " << bundlesNames.size() << std::endl ;
+      std::string outMessage = outMessageOss.str() ;
+
+      throw( std::invalid_argument( outMessage ) ) ;
+
+    }
+
+    std::string labelName = bundlesNames[ labelFiber ] ;
+
+    labelsByName[ stoi( out[ 0 ] ) ].push_back( labelName ) ;
+
+  }
+
+  labelsFile.close() ;
 
 }
 
 
+////////////////////////////////////////////////////////////////////////////////
+/////////////////// Get label number from name and dict ////////////////////////
+////////////////////////////////////////////////////////////////////////////////
+int getLabelFromName( const std::vector<std::string>& bundlesDict,
+                      const std::string& bundleName )
+{
+
+
+  int nbBundles = bundlesDict.size() ;
+
+  if ( nbBundles <= 0 )
+  {
+
+    std::stringstream outMessageOss ;
+    outMessageOss << "ioWrapper->getLabelFromName : the size of bundlesDict "
+                  << " must be strictly positive " << nbBundles << std::endl ;
+    std::string outMessage = outMessageOss.str() ;
+
+    throw( std::invalid_argument( outMessage ) ) ;
+
+  }
+
+  for ( int i = 0 ; i < nbBundles ; i++ )
+  {
+
+    if ( bundlesDict[ i ] == bundleName )
+    {
+
+      return i ;
+
+    }
+
+  }
+
+  return -1 ;
+
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 //////////////////// Read index in tractogram neighbors ////////////////////////

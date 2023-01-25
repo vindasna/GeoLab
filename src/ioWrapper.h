@@ -46,7 +46,7 @@ bool copytree( const std::string& source,
                       bool forceOverride ) ;
 //
 bool rename( const std::string& source,
-                    const std::string& destination ) ;
+             const std::string& destination ) ;
 //
 std::string dirname( const std::string& path ) ;
 //
@@ -90,6 +90,14 @@ void readLabelsDict( const char* labelsDictFilename,
 //
 void saveLabelsDict( const char* labelsDictFilename,
                      const std::vector<std::string>& bundlesNames ) ;
+//
+void readLabelsWithDict( const char* labelsDictFilename,
+                         const char* labelsBinaryFilename,
+                         std::vector<std::vector<std::string>>& labelsByName,
+                         int nbFibers ) ;
+//
+int getLabelFromName( const std::vector<std::string>& bundlesDict,
+                      const std::string& bundleName ) ;
 //
 void readIndexInTractogram( const char* predictedLabelsFilename,
                             std::vector<int64_t>& predictedLabels,
