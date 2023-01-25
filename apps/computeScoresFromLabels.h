@@ -43,6 +43,8 @@ std::string outputDirectory ;
 std::string confusionMatrixPath ;
 std::string scoresPath ;
 
+bool isSupWMA = false ;
+
 
 ////////////////////////////////////////////////////////////////////////////////
 void saveConfusionMatrix(

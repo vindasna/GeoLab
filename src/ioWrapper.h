@@ -96,6 +96,12 @@ void readLabelsWithDict( const char* labelsDictFilename,
                          std::vector<std::vector<std::string>>& labelsByName,
                          int nbFibers ) ;
 //
+void readLabelsWithDictSupWMA(
+                            const char* labelsDictFilename,
+                            const char* labelsBinaryFilename,
+                            std::vector<std::vector<std::string>>& labelsByName,
+                            int nbFibers ) ;
+//
 int getLabelFromName( const std::vector<std::string>& bundlesDict,
                       const std::string& bundleName ) ;
 //

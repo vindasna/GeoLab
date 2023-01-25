@@ -62,9 +62,10 @@ int nbThreadsUsed ;
 int minimumNumberFibers = 20 ;
 // int minimumNumberFibers = 1 ;
 // float thrPercentageSimilarity = 0.05 ;
-float thrPercentageSimilarity = 0.05 ;
 // float thrPercentageSimilarity = 0.50 ;
 // float thrPercentageSimilarity = 0.50 ;
+// float thrPercentageSimilarity = 0.05 ;
+float thrPercentageSimilarity = 0.00001 ;
 
 bool isFullAtlas = false ;
 bool isAtlasNeighborhoodCentroids = false ;
@@ -77,11 +78,11 @@ float toleranceMaxDirectionAngle = 0.0 ;
 float toleranceMinShapeAngle = 0.0 ;
 float toleranceMaxShapeAngle = 0.0 ;
 float toleranceLenght = 0.0 ;
-float toleranceDistanceBetweenMedialPoints = 0.0 ;
+float toleranceDistanceBetweenMedialPoints = 1.0 ;
 
-float toleranceThrComputeNeighborhood = 1.5 ;
+float toleranceThrComputeNeighborhood = 2.0 ;
 
-float adjacencyForCompareBundles = 5 ; // In mm
+float adjacencyForCompareBundles = 5.0 ; // In mm
 
 bool doClassical = true ;
 

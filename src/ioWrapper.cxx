@@ -983,8 +983,6 @@ void readLabelsWithDict( const char* labelsDictFilename,
   // Read predicted labels
   labelsByName.resize( nbFibers, std::vector<std::string>() ) ;
 
-
-
   std::ifstream labelsFile ;
   labelsFile.open( labelsBinaryFilename ) ;
   if ( labelsFile.fail() )
@@ -1050,6 +1048,82 @@ void readLabelsWithDict( const char* labelsDictFilename,
 
 }
 
+
+////////////////////////////////////////////////////////////////////////////////
+////// Function to read labels into a list of vecotr of bundles names //////////
+////////////////////////////////////////////////////////////////////////////////
+void readLabelsWithDictSupWMA(
+                            const char* labelsDictFilename,
+                            const char* labelsBinaryFilename,
+                            std::vector<std::vector<std::string>>& labelsByName,
+                            int nbFibers )
+{
+
+  // Read dictionary
+  std::vector<std::string> bundlesNames ;
+
+  const char delim = ':' ;
+  std::string line ;
+  std::ifstream dictFile ;
+  dictFile.open( labelsDictFilename ) ;
+  if ( dictFile.fail() )
+  {
+
+    std::cout << "Problem reading file : " << labelsDictFilename
+                                           << std::endl ;
+
+    exit( 1 ) ;
+
+  }
+  while ( std::getline( dictFile, line ) )
+  {
+
+    std::vector< std::string > out ;
+    std::stringstream ss( line ) ;
+    std::string s ;
+    while ( std::getline( ss, s, delim ) )
+    {
+
+      s.erase( std::remove( s.begin(), s.end(), ' ' ), s.end() ) ;
+      out.push_back( s ) ;
+
+    }
+
+    bundlesNames.push_back( out[ 0 ] ) ;
+
+  }
+
+  dictFile.close() ;
+
+  int nbLabels = bundlesNames.size() ;
+
+  // Read predicted labels
+  labelsByName.resize( nbFibers, std::vector<std::string>() ) ;
+
+  std::ifstream file ;
+  file.open( labelsBinaryFilename, std::ios::binary | std::ios::in ) ;
+  if ( file.fail() )
+  {
+
+    std::cout << "Problem reading file : " << labelsBinaryFilename <<
+                                                                     std::endl ;
+    exit( 1 ) ;
+
+  }
+
+  for ( int fiber = 0 ; fiber < nbFibers ; fiber++ )
+  {
+
+    int16_t _label ;
+
+    file.read( reinterpret_cast<char*>( &( _label ) ), sizeof( int16_t ) ) ;
+    labelsByName[ fiber ].push_back( bundlesNames[ _label ] ) ;
+
+  }
+
+  file.close() ;
+
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 /////////////////// Get label number from name and dict ////////////////////////

@@ -1377,7 +1377,7 @@ int main( int argc, char* argv[] )
               << "[-thrCov] : Threshold to keep bundles where coverage is "
               << "greater than thrCov (default : 0 -> keep all bundles ) \n"
               << "[-thrDBMP] : Threshold for maximum distance between medial "
-              << "points (default = 50 mm) \n"
+              << "points (default : based on bundles distribution) \n"
               << "[-tolP] : Tolerance for parameter p (for advanced users, "
               << "default = 0) \n"
               << "[-tolThr] : Tolerance for parameter thr (for advanced users, "

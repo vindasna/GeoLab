@@ -182,7 +182,7 @@ int main( int argc, char* argv[] )
   const auto start_time = std::chrono::system_clock::now() ;
 
   int index_pl, index_pd, index_tl, index_td, index_st, index_output,
-                       index_force, index_nbThreads, index_verbose, index_help ;
+         index_supWMA, index_force, index_nbThreads, index_verbose, index_help ;
 
   index_pl = getFlagPosition( argc, argv, "-pl") ;
   index_pd = getFlagPosition( argc, argv, "-pd") ;
@@ -190,6 +190,7 @@ int main( int argc, char* argv[] )
   index_td = getFlagPosition( argc, argv, "-td") ;
   index_st = getFlagPosition( argc, argv, "-st") ;
   index_output = getFlagPosition( argc, argv, "-o") ;
+  index_supWMA = getFlagPosition( argc, argv, "-supWMA") ;
   index_force = getFlagPosition( argc, argv, "-force") ;
   index_nbThreads = getFlagPosition( argc, argv, "-nbThreads") ;
   index_verbose = getFlagPosition( argc, argv, "-v") ;
@@ -206,6 +207,7 @@ int main( int argc, char* argv[] )
               << "-st : Path to the input subject's tractogram of the "
               << "ProjectAtlasGeoLab command \n"
               << "-o : Path to the output directory \n"
+              << "[-supWMA] : Use if predicted labels come from supWMA \n"
               << "[-force] : Force to overwrite files (default = false) \n"
               << "[-nbThreads] : Sets the value of omp_set_num_threads before "
               << "applyRecoBundles (default : let openMP decide ) \n"
@@ -270,6 +272,15 @@ int main( int argc, char* argv[] )
   ///////////////////////////// Checking arguments /////////////////////////////
   //////////////////////////////////////////////////////////////////////////////
 
+  //////////////////////// Check if predicted is SupWMA ////////////////////////
+  // We need to do this first because predictedLabelsPath depends on it
+  if ( index_supWMA )
+  {
+
+    isSupWMA = true ;
+
+  }
+
   /////////////////////////// Predicted labels path ////////////////////////////
   predictedLabelsPath = argv[ index_pl + 1 ] ;
   char lastChar = predictedLabelsPath[ predictedLabelsPath.size() - 1 ] ;
@@ -286,6 +297,17 @@ int main( int argc, char* argv[] )
     std::cout << "ERROR : Predicted labels " << predictedLabelsPath << " does "
                                                  << "not exists " << std::endl ;
     exit( 1 );
+
+  }
+
+  if ( !endswith( predictedLabelsPath, ".txt" ) &&
+                                      !endswith( predictedLabelsPath, ".bin" ) )
+  {
+
+    std::cout << "ERROR : the only formats supported for -pl are .txt/.bin"
+              << std::endl ;
+
+    exit( 1 ) ;
 
   }
 
@@ -473,8 +495,23 @@ int main( int argc, char* argv[] )
 
   std::vector<std::vector<std::string>> predictedLabelsByName ;
   std::cout << "Reading predicted labels... " ;
-  readLabelsWithDict( predictedDictPath.c_str(), predictedLabelsPath.c_str(),
+
+  if ( !isSupWMA )
+  {
+
+    readLabelsWithDict( predictedDictPath.c_str(), predictedLabelsPath.c_str(),
                                              predictedLabelsByName, nbFibers ) ;
+
+  }
+  else
+  {
+
+    readLabelsWithDictSupWMA( predictedDictPath.c_str(),
+                              predictedLabelsPath.c_str(),
+                              predictedLabelsByName,
+                              nbFibers ) ;
+
+  }
   std::cout << "Done" << std::endl ;
 
   std::cout << "Reading predicted dictionary... " ;
@@ -711,10 +748,10 @@ int main( int argc, char* argv[] )
 
   }
 
-  averagePrecision /= nbLabels ;
-  averageSensitivity /= nbLabels ;
-  averageAccuracy /= nbLabels ;
-  averageJaccard /= nbLabels ;
+  averagePrecision /= ( nbLabels + 1 ) ;
+  averageSensitivity /= ( nbLabels + 1 ) ;
+  averageAccuracy /= ( nbLabels + 1 ) ;
+  averageJaccard /= ( nbLabels + 1 ) ;
 
 
   // Saving results
