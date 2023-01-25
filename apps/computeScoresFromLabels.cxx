@@ -66,18 +66,15 @@ void saveConfusionMatrix(
                       const std::vector<std::vector<int32_t>>& confusionMatrix )
 {
 
-  if ( verbose > 1 )
-  {
+  std::cout << "Saving confusion matrix in : " << confusionMatrixPath
+                                               << std::endl ;
 
-    std::cout << "\tSaving confusion matrix in : " << confusionMatrixPath
-                                                 << std::endl ;
-  }
   std::ofstream file ;
   file.open( confusionMatrixPath ) ;
   if ( file.fail() )
   {
 
-    std::cout << "Problem opening file to write : " << confusionMatrixPath <<
+    std::cout << "   Problem opening file to write : " << confusionMatrixPath <<
                                                                      std::endl ;
 
     exit( 1 ) ;
@@ -85,7 +82,10 @@ void saveConfusionMatrix(
   }
 
   int sizeConfusionMatrix = confusionMatrix.size() ;
-  std::cout << "Size confusion matrix : " << sizeConfusionMatrix << std::endl ;
+
+  std::cout << "   Size confusion matrix : " << sizeConfusionMatrix
+                                                                  << std::endl ;
+
 
   for ( int _line_i = 0 ; _line_i < sizeConfusionMatrix ; _line_i++ )
   {
@@ -102,6 +102,8 @@ void saveConfusionMatrix(
   }
 
   file.close() ;
+
+  std::cout << "Done" << std::endl ;
 
 }
 
@@ -120,31 +122,38 @@ void saveScorePerBundle( const char* scoresPerBundlePath,
                          float averageJaccard )
 {
 
-  if ( verbose > 1 )
-  {
-
-    std::cout << "\tSaving scores per bundle in : " << scoresPerBundlePath
+  std::cout << "Saving scores per bundle in : " << scoresPerBundlePath
                                                     << std::endl ;
-  }
   std::ofstream file ;
   file.open( scoresPerBundlePath ) ;
   if ( file.fail() )
   {
 
-    std::cout << "Problem opening file to write : " << scoresPerBundlePath <<
+    std::cout << "   Problem opening file to write : " << scoresPerBundlePath <<
                                                                    std::endl ;
 
     exit( 1 ) ;
 
   }
 
-  file << "Bundle\tPrecision\tRecall\tAccuracy\tWeights\n" ;
+  file << "Bundle\tPrecision\tSensitivity\tAccuracy\tJaccard\n" ;
 
-  int nbBundles = precisionPerBundle.size() ;
-  for ( int _bundleIndex = 0 ; _bundleIndex < nbBundles ; _bundleIndex++ )
+  int nbBundles = precisionPerBundle.size() - 1 ;
+  for ( int _bundleIndex = 0 ; _bundleIndex < nbBundles + 1 ; _bundleIndex++ )
   {
 
-    file << bundleNames[ _bundleIndex ] << "\t" ;
+    if ( _bundleIndex == nbBundles )
+    {
+
+      file << "Unlabeled\t" ;
+
+    }
+    else
+    {
+
+      file << bundleNames[ _bundleIndex ] << "\t" ;
+
+    }
     file << precisionPerBundle[ _bundleIndex ] << "\t" ;
     file << sensitivityPerBundle[ _bundleIndex ] << "\t" ;
     file << accuracyPerBundle[ _bundleIndex ] << "\t" ;
@@ -154,10 +163,12 @@ void saveScorePerBundle( const char* scoresPerBundlePath,
 
   }
 
-  file << "Average\t" << averagePrecision << "\t" << averageRecall << "\t"
+  file << "Average\t" << averagePrecision << "\t" << averageSensitivity << "\t"
                       << averageAccuracy << "\t" << averageJaccard << "\n" ;
 
   file.close() ;
+
+  std::cout << "Done" << std::endl ;
 
 }
 
@@ -280,7 +291,7 @@ int main( int argc, char* argv[] )
 
   //////////////////////////// Predicted dict path /////////////////////////////
   predictedDictPath = argv[ index_pd + 1 ] ;
-  char lastChar = predictedDictPath[ predictedDictPath.size() - 1 ] ;
+  lastChar = predictedDictPath[ predictedDictPath.size() - 1 ] ;
   if ( lastChar == '/' )
   {
 
@@ -299,7 +310,7 @@ int main( int argc, char* argv[] )
 
   ////////////////////////////// True labels path //////////////////////////////
   trueLabelsPath = argv[ index_tl + 1 ] ;
-  char lastChar = trueLabelsPath[ trueLabelsPath.size() - 1 ] ;
+  lastChar = trueLabelsPath[ trueLabelsPath.size() - 1 ] ;
   if ( lastChar == '/' )
   {
 
@@ -317,7 +328,7 @@ int main( int argc, char* argv[] )
 
   /////////////////////////////// True dict path ///////////////////////////////
   trueDictPath = argv[ index_td + 1 ] ;
-  char lastChar = trueDictPath[ trueDictPath.size() - 1 ] ;
+  lastChar = trueDictPath[ trueDictPath.size() - 1 ] ;
   if ( lastChar == '/' )
   {
 
@@ -336,7 +347,7 @@ int main( int argc, char* argv[] )
 
   ////////////////////////// Subject's tracogram path //////////////////////////
   subjectTractogramPath = argv[ index_st + 1 ] ;
-  char lastChar = subjectTractogramPath[ subjectTractogramPath.size() - 1 ] ;
+  lastChar = subjectTractogramPath[ subjectTractogramPath.size() - 1 ] ;
   if ( lastChar == '/' )
   {
 
@@ -409,7 +420,7 @@ int main( int argc, char* argv[] )
 
 
 
-  if ( !id_dir( outputDirectory ) )
+  if ( !is_dir( outputDirectory ) )
   {
 
     mkdir( outputDirectory ) ;
@@ -460,37 +471,47 @@ int main( int argc, char* argv[] )
 
   int nbFibers = subjectTractogramInfo.curves_count ;
 
-  std::vector<std::vector<std::string>> predictedLabelsByName :
-  readLabelsWithDict( predictedLabelsPath.c_str(), predictedDictPath.c_str(),
-                                                                    nbFibers ) ;
+  std::vector<std::vector<std::string>> predictedLabelsByName ;
+  std::cout << "Reading predicted labels... " ;
+  readLabelsWithDict( predictedDictPath.c_str(), predictedLabelsPath.c_str(),
+                                             predictedLabelsByName, nbFibers ) ;
+  std::cout << "Done" << std::endl ;
+
+  std::cout << "Reading predicted dictionary... " ;
   std::vector<std::string> predictedDict ;
   readLabelsDict( predictedDictPath.c_str(), predictedDict ) ;
   int nbPredictedLabels = predictedDict.size() ;
+  std::cout << "Done" << std::endl ;
 
+  std::cout << "Reading true labels... " ;
+  std::vector<std::vector<std::string>> trueLabelsByName ;
+  readLabelsWithDict( trueDictPath.c_str(), trueLabelsPath.c_str(),
+                                                  trueLabelsByName, nbFibers ) ;
+  std::cout << "Done" << std::endl ;
 
-  std::vector<std::vector<std::string>> trueLabelsByName :
-  readLabelsWithDict( trueLabelsPath.c_str(), trueDictPath.c_str(), nbFibers ) ;
-
+  std::cout << "Reading true dict... " ;
   std::vector<std::string> trueDict ;
   readLabelsDict( trueDictPath.c_str(), trueDict ) ;
   int nbTrueLabels = trueDict.size() ;
+  std::cout << "Done" << std::endl ;
 
-  int nbLabels = -1 ;
-  std::vector<std::string> bundlesNames ;
-  if ( nbTrueLabels > nbPredictedLabels )
-  {
-
-    nbLabels = nbTrueLabels ;
-    bundlesNames = trueDict ;
-
-  }
-  else
-  {
-
-    nbLabels = nbPredictedLabels ;
-    bundlesNames = predictedDict ;
-
-  }
+  std::vector<std::string>& bundlesNames = trueDict ;
+  int nbLabels = nbTrueLabels ;
+  // int nbLabels = -1 ;
+  // if ( nbTrueLabels > nbPredictedLabels )
+  // {
+  //
+  //   nbLabels = nbTrueLabels ;
+  //   bundlesNames = trueDict ;
+  //
+  // }
+  // else
+  // {
+  //
+  //   nbLabels = nbPredictedLabels ;
+  //   bundlesNames = predictedDict ;
+  //
+  // }
 
 
   std::cout << "Computing confusion matrix... " ;
@@ -517,7 +538,7 @@ int main( int argc, char* argv[] )
         int line = -1 ;
         int column = -1 ;
 
-        if ( predictedLabels[ predictedLabelIndex ] == -1 )
+        if ( predictedLabels[ predictedLabelIndex ] == "Unlabeled" )
         {
 
           line =  nbLabels ;
@@ -531,18 +552,30 @@ int main( int argc, char* argv[] )
           if ( line == -1 )
           {
 
-            std::stringstream outMessageOss ;
-            outMessageOss << "ERROR : while computing confusion matrix could "
-                          << "not get the line number " << std::endl ;
-            std::string outMessage = outMessageOss.str() ;
+            if ( verbose > 2 )
+            {
 
-            throw( outMessage ) ;
+              std::cout << "WARNING : predicted bundle "
+                        << predictedLabels[ predictedLabelIndex ]
+                        << " not found in true labels dictionary"
+                        << std::endl ;
+
+            }
+
+            continue ;
+
+            // std::stringstream outMessageOss ;
+            // outMessageOss << "ERROR : while computing confusion matrix could "
+            //               << "not get the line number " << std::endl ;
+            // std::string outMessage = outMessageOss.str() ;
+            //
+            // throw( std::invalid_argument( outMessage ) ) ;
 
           }
 
         }
 
-        if ( trueLabels[ trueLabelIndex ] == -1 )
+        if ( trueLabels[ trueLabelIndex ] == "Unlabeled" )
         {
 
           column =  nbLabels ;
@@ -561,13 +594,13 @@ int main( int argc, char* argv[] )
                           << "not get the column number " << std::endl ;
             std::string outMessage = outMessageOss.str() ;
 
-            throw( outMessage ) ;
+            throw( std::invalid_argument( outMessage ) ) ;
 
           }
 
         }
 
-        confusionMatrix[ line, column ] += 1 ;
+        confusionMatrix[ line ][ column ] += 1 ;
 
         // if ( trueLabels[ trueLabelIndex ] ==
         //                               predictedLabels[ predictedLabelIndex ] )
@@ -583,8 +616,10 @@ int main( int argc, char* argv[] )
     }
 
   }
+  std::cout << "Done" << std::endl ;
 
   // Computing TP, TN, FP and FN
+  std::cout << "Computing TP, TN, FP, FN... " ;
   std::vector<int> truePositives( nbLabels + 1, 0 ) ;
   std::vector<int> trueNegatives( nbLabels + 1, 0 ) ;
   std::vector<int> falsePositives( nbLabels + 1, 0 ) ;
@@ -600,21 +635,21 @@ int main( int argc, char* argv[] )
       if ( i != labelIndex )
       {
 
-        trueNegatives[ labelIndex ] += confusionMatrix[ i ][ i ] ;
+        trueNegatives[ labelIndex ] += confusionMatrix[ i ][ i ] ;
 
       }
 
       if ( i != labelIndex )
       {
 
-        falsePositives[ labelIndex ] += confusionMatrix[ i ][ labelIndex ] ;
+        falsePositives[ labelIndex ] += confusionMatrix[ i ][ labelIndex ] ;
 
       }
 
       if ( i != labelIndex )
       {
 
-        falseNegatives[ labelIndex ] += confusionMatrix[ labelIndex ][ i ] ;
+        falseNegatives[ labelIndex ] += confusionMatrix[ labelIndex ][ i ] ;
 
       }
 
@@ -623,6 +658,7 @@ int main( int argc, char* argv[] )
 
 
   }
+  std::cout << "Done" << std::endl ;
 
 
   std::vector<float> precisionPerBundle( nbLabels + 1, 0 ) ;
@@ -697,7 +733,7 @@ int main( int argc, char* argv[] )
                   << std::endl ;
     std::string outMessage = outMessageOss.str() ;
 
-    throw( outMessage ) ;
+    throw( std::invalid_argument( outMessage ) ) ;
 
   }
   saveConfusionMatrix( confusionMatrixPath.c_str(), confusionMatrix ) ;
@@ -715,7 +751,7 @@ int main( int argc, char* argv[] )
                   << std::endl ;
     std::string outMessage = outMessageOss.str() ;
 
-    throw( outMessage ) ;
+    throw( std::invalid_argument( outMessage ) ) ;
 
   }
   saveScorePerBundle( scoresPath.c_str(),

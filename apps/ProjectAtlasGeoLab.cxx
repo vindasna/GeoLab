@@ -1396,7 +1396,7 @@ int main( int argc, char* argv[] )
               << "(default = 2.0) \n"
               << "[-tolDBMP] : Tolerance for distance between medial points "
               << "(for advanced users, default = 1.0) \n"
-              << "[thrAdj] : keep bundle with adjacency greater than given value"
+              << "[-thrAdj] : keep bundle with adjacency greater than given value"
               << " (default : 0 -> keep all bundles ) \n"
               << "[-minNbFibers] : Minimum number of fiber to consider a bundle"
               << " recognized ( default : 20 )\n"

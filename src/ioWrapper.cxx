@@ -978,17 +978,19 @@ void readLabelsWithDict( const char* labelsDictFilename,
 
   dictFile.close() ;
 
-  // Read predicted labels
-  labelsByName.resize( nbFibers, std::vector<std::string> ) ;
+  int nbLabels = bundlesNames.size() ;
 
-  const char delim = ':' ;
-  std::string line ;
+  // Read predicted labels
+  labelsByName.resize( nbFibers, std::vector<std::string>() ) ;
+
+
+
   std::ifstream labelsFile ;
-  labelsFile.open( predictedLabelsFilename ) ;
+  labelsFile.open( labelsBinaryFilename ) ;
   if ( labelsFile.fail() )
   {
 
-    std::cout << "Problem reading file : " << predictedLabelsFilename
+    std::cout << "Problem reading file : " << labelsBinaryFilename
                                            << std::endl ;
 
     exit( 1 ) ;
@@ -1010,7 +1012,8 @@ void readLabelsWithDict( const char* labelsDictFilename,
 
     int labelFiber = stoi( out[ 1 ] ) ;
 
-    if ( labelFiber > bundlesNames.size() )
+
+    if ( labelFiber > nbLabels )
     {
 
       std::stringstream outMessageOss ;
@@ -1023,7 +1026,21 @@ void readLabelsWithDict( const char* labelsDictFilename,
 
     }
 
-    std::string labelName = bundlesNames[ labelFiber ] ;
+    std::string labelName ;
+    if ( labelFiber == -1 )
+    {
+
+      labelName = "Unlabeled" ;
+
+
+    }
+    else
+    {
+
+      labelName = bundlesNames[ labelFiber ] ;
+
+    }
+
 
     labelsByName[ stoi( out[ 0 ] ) ].push_back( labelName ) ;
 
