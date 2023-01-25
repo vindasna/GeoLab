@@ -2303,9 +2303,16 @@ int main( int argc, char* argv[] )
           if ( _trueLabel == -1 )
           {
 
-            std::cout << "ERROR : in labelsFullTest, found label with value -1"
-                      << std::endl ;
-            exit( 1 ) ;
+            // std::cout << "ERROR : in labelsFullTest, found label with value -1"
+            //           << std::endl ;
+            // exit( 1 ) ;
+            if ( _predictedLabel == - 1 )
+            {
+
+              confusionMatrix[ nbBundlesTest ][ nbBundlesTest ] += 1 ;
+            }
+            continue ;
+
           }
 
           std::string _trueLabelBundleName = dictFullTest[ _trueLabel ] ;
@@ -2353,9 +2360,11 @@ int main( int argc, char* argv[] )
           if ( _trueLabel == -1 )
           {
 
-            std::cout << "ERROR : in labelsFullTest, found label with value -1"
-                      << std::endl ;
-            exit( 1 ) ;
+            // std::cout << "ERROR : in labelsFullTest, found label with value -1"
+            //           << std::endl ;
+            // exit( 1 ) ;
+            continue ;
+
           }
 
           std::string _trueLabelBundleName = dictFullTest[ _trueLabel ] ;
