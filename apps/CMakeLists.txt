@@ -21,3 +21,4 @@ configure_file(dipyServer.py  ${CMAKE_BINARY_DIR}/bin/dipyServer.py  COPYONLY FI
 configure_file(clientRegisterBundles.py ${CMAKE_BINARY_DIR}/bin/clientRegisterBundles.py COPYONLY FILE_PERMISSIONS OWNER_EXECUTE OWNER_WRITE OWNER_READ )
 configure_file(clientComputeCentroids.py ${CMAKE_BINARY_DIR}/bin/clientComputeCentroids.py COPYONLY FILE_PERMISSIONS OWNER_EXECUTE OWNER_WRITE OWNER_READ )
 configure_file(clientCloseServer.py ${CMAKE_BINARY_DIR}/bin/clientCloseServer.py COPYONLY FILE_PERMISSIONS OWNER_EXECUTE OWNER_WRITE OWNER_READ )
+configure_file(scoresPredictedSGT.py ${CMAKE_BINARY_DIR}/bin/scoresPredictedSGT.py COPYONLY FILE_PERMISSIONS OWNER_EXECUTE OWNER_WRITE OWNER_READ )
