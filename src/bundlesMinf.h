@@ -47,6 +47,7 @@ class BundlesMinf
   bool isBundles = false ;
   bool isTrk = false ;
   bool isTck = false ;
+  bool haveMinf = false ;
 
   // Common to all formats
   int64_t curves_count = 0 ;

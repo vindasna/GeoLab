@@ -673,6 +673,7 @@ void BundlesMinf::read( const char* bundlesFilename )
   {
 
     isBundles = true ;
+    haveMinf = true ;
     bundlesDataFilenameStr = replaceExtension( bundlesDataFilenameStr,
                                                               ".bundlesdata" ) ;
 
@@ -681,6 +682,7 @@ void BundlesMinf::read( const char* bundlesFilename )
   {
 
     isBundles = true ;
+    haveMinf = true ;
     bundlesFilenameStr = replaceExtension( bundlesFilenameStr, ".bundles" ) ;
 
   }
@@ -689,6 +691,18 @@ void BundlesMinf::read( const char* bundlesFilename )
 
     isTrk = true ;
     bundlesFilenameStr = replaceExtension( bundlesFilenameStr, ".minf" ) ;
+    if ( !is_file( bundlesFilenameStr ) )
+    {
+
+      haveMinf = false ;
+
+    }
+    else
+    {
+
+      haveMinf = true ;
+
+    }
 
   }
   else if ( endswith( bundlesFilenameStr, ".tck" ) )
@@ -696,10 +710,35 @@ void BundlesMinf::read( const char* bundlesFilename )
 
     isTck = true ;
     bundlesFilenameStr = replaceExtension( bundlesFilenameStr, ".minf" ) ;
+    if ( !is_file( bundlesFilenameStr ) )
+    {
+
+      haveMinf = false ;
+
+    }
+    else
+    {
+
+      haveMinf = true ;
+
+    }
 
   }
   else if ( endswith( bundlesFilenameStr, ".minf" ) )
   {
+
+    if ( !is_file( bundlesFilenameStr ) )
+    {
+
+      haveMinf = false ;
+
+    }
+    else
+    {
+
+      haveMinf = true ;
+
+    }
 
     if ( is_file( replaceExtension( bundlesFilenameStr, ".trk" ) ) )
     {
@@ -767,259 +806,13 @@ void BundlesMinf::read( const char* bundlesFilename )
   }
 
 
-  const char delim = ':' ;
-  std::string line ;
-  std::ifstream minfFile ;
-  minfFile.open( bundlesFilenameStr.c_str() ) ;
-  if ( minfFile.fail() )
+
+  if ( haveMinf )
   {
 
-    std::ostringstream outMessageOss ;
-    outMessageOss << "BundlesMinf::read : Problem reading file : "
-                  << bundlesFilenameStr << std::endl ;
-    std::string outMessage = outMessageOss.str() ;
-    throw( std::invalid_argument( outMessage ) ) ;
-
-  }
-  while ( std::getline( minfFile, line ) )
-  {
-
-    std::vector< std::string > out ;
-    std::stringstream ss( line ) ;
-    std::string s ;
-    while ( std::getline( ss, s, delim ) )
-    {
-
-      std::string sCopy = s ;
-      if ( sCopy  == s )
-      {
-
-        s.erase(std::remove( s.begin(), s.end(), ' ' ), s.end() ) ;
-        s.erase(std::remove( s.begin(), s.end(), ',' ), s.end() ) ;
-        out.push_back( s ) ;
-
-      }
-      else
-      {
-
-        out.push_back( s.substr( 0, s.size() - 1 ) ) ;
-
-      }
-
-    }
-
-    if ( out[ 0 ] == "\'averageRadius\'" )
-    {
-
-      this->averageRadius = std::stof( out[ 1 ] ) ;
-
-    }
-
-    if ( out[ 0 ] == "\'minRadius\'" )
-    {
-
-      this->minRadius = std::stof( out[ 1 ] ) ;
-
-    }
-
-    if ( out[ 0 ] == "\'maxRadius\'" )
-    {
-
-      this->maxRadius = std::stof( out[ 1 ] ) ;
-
-    }
-
-    if ( out[ 0 ] == "\'averageAngle\'" )
-    {
-
-      this->averageAngle = std::stof( out[ 1 ] ) ;
-
-    }
-
-    if ( out[ 0 ] == "\'minAngle\'" )
-    {
-
-      this->minAngle = std::stof( out[ 1 ] ) ;
-
-    }
-
-    if ( out[ 0 ] == "\'maxAngle\'" )
-    {
-
-      this->maxAngle = std::stof( out[ 1 ] ) ;
-
-    }
-
-    if ( out[ 0 ] == "\'averageDirectionAngle\'" )
-    {
-
-      this->averageDirectionAngle = std::stof( out[ 1 ] ) ;
-
-    }
-
-    if ( out[ 0 ] == "\'minDirectionAngle\'" )
-    {
-
-      this->minDirectionAngle = std::stof( out[ 1 ] ) ;
-
-    }
-
-    if ( out[ 0 ] == "\'maxDirectionAngle\'" )
-    {
-
-      this->maxDirectionAngle = std::stof( out[ 1 ] ) ;
-
-    }
-
-    if ( out[ 0 ] == "\'averageShapeAngle\'" )
-    {
-
-      this->averageShapeAngle = std::stof( out[ 1 ] ) ;
-
-    }
-
-    if ( out[ 0 ] == "\'minShapeAngle\'" )
-    {
-
-      this->minShapeAngle = std::stof( out[ 1 ] ) ;
-
-    }
-
-    if ( out[ 0 ] == "\'maxShapeAngle\'" )
-    {
-
-      this->maxShapeAngle = std::stof( out[ 1 ] ) ;
-
-    }
-
-    if ( out[ 0 ] == "\'averageLength\'" )
-    {
-
-      this->averageLength = std::stof( out[ 1 ] ) ;
-
-    }
-
-    if ( out[ 0 ] == "\'minLength\'" )
-    {
-
-      this->minLength = std::stof( out[ 1 ] ) ;
-
-    }
-
-    if ( out[ 0 ] == "\'maxLength\'" )
-    {
-
-      this->maxLength = std::stof( out[ 1 ] ) ;
-
-    }
-
-    if ( out[ 0 ] == "\'averageDisimilarity\'" )
-    {
-
-      this->averageDisimilarity = std::stof( out[ 1 ] ) ;
-
-    }
-
-    if ( out[ 0 ] == "\'minDisimilarity\'" )
-    {
-
-      this->minDisimilarity = std::stof( out[ 1 ] ) ;
-
-    }
-
-    if ( out[ 0 ] == "\'maxDisimilarity\'" )
-    {
-
-      this->maxDisimilarity = std::stof( out[ 1 ] ) ;
-
-    }
-
-    if ( out[ 0 ] == "\'averageDistanceBetweenMedialPoints\'" )
-    {
-
-      this->averageDistanceBetweenMedialPoints = std::stof( out[ 1 ] ) ;
-
-    }
-
-    if ( out[ 0 ] == "\'minDistanceBetweenMedialPoints\'" )
-    {
-
-      this->minDistanceBetweenMedialPoints = std::stof( out[ 1 ] ) ;
-
-    }
-
-    if ( out[ 0 ] == "\'maxDistanceBetweenMedialPoints\'" )
-    {
-
-      this->maxDistanceBetweenMedialPoints = std::stof( out[ 1 ] ) ;
-
-    }
-
-    if ( out[ 0 ] == "\'centerBundleX\'" )
-    {
-
-      this->centerBundle[ 0 ] = std::stof( out[ 1 ] ) ;
-
-    }
-
-    if ( out[ 0 ] == "\'centerBundleY\'" )
-    {
-
-      this->centerBundle[ 1 ] = std::stof( out[ 1 ] ) ;
-
-    }
-
-    if ( out[ 0 ] == "\'centerBundleZ\'" )
-    {
-
-      this->centerBundle[ 2 ] = std::stof( out[ 1 ] ) ;
-
-    }
-
-    if ( out[ 0 ] == "\'density\'" )
-    {
-
-      this->density = std::stof( out[ 1 ] ) ;
-
-    }
-
-    if ( out[ 0 ] == "\'disimilarityWithAtlas\'" )
-    {
-
-      this->disimilarityWithAtlas = std::stof( out[ 1 ] ) ;
-
-    }
-
-    if ( out[ 0 ] == "\'coverageWithAtlas\'" )
-    {
-
-      this->coverageWithAtlas = std::stof( out[ 1 ] ) ;
-
-    }
-
-    if ( out[ 0 ] == "\'adjacencyWithAtlas\'" )
-    {
-
-      this->adjacencyWithAtlas = std::stof( out[ 1 ] ) ;
-
-    }
-
-    if ( out[ 0 ] == "\'overlapWithAtlas\'" )
-    {
-
-      this->overlapWithAtlas = std::stof( out[ 1 ] ) ;
-
-    }
-
-  }
-
-  minfFile.close() ;
-
-
-  ////////////////////////////// For .bundles format ///////////////////////////
-  if ( isBundles )
-  {
-
+    const char delim = ':' ;
+    std::string line ;
+    std::ifstream minfFile ;
     minfFile.open( bundlesFilenameStr.c_str() ) ;
     if ( minfFile.fail() )
     {
@@ -1041,34 +834,11 @@ void BundlesMinf::read( const char* bundlesFilename )
       {
 
         std::string sCopy = s ;
-        if ( sCopy == s )
+        if ( sCopy  == s )
         {
 
-          s.erase( std::remove( s.begin(), s.end(), ' ' ), s.end() ) ;
-          if ( out.size() > 0 )
-          {
-
-            if ( out[ 0 ] != "\'bundles\'" )
-            {
-
-              s.erase( std::remove( s.begin(), s.end(), ',' ), s.end() ) ;
-
-            }
-            else
-            {
-
-              s = s.substr( 0, s.size() - 1 ) ;
-
-            }
-
-          }
-          else
-          {
-
-            s.erase( std::remove( s.begin(), s.end(), ',' ), s.end() ) ;
-
-          }
-
+          s.erase(std::remove( s.begin(), s.end(), ' ' ), s.end() ) ;
+          s.erase(std::remove( s.begin(), s.end(), ',' ), s.end() ) ;
           out.push_back( s ) ;
 
         }
@@ -1081,131 +851,340 @@ void BundlesMinf::read( const char* bundlesFilename )
 
       }
 
-      if ( out[ 0 ] == "\'binary\'" )
+      if ( out[ 0 ] == "\'averageRadius\'" )
       {
 
-        this->binary = std::stoi( out[ 1 ] ) ;
+        this->averageRadius = std::stof( out[ 1 ] ) ;
 
       }
 
-      if ( out[ 0 ] == "\'bundles\'" )
+      if ( out[ 0 ] == "\'minRadius\'" )
       {
 
-        this->bundles = out[ 1 ] ;
+        this->minRadius = std::stof( out[ 1 ] ) ;
 
       }
 
-      if ( out[ 0 ] == "\'byte_order\'" )
+      if ( out[ 0 ] == "\'maxRadius\'" )
       {
 
-        this->byte_order = out[ 1 ] ;
-
+        this->maxRadius = std::stof( out[ 1 ] ) ;
 
       }
 
-      if ( out[ 0 ] == "\'data_file_name\'" )
+      if ( out[ 0 ] == "\'averageAngle\'" )
       {
 
-        this->data_file_name = out[ 1 ] ;
+        this->averageAngle = std::stof( out[ 1 ] ) ;
 
       }
 
-      if ( out[ 0 ] == "\'format\'" )
+      if ( out[ 0 ] == "\'minAngle\'" )
       {
 
-        this->format = out[ 1 ] ;
+        this->minAngle = std::stof( out[ 1 ] ) ;
 
       }
 
-      if ( out[ 0 ] == "\'io_mode\'" )
+      if ( out[ 0 ] == "\'maxAngle\'" )
       {
 
-        this->io_mode = out[ 1 ] ;
+        this->maxAngle = std::stof( out[ 1 ] ) ;
 
       }
 
-      if ( out[ 0 ] == "\'item_count\'" )
+      if ( out[ 0 ] == "\'averageDirectionAngle\'" )
       {
 
-        this->item_count = std::stoi( out[ 1 ] ) ;
+        this->averageDirectionAngle = std::stof( out[ 1 ] ) ;
 
       }
 
-      if ( out[ 0 ] == "\'label_type\'" )
+      if ( out[ 0 ] == "\'minDirectionAngle\'" )
       {
 
-        this->label_type = out[ 1 ] ;
+        this->minDirectionAngle = std::stof( out[ 1 ] ) ;
 
       }
 
-      if ( out[ 0 ] == "\'labels\'" )
+      if ( out[ 0 ] == "\'maxDirectionAngle\'" )
       {
 
-        this->labels = out[ 1 ] ;
+        this->maxDirectionAngle = std::stof( out[ 1 ] ) ;
 
       }
 
-      if ( out[ 0 ] == "\'object_type\'" )
+      if ( out[ 0 ] == "\'averageShapeAngle\'" )
       {
 
-        this->object_type = out[ 1 ] ;
+        this->averageShapeAngle = std::stof( out[ 1 ] ) ;
 
       }
 
-
-      if ( out[ 0 ] == "\'space_dimension\'" )
+      if ( out[ 0 ] == "\'minShapeAngle\'" )
       {
 
-        this->space_dimension = std::stoi( out[ 1 ] ) ;
+        this->minShapeAngle = std::stof( out[ 1 ] ) ;
 
       }
 
-      if ( out[ 0 ] == "\'curves_count\'" )
+      if ( out[ 0 ] == "\'maxShapeAngle\'" )
       {
 
-        this->curves_count = std::stoi( out[ 1 ] ) ;
+        this->maxShapeAngle = std::stof( out[ 1 ] ) ;
 
       }
 
-      if ( out[ 0 ] == "\'resolutionX\'" )
+      if ( out[ 0 ] == "\'averageLength\'" )
       {
 
-        this->resolution[ 0 ] = std::stof( out[ 1 ] ) ;
+        this->averageLength = std::stof( out[ 1 ] ) ;
 
       }
 
-      if ( out[ 0 ] == "\'resolutionY\'" )
+      if ( out[ 0 ] == "\'minLength\'" )
       {
 
-        this->resolution[ 1 ] = std::stof( out[ 1 ] ) ;
+        this->minLength = std::stof( out[ 1 ] ) ;
 
       }
 
-      if ( out[ 0 ] == "\'resolutionZ\'" )
+      if ( out[ 0 ] == "\'maxLength\'" )
       {
 
-        this->resolution[ 2 ] = std::stof( out[ 1 ] ) ;
+        this->maxLength = std::stof( out[ 1 ] ) ;
 
       }
 
-      if ( out[ 0 ] == "\'sizeX\'" )
+      if ( out[ 0 ] == "\'averageDisimilarity\'" )
       {
 
-        this->size[ 0 ] = std::stoi( out[ 1 ] ) ;
+        this->averageDisimilarity = std::stof( out[ 1 ] ) ;
 
       }
 
-      if ( out[ 0 ] == "\'sizeY\'" )
+      if ( out[ 0 ] == "\'minDisimilarity\'" )
       {
 
-        this->size[ 1 ] = std::stoi( out[ 1 ] ) ;
+        this->minDisimilarity = std::stof( out[ 1 ] ) ;
 
       }
 
-      if ( out[ 0 ] == "\'sizeZ\'" )
+      if ( out[ 0 ] == "\'maxDisimilarity\'" )
       {
 
-        this->size[ 2 ] = std::stoi( out[ 1 ] ) ;
+        this->maxDisimilarity = std::stof( out[ 1 ] ) ;
+
+      }
+
+      if ( out[ 0 ] == "\'averageDistanceBetweenMedialPoints\'" )
+      {
+
+        this->averageDistanceBetweenMedialPoints = std::stof( out[ 1 ] ) ;
+
+      }
+
+      if ( out[ 0 ] == "\'minDistanceBetweenMedialPoints\'" )
+      {
+
+        this->minDistanceBetweenMedialPoints = std::stof( out[ 1 ] ) ;
+
+      }
+
+      if ( out[ 0 ] == "\'maxDistanceBetweenMedialPoints\'" )
+      {
+
+        this->maxDistanceBetweenMedialPoints = std::stof( out[ 1 ] ) ;
+
+      }
+
+      if ( out[ 0 ] == "\'centerBundleX\'" )
+      {
+
+        this->centerBundle[ 0 ] = std::stof( out[ 1 ] ) ;
+
+      }
+
+      if ( out[ 0 ] == "\'centerBundleY\'" )
+      {
+
+        this->centerBundle[ 1 ] = std::stof( out[ 1 ] ) ;
+
+      }
+
+      if ( out[ 0 ] == "\'centerBundleZ\'" )
+      {
+
+        this->centerBundle[ 2 ] = std::stof( out[ 1 ] ) ;
+
+      }
+
+      if ( out[ 0 ] == "\'density\'" )
+      {
+
+        this->density = std::stof( out[ 1 ] ) ;
+
+      }
+
+      if ( out[ 0 ] == "\'disimilarityWithAtlas\'" )
+      {
+
+        this->disimilarityWithAtlas = std::stof( out[ 1 ] ) ;
+
+      }
+
+      if ( out[ 0 ] == "\'coverageWithAtlas\'" )
+      {
+
+        this->coverageWithAtlas = std::stof( out[ 1 ] ) ;
+
+      }
+
+      if ( out[ 0 ] == "\'adjacencyWithAtlas\'" )
+      {
+
+        this->adjacencyWithAtlas = std::stof( out[ 1 ] ) ;
+
+      }
+
+      if ( out[ 0 ] == "\'overlapWithAtlas\'" )
+      {
+
+        this->overlapWithAtlas = std::stof( out[ 1 ] ) ;
+
+      }
+
+      ///////////////////////////// For .bundles format //////////////////////////
+      if ( isBundles )
+      {
+
+        if ( out[ 0 ] == "\'binary\'" )
+        {
+
+          this->binary = std::stoi( out[ 1 ] ) ;
+
+        }
+
+        if ( out[ 0 ] == "\'bundles\'" )
+        {
+
+          this->bundles = out[ 1 ] ;
+
+        }
+
+        if ( out[ 0 ] == "\'byte_order\'" )
+        {
+
+          this->byte_order = out[ 1 ] ;
+
+
+        }
+
+        if ( out[ 0 ] == "\'data_file_name\'" )
+        {
+
+          this->data_file_name = out[ 1 ] ;
+
+        }
+
+        if ( out[ 0 ] == "\'format\'" )
+        {
+
+          this->format = out[ 1 ] ;
+
+        }
+
+        if ( out[ 0 ] == "\'io_mode\'" )
+        {
+
+          this->io_mode = out[ 1 ] ;
+
+        }
+
+        if ( out[ 0 ] == "\'item_count\'" )
+        {
+
+          this->item_count = std::stoi( out[ 1 ] ) ;
+
+        }
+
+        if ( out[ 0 ] == "\'label_type\'" )
+        {
+
+          this->label_type = out[ 1 ] ;
+
+        }
+
+        if ( out[ 0 ] == "\'labels\'" )
+        {
+
+          this->labels = out[ 1 ] ;
+
+        }
+
+        if ( out[ 0 ] == "\'object_type\'" )
+        {
+
+          this->object_type = out[ 1 ] ;
+
+        }
+
+
+        if ( out[ 0 ] == "\'space_dimension\'" )
+        {
+
+          this->space_dimension = std::stoi( out[ 1 ] ) ;
+
+        }
+
+        if ( out[ 0 ] == "\'curves_count\'" )
+        {
+
+          this->curves_count = std::stoi( out[ 1 ] ) ;
+
+        }
+
+        if ( out[ 0 ] == "\'resolutionX\'" )
+        {
+
+          this->resolution[ 0 ] = std::stof( out[ 1 ] ) ;
+
+        }
+
+        if ( out[ 0 ] == "\'resolutionY\'" )
+        {
+
+          this->resolution[ 1 ] = std::stof( out[ 1 ] ) ;
+
+        }
+
+        if ( out[ 0 ] == "\'resolutionZ\'" )
+        {
+
+          this->resolution[ 2 ] = std::stof( out[ 1 ] ) ;
+
+        }
+
+        if ( out[ 0 ] == "\'sizeX\'" )
+        {
+
+          this->size[ 0 ] = std::stoi( out[ 1 ] ) ;
+
+        }
+
+        if ( out[ 0 ] == "\'sizeY\'" )
+        {
+
+          this->size[ 1 ] = std::stoi( out[ 1 ] ) ;
+
+        }
+
+        if ( out[ 0 ] == "\'sizeZ\'" )
+        {
+
+          this->size[ 2 ] = std::stoi( out[ 1 ] ) ;
+
+        }
 
       }
 
@@ -1213,10 +1192,15 @@ void BundlesMinf::read( const char* bundlesFilename )
 
     minfFile.close() ;
 
-    this->fillDefaultTrk() ;
+    if ( isBundles )
+    {
 
+      this->fillDefaultTrk() ;
+
+    }
 
   }
+
 
   ////////////////////////////// For .trk format ///////////////////////////////
   if ( isTrk )
@@ -1519,6 +1503,13 @@ void BundlesMinf::write( const char* bundlesFilename,
                          float overlap,
                          float adjacency ) const
 {
+
+  // if ( !haveMinf )
+  // {
+  //
+  //   return ;
+  //
+  // }
 
   bool outIsBundles = false ;
   bool outIsTrk = false ;

@@ -263,6 +263,7 @@ void applyRecoBundles( const std::string& movedTractogramNeighborhood,
                   << "be in .bundles/.trk/.tck format, got "
                   << atlasNeighborhoodFile << std::endl ;
     std::string outMessage = outMessageOss.str() ;
+    closeDipyServer( portDipyServer ) ;
     throw( std::invalid_argument( outMessage ) ) ;
 
 

@@ -1043,59 +1043,6 @@ void BundlesData::write( const char* bundlesFilename,
     newBundleInfo.computeHeaderTck( this->curves_count ) ;
     newBundleInfo.computeTckOffsetBinary() ;
 
-    // Not necessary since we recomputed the header before
-    // if ( !bundleInfo.isTck )
-    // {
-    //
-    //   std::cout << "In BundlesData::write, the input BundlesMinf is not for "
-    //              << ".tck format, creating new one ... " ;
-    //
-    //   std::string matrixTracksString = "mrtrix tracks    " ;
-    //
-    //   std::string timeStampString = "timestamp: 1661165504.3768622875" ;
-    //
-    //   std::string datatypeString = "datatype: Float32LE" ;
-    //
-    //   std::ostringstream countStringOss ;
-    //   countStringOss << "count: " << this->curves_count ;
-    //   std::string countString = countStringOss.str() ;
-    //
-    //   std::ostringstream totalCountStringOss ;
-    //   totalCountStringOss << "total_count: " << this->curves_count ;
-    //   std::string totalCountString = totalCountStringOss.str() ;
-    //
-    //   std::ostringstream fileStringOss ;
-    //   fileStringOss << "file: . " ;
-    //   std::string fileString = fileStringOss.str() ;
-    //
-    //   std::string endString = "END" ;
-    //
-    //   int tmpSizeBytes = matrixTracksString.size() + timeStampString.size() +
-    //                             datatypeString.size() + countString.size() +
-    //                                totalCountString.size() + fileString.size() +
-    //                                                       endString.size() + 7 ;
-    //
-    //   std::ostringstream tmpSizeBytesOss ;
-    //   tmpSizeBytesOss << tmpSizeBytes ;
-    //   std::string tmpSizeBytesString = tmpSizeBytesOss.str() ;
-    //
-    //   tmpSizeBytes += tmpSizeBytesString.size() ;
-    //
-    //   fileStringOss << tmpSizeBytes ;
-    //   fileString = fileStringOss.str() ;
-    //
-    //   newBundleInfo.tckHeaderInfo.push_back( matrixTracksString ) ;
-    //   newBundleInfo.tckHeaderInfo.push_back( timeStampString ) ;
-    //   newBundleInfo.tckHeaderInfo.push_back( datatypeString ) ;
-    //   newBundleInfo.tckHeaderInfo.push_back( fileString ) ;
-    //   newBundleInfo.tckHeaderInfo.push_back( countString ) ;
-    //   newBundleInfo.tckHeaderInfo.push_back( totalCountString ) ;
-    //   newBundleInfo.tckHeaderInfo.push_back( endString ) ;
-    //
-    //   newBundleInfo.tckOffsetBinary = tmpSizeBytes + 1 ;
-    //
-    // }
-
     std::ofstream file ;
     file.open( bundlesFilenameStr, std::ios::binary | std::ios::out ) ;
     if ( file.fail() )
@@ -1202,8 +1149,12 @@ void BundlesData::write( const char* bundlesFilename,
 
   }
 
+  if ( bundleInfo.haveMinf )
+  {
 
-  bundleInfo.write( bundlesFilenameInfoStr.c_str() ) ;
+    bundleInfo.write( bundlesFilenameInfoStr.c_str() ) ;
+
+  }
 
 }
 
