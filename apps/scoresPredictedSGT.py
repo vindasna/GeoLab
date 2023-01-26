@@ -206,70 +206,8 @@ def getLabelFromBundleName( bundlesDict, bundleName ) :
         print( f"\'{bundlesDict[ label ]}\'" )
     sys.exit( 1 )
 
-def saveScoresPerBundle( accuracies_per_bundle,
-                         f1_score_per_bundle_model,
-                         precision_score_per_bundle_model,
-                         recall_score_per_bundle_model,
-                         labelsNames,
-                         out_scores_per_bundle_path ) :
-    accLen = len( accuracies_per_bundle )
-    f1Len = len( f1_score_per_bundle_model )
-    preLen = len( precision_score_per_bundle_model )
-    recLen = len( recall_score_per_bundle_model )
-    lnLen = len( labelsNames )
-    if ( accLen != f1Len ) :
-        print( "ERROR in saveScoresPerBundle() : F1-scores must be the same "
-              f"dimension as accuracies, got {f1Len} and {accLen} respectivly" )
-        sys.exit( 1 )
-    if ( accLen != preLen ) :
-        print( "ERROR in saveScoresPerBundle() : precisions must be the same "
-             f"dimension as accuracies, got {preLen} and {accLen} respectivly" )
-        sys.exit( 1 )
-    if ( accLen != recLen ) :
-        print( "ERROR in saveScoresPerBundle() : recalls must be the same "
-             f"dimension as accuracies, got {recLen} and {accLen} respectivly" )
-        sys.exit( 1 )
-    if ( accLen != lnLen ) :
-        print( "ERROR in saveScoresPerBundle() : labels names must be the same "
-              f"dimension as accuracies, got {lnLen} and {accLen} respectivly" )
-        sys.exit( 1 )
 
-    nbBundles = len( accuracies_per_bundle )
-
-    with open( out_scores_per_bundle_path, 'w' ) as f :
-        f.write( "BundleName\tAccuracy\tF1-score\tPrecision\tRecall\n" )
-        for i in range( nbBundles ) :
-            labelName = labelsNames[ i ]
-            accuracy_bundle = accuracies_per_bundle[ i ]
-            f1_bundle = f1_score_per_bundle_model[ i ]
-            precision_bundle = precision_score_per_bundle_model[ i ]
-            recall_bundle = recall_score_per_bundle_model[ i ]
-            f.write( f"{labelName}\t{accuracy_bundle}\t{f1_bundle}\t"
-                     f"{precision_bundle}\t{recall_bundle}\n" )
-
-    #--------------------------------------------------------------------------#
-    mean_acc = np.mean( accuracies_per_bundle )
-    std_acc = np.std( accuracies_per_bundle )
-
-    mean_f1 = np.mean( f1_score_per_bundle_model )
-    std_f1 = np.std( f1_score_per_bundle_model )
-
-    mean_pre = np.mean( precision_score_per_bundle_model )
-    std_pre = np.std( precision_score_per_bundle_model )
-
-    mean_rec = np.mean( recall_score_per_bundle_model )
-    std_rec = np.std( recall_score_per_bundle_model )
-
-    print( f"Scores per bundles ( mean +- std ) :\n"
-           f" Accuracy : {mean_acc} +- {std_acc} \n"
-           f" F1-Score : {mean_f1} +- {std_f1} \n"
-           f" Precision : {mean_pre} +- {std_pre} \n"
-           f" Recall : {mean_rec} +- {std_rec}" )
-
-
-
-
-def saveScoresPerBundle2( sensitivities,
+def saveScoresPerBundle( sensitivities,
                           specificities,
                           accuracies,
                           precisions,
@@ -296,24 +234,24 @@ def saveScoresPerBundle2( sensitivities,
     jacLen = len( jaccards )
     lnLen = len( sortedLabelsNames )
     if ( senLen != speLen ) :
-        print( f"ERROR in saveScoresPerBundle2() : Specificities must be the "
+        print( f"ERROR in saveScoresPerBundle() : Specificities must be the "
                f"same size as sensitivities, got {speLen} and {senLen} "
                f"respectivly" )
         sys.exit( 1 )
     if ( senLen != accLen ) :
-        print( f"ERROR in saveScoresPerBundle2() : accuracies must be the same "
+        print( f"ERROR in saveScoresPerBundle() : accuracies must be the same "
                f"size as sensitivities, got {accLen} and {senLen} respectivly" )
         sys.exit( 1 )
     if ( senLen != preLen ) :
-        print( f"ERROR in saveScoresPerBundle2() : precisions must be the same "
+        print( f"ERROR in saveScoresPerBundle() : precisions must be the same "
                f"size as sensitivities, got {preLen} and {senLen} respectivly" )
         sys.exit( 1 )
     if ( senLen != jacLen ) :
-        print( f"ERROR in saveScoresPerBundle2() : jaccards must be the same "
+        print( f"ERROR in saveScoresPerBundle() : jaccards must be the same "
                f"size as sensitivities, got {jacLen} and {senLen} respectivly" )
         sys.exit( 1 )
     if ( senLen != lnLen ) :
-        print( "ERROR in saveScoresPerBundle2() : labels names must be the same"
+        print( "ERROR in saveScoresPerBundle() : labels names must be the same"
                f" size as sensitivities, got {lnLen} and {senLen} respectivly" )
         sys.exit( 1 )
 
@@ -377,20 +315,13 @@ def readConfusionMatrix( path ) :
 
 
 def comparePredictionToTrue( realLabelsPath, realDictPath, predictedLabelsPath,
-                          predictedDictPath, isSupWMA = False, force = False ) :
-    confusionMatrixSavingPath = os.path.dirname( predictedLabelsPath )
-    _tmpBasename = os.path.basename( os.path.dirname( realLabelsPath ) )
-    confusionMatrixSavingPath = os.path.join( confusionMatrixSavingPath,
-                                         f"confusionMatrix_{_tmpBasename}.tsv" )
+                  predictedDictPath, outDir, isSupWMA = False, force = False ) :
+    confusionMatrixSavingPath = os.path.join( outDir, f"confusionMatrix.tsv" )
 
-    confusionMatrixDictSavingPath = os.path.dirname( predictedLabelsPath )
-    _tmpBasename = os.path.basename( os.path.dirname( realLabelsPath ) )
-    confusionMatrixDictSavingPath = os.path.join( confusionMatrixDictSavingPath,
-                                        f"confusionMatrix_{_tmpBasename}.dict" )
+    confusionMatrixDictSavingPath = os.path.join( outDir,
+                                                       f"confusionMatrix.dict" )
 
-    out_scores_per_bundle_path = os.path.join(
-                                     os.path.dirname( predictedLabelsPath ),
-                                     f"scoresPerBundle_{_tmpBasename}.tsv" )
+    out_scores_per_bundle_path = os.path.join( outDir, f"scoresPerBundle.tsv" )
 
     if ( not os.path.isfile( confusionMatrixSavingPath ) or
                 not os.path.isfile( confusionMatrixDictSavingPath ) or force ) :
@@ -506,24 +437,7 @@ def comparePredictionToTrue( realLabelsPath, realDictPath, predictedLabelsPath,
 
         confusion_matrix_model = confusion_matrix( yTrue, yPred )
         saveConfusionMatrix( confusion_matrix_model, confusionMatrixSavingPath )
-        # accuracy_model = accuracy_score( yTrue, yPred )
-        # print( f"Accuracy : {accuracy_model}" )
-        #
-        # balanced_accuracy_model = balanced_accuracy_score( yTrue, yPred )
-        # print( f"Balanced accuracy : {balanced_accuracy_model}" )
-        #
-        # f1_score_model = f1_score( yTrue, yPred, average = "macro" )
-        # # f1_score_model = f1_score( yTrue, yPred, average = "weighted" )
-        # print( f"F1 Score : {f1_score_model}" )
-        #
-        #
-        # f1_score_per_bundle_model = f1_score( yTrue, yPred, average = None )
-        # precision_score_per_bundle_model = precision_score( yTrue, yPred,
-        #                                                             average = None )
-        # recall_score_per_bundle_model = recall_score( yTrue, yPred, average = None )
-        # cm = np.copy( confusion_matrix_model )
-        # cm = ( cm.astype('float') / cm.sum(axis=1)[:, np.newaxis] )
-        # accuracies_per_bundle = cm.diagonal()
+
 
         testPredictedLabels = list( testPredictedLabels )
         testRealLabels = list( testRealLabels )
@@ -538,20 +452,7 @@ def comparePredictionToTrue( realLabelsPath, realDictPath, predictedLabelsPath,
                 newPredictedDict[ _i ] = "unlabeledFibers"
             else :
                 newPredictedDict[ _i ] = predictedDict[ _realLabel ]
-        # if len( testRealLabels ) <= len( testPredictedLabels ) :
-        #     for _i in range( len( testRealLabels ) ) :
-        #         _realLabel = testRealLabels[ _i ]
-        #         if _realLabel == -1 :
-        #             newPredictedDict[ _i ] = "unlabeledFibers"
-        #         else :
-        #             newPredictedDict[ _i ] = predictedDict[ _realLabel ]
-        # else :
-        #     for _i in range( len( testPredictedLabels ) )  :
-        #         _predLabel = testPredictedLabels[ _i ]
-        #         if _predLabel == -1 :
-        #             newPredictedDict[ _i ] = "unlabeledFibers"
-        #         else :
-        #             newPredictedDict[ _i ] = testRealLabels[ _predLabel ]
+
 
         saveDict( newPredictedDict, confusionMatrixDictSavingPath )
     else :
@@ -585,7 +486,7 @@ def comparePredictionToTrue( realLabelsPath, realDictPath, predictedLabelsPath,
 
     print( "\nDone" )
 
-    saveScoresPerBundle2( sensitivities,
+    saveScoresPerBundle( sensitivities,
                           specificities,
                           accuracies,
                           precisions,
@@ -593,16 +494,6 @@ def comparePredictionToTrue( realLabelsPath, realDictPath, predictedLabelsPath,
                           newPredictedDict,
                           out_scores_per_bundle_path )
 
-
-
-    #--------------------------------------------------------------------------#
-
-    # saveScoresPerBundle( accuracies_per_bundle,
-                         # f1_score_per_bundle_model,
-                         # precision_score_per_bundle_model,
-                         # recall_score_per_bundle_model,
-                         # newPredictedDict,
-                         # out_scores_per_bundle_path )
 
 
 
@@ -701,16 +592,6 @@ def computeJaccard( confusion_matrix_model, index_class ) :
     return( jaccard )
 
 
-"""
-sensitivity (TP/(TP + FN))
-specificity (TN/(TN + FN))
-accuracy (TP + TN)/(TP + TN + FP + FN)
-precision TP/(TP + FP)
-Jaccard index (TP/(TP + FN + FP))
-"""
-
-
-
 ################################################################################
 ################################################################################
 ################################################################################
@@ -746,114 +627,8 @@ def main() :
 
 
     comparePredictionToTrue( trueLabelsPath, trueDictPath, predictedLabelsPath,
-                                            predictedDictPath, isSupWMA, force )
+                                    predictedDictPath, outDir, isSupWMA, force )
 
 
 if __name__ == "__main__":
     main()
-
-################################################################################
-################################################################################
-################################################################################
-# disco_darted_fused_dir = "/home/nv264568/Bureau/Doctorat/ISBI2023/fused_2_groups"
-# dir_to_analyse = disco_darted_fused_dir
-#
-# """
-# Good combinations
-# tmpNum = "9"
-# _num = 3
-#
-# """
-#
-# # tmpNum = "5"
-# # tmpNum = "7"
-# # tmpNum = "17"
-#
-# # tmpNum = "15"
-# # tmpNum = "13"
-# # tmpNum = "14"
-# # tmpNum = "16"
-# # realLabelsPath = f"{dir_to_analyse}/newLabels{tmpNum}/labels.txt"
-# # realDictPath = f"{dir_to_analyse}/newLabels{tmpNum}/labels.dict"
-#
-# # realLabelsPath = f"{dir_to_analyse}/semiAutomaticLabels/labels.txt"
-# # realDictPath = f"{dir_to_analyse}/semiAutomaticLabels/labels.dict"
-#
-# realLabelsPath = f"{dir_to_analyse}/semiAutomaticLabelsWithoutAtlasFinal/labels.txt"
-# realDictPath = f"{dir_to_analyse}/semiAutomaticLabelsWithoutAtlasFinal/labels.dict"
-# #-----------------------------------------------------------------------------#
-#
-# # _num = 10
-# # _num = 6
-# # _num = "12"
-# _num = "2"
-# # predictedLabelsPath = f"{dir_to_analyse}/testFullISBI{_num}/labels.txt"
-# # predictedDictPath = f"{dir_to_analyse}/testFullISBI{_num}/labels.dict"
-# predictedLabelsPath = f"/home/nv264568/Bureau/Doctorat/ISBI2023/fused_2_groups/tests/testClassicFull{_num}/labels.txt"
-# predictedDictPath = f"/home/nv264568/Bureau/Doctorat/ISBI2023/fused_2_groups/tests/testClassicFull{_num}/labels.dict"
-# #-----------------------------------------------------------------------------#
-# # _numReco = "5"
-# # _numReco = "8"
-#
-# # _numReco = "3"
-# _numReco = "24"
-#
-# # predictedLabelsPathReco = f"{dir_to_analyse}/testFullReco{_numReco}/labels.txt"
-# # predictedDictPathReco = f"{dir_to_analyse}/testFullReco{_numReco}/labels.dict"
-#
-# # predictedLabelsPathReco = f"{dir_to_analyse}/tests/testProjectAtlasRecobundles2/labels.txt"
-# # predictedDictPathReco = f"{dir_to_analyse}/tests/testProjectAtlasRecobundles2/labels.dict"
-#
-# _numReco = 11
-# predictedLabelsPathReco = f"/home/nv264568/Bureau/Doctorat/ISBI2023/fused_2_groups/tests/testProjectAtlasRecobundlesFull{_numReco}/labels.txt"
-# predictedDictPathReco = f"/home/nv264568/Bureau/Doctorat/ISBI2023/fused_2_groups/tests/testProjectAtlasRecobundlesFull{_numReco}/labels.dict"
-#
-# # predictedLabelsPathReco = f"/home/nv264568/Bureau/Doctorat/ISBI2023/fused_2_groups/TGCC/testFullReco0.5/labels.txt"
-# # predictedDictPathReco = f"/home/nv264568/Bureau/Doctorat/ISBI2023/fused_2_groups/TGCC/testFullReco0.5/labels.dict"
-#
-# # predictedLabelsPathReco = f"{dir_to_analyse}/testCombReco/labels.txt"
-# # predictedDictPathReco = f"{dir_to_analyse}/testCombReco/labels.dict"
-#
-# # predictedLabelsPathReco = f"{dir_to_analyse}/testFullReco2/labels.txt"
-# # predictedDictPathReco = f"{dir_to_analyse}/testFullReco2/labels.dict"
-# #-----------------------------------------------------------------------------#
-#
-# # predictedLabelsSupWMA = f"{dir_to_analyse}/testSupWMA/predicted_labels.bin"
-# # predictedDictSupWMA = f"/home/nv264568/Bureau/Doctorat/ISBI2023/labelsDictSupWMA.txt"
-# # predictedLabelsSupWMA = f"{dir_to_analyse}/tests/testSupWMA/predicted_labels.bin"
-# # predictedDictSupWMA = f"/home/nv264568/Bureau/Doctorat/ISBI2023/labelsDictSupWMA.txt"
-# predictedLabelsSupWMA = f"/home/nv264568/Bureau/Doctorat/ISBI2023/fused_2_groups/tests/testSupWMA2/predicted_labels.bin"
-# predictedDictSupWMA = f"/home/nv264568/Bureau/Doctorat/ISBI2023/fused_2_groups/tests/testSupWMA2/sf_clusters_train_labels_dictionary.txt"
-#
-#
-# #-----------------------------------------------------------------------------#
-# #-----------------------------------------------------------------------------#
-# #-----------------------------------------------------------------------------#
-#
-# print( f"True labels directory : {os.path.dirname( realLabelsPath )}" )
-# print( f"Predicted classic directory : {os.path.dirname( predictedLabelsPath )}" )
-# print( f"Predicted reco directory : {os.path.dirname( predictedLabelsPathReco )}" )
-#
-# # print( "##################### Classic #####################" )
-# # forceClassic = False
-# # comparePredictionToTrue( realLabelsPath, realDictPath, predictedLabelsPath,
-# #                      predictedDictPath, isSupWMA = False, force = forceClassic )
-#
-# # print( "##################### Geolab #####################" )
-# # forceGeoLab = False
-# # comparePredictionToTrue( realLabelsPath, realDictPath, predictedLabelsPathReco,
-# #                   predictedDictPathReco, isSupWMA = False, force = forceGeoLab )
-#
-# print( "\n##################### SupWMA #####################" )
-# forceSupWMA = False
-# comparePredictionToTrue( realLabelsPath, realDictPath, predictedLabelsSupWMA,
-#
-# predictedDictSupWMA, isSupWMA = True, force = forceSupWMA )
-#
-#
-#
-# """
-# -thrSim 0.05 -tolP 0.0 -tolThr 0.3 -tolMaxAng 0.0 -tolMaxDirAng 0.0 -tolMinShapeAng 0.9
-# -tolMaxShapeAng 0.9 -tolLenght 0.0 -tolDBMP 0.0 -cp false -cb -sp false -v 1"
-#
-# """
