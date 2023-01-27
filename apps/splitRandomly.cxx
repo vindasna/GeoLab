@@ -481,6 +481,12 @@ int main( int argc, char* argv[] )
   tractogramDataOut.matrixTracks = matrixTracks ;
   tractogramDataOut.pointsPerTrack = pointsPerTrack ;
   tractogramDataOut.curves_count = curves_count ;
+  if ( format == ".bundles" || format == ".bundlesdata" )
+  {
+
+    tractogramInfoOut.haveMinf = true ;
+
+  }
   tractogramDataOut.write( outBundlesDataFilename.c_str(), tractogramInfoOut ) ;
 
   return( 0 ) ;

@@ -109,6 +109,9 @@ void bundlesData2Trk( const char* inputFile,
   bundlesInfo.isBundles = false ;
   bundlesInfo.isTrk = true ;
 
+  // Because we do not want to produce a .minf when converting .bundles->.trk
+  bundlesInfo.haveMinf = false ;
+
   std::cout << "Writing : " << outputFile << std::endl ;
   bundlesdata.write( outputFile, bundlesInfo ) ;
 
@@ -193,6 +196,9 @@ void Trk2BundlesData( const char* inputFile,
 
   bundlesInfo.isBundles = true ;
   bundlesInfo.isTrk = false ;
+
+  // Because we want to produce a .bundles when converting .trk->.bundles
+  bundlesInfo.haveMinf = true ;
 
   std::cout << "Writing : " << outputFile << std::endl ;
   bundlesdata.write( outputFile, bundlesInfo ) ;
@@ -301,6 +307,9 @@ void Tck2BundlesData( const char* inputFile,
 
   bundlesdata.isTck = false ;
   bundlesdata.isBundles = true ;
+
+  // Because we do not want to produce a .minf when converting .tck->.bundles
+  bundlesInfo.haveMinf = true ;
 
   std::cout << "Writing : " << outputFile << std::endl ;
   bundlesdata.write( outputFile, bundlesInfo ) ;
@@ -418,6 +427,9 @@ void BundlesData2Tck( const char* inputFile,
 
   bundlesInfo.isBundles = false ;
   bundlesInfo.isTck = true ;
+
+  // Because we do not want to produce a .minf when converting .bundles->.tck
+  bundlesInfo.haveMinf = false ;
 
   std::cout << "Writing : " << outputFile << std::endl ;
   bundlesdata.write( outputFile, bundlesInfo ) ;
