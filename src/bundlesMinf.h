@@ -149,7 +149,16 @@ class BundlesMinf
               float disimilarity,
               float coverage,
               float overlap,
+              float adjacency,
+              bool haveMinf ) const ;
+
+  void write( const char* bundlesFilename,
+              float disimilarity,
+              float coverage,
+              float overlap,
               float adjacency ) const ;
+
+  void write( const char* bundlesFilename, bool haveMinf ) const ;
 
   void write( const char* bundlesFilename ) const ;
 

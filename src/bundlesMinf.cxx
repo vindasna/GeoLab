@@ -1501,15 +1501,16 @@ void BundlesMinf::write( const char* bundlesFilename,
                          float disimilarity,
                          float coverage,
                          float overlap,
-                         float adjacency ) const
+                         float adjacency,
+                         bool haveMinf ) const
 {
 
-  // if ( !haveMinf )
-  // {
-  //
-  //   return ;
-  //
-  // }
+  if ( !haveMinf )
+  {
+
+    return ;
+
+  }
 
   bool outIsBundles = false ;
   bool outIsTrk = false ;
@@ -1901,8 +1902,36 @@ void BundlesMinf::write( const char* bundlesFilename,
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-// For details on .tck http://trackvis.org/docs/?subsect=fileformat
-// For details on .trk http://trackvis.org/docs/?subsect=fileformat
+void BundlesMinf::write( const char* bundlesFilename,
+                         float disimilarity,
+                         float coverage,
+                         float overlap,
+                         float adjacency ) const
+{
+
+
+  write( bundlesFilename,
+         disimilarity,
+         coverage,
+         overlap,
+         adjacency,
+         this->haveMinf ) ;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+void BundlesMinf::write( const char* bundlesFilename, bool haveMinf ) const
+{
+
+  this->write( bundlesFilename,
+               this->disimilarityWithAtlas,
+               this->coverageWithAtlas,
+               this->overlapWithAtlas,
+               this->adjacencyWithAtlas,
+               haveMinf ) ;
+
+}
+
+////////////////////////////////////////////////////////////////////////////////
 void BundlesMinf::write( const char* bundlesFilename ) const
 {
 
@@ -1910,7 +1939,8 @@ void BundlesMinf::write( const char* bundlesFilename ) const
                this->disimilarityWithAtlas,
                this->coverageWithAtlas,
                this->overlapWithAtlas,
-               this->adjacencyWithAtlas ) ;
+               this->adjacencyWithAtlas,
+               this->haveMinf ) ;
 
 }
 

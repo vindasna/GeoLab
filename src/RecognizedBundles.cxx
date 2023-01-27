@@ -2336,7 +2336,8 @@ void RecognizedBundles::projectAtlas( AtlasBundles& atlasData,
                               disimilarity,
                               coverageRecognizedToAtlas,
                               overlap,
-                              adjacency ) ;
+                              adjacency,
+                              true ) ;
 
       }
 

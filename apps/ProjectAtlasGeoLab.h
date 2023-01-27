@@ -88,6 +88,8 @@ bool doClassical = true ;
 
 bool keepTmpFiles = false ;
 
+bool haveMinf = false ;
+
 
 ////////////////////////////////////////////////////////////////////////////////
 int getFlagPosition( int argc, char* argv[], const std::string& flag ) ;

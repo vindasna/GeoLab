@@ -171,7 +171,6 @@ void applyRecoBundles( const std::string& movedTractogramNeighborhood,
   if ( is_file( recognizedBundle ) )
   {
 
-
     coverage_classic = getCoverageWithAtlas( recognizedBundle ) ;
     adjacency_classic = getAdjacencyWithAtlas( recognizedBundle ) ;
     int nbFibersClassic = getNbFibers( recognizedBundle ) ;
@@ -432,23 +431,26 @@ void applyRecoBundles( const std::string& movedTractogramNeighborhood,
                                                     movedTractogramNeighborhood,
                                                     "_centroids.bundles" ) ;
 
-  if ( format == ".trk" || format == ".tck" )
+  if ( ( format == ".trk" || format == ".tck" ) )
   {
 
     movedTractogramNeighborhoodCentroids = replaceExtension(
                                            movedTractogramNeighborhoodCentroids,
                                            format ) ;
 
-    std::string movedTractogramNeighborhoodCentroidsMinf = replaceExtension(
+    if ( haveMinf )
+    {
+
+      std::string movedTractogramNeighborhoodCentroidsMinf = replaceExtension(
                                movedTractogramNeighborhoodCentroids, ".minf" ) ;
 
-    std::string movedTractogramNeighborhoodMinf = replaceExtension(
+      std::string movedTractogramNeighborhoodMinf = replaceExtension(
                                         movedTractogramNeighborhood, ".minf" ) ;
 
-    copy( movedTractogramNeighborhoodMinf,
+      copy( movedTractogramNeighborhoodMinf,
                                     movedTractogramNeighborhoodCentroidsMinf ) ;
 
-
+    }
 
   }
 
@@ -556,20 +558,24 @@ void applyRecoBundles( const std::string& movedTractogramNeighborhood,
                                                     "_moved.bundles" ) ;
 
 
-  if ( format == ".trk" || format == ".tck" )
+  if ( ( format == ".trk" || format == ".tck" ) )
   {
 
     neighborhoodRegistered = replaceExtension( neighborhoodRegistered, format) ;
 
-    std::string neighborhoodRegisteredMinf = replaceExtension(
+    if ( haveMinf )
+    {
+
+      std::string neighborhoodRegisteredMinf = replaceExtension(
                                              neighborhoodRegistered, ".minf" ) ;
 
-    std::string movedTractogramNeighborhoodMinf = replaceExtension(
+      std::string movedTractogramNeighborhoodMinf = replaceExtension(
                                         movedTractogramNeighborhood, ".minf" ) ;
 
-    copy( movedTractogramNeighborhoodMinf, neighborhoodRegisteredMinf ) ;
+      copy( movedTractogramNeighborhoodMinf, neighborhoodRegisteredMinf ) ;
 
 
+    }
 
   }
 
@@ -1505,7 +1511,6 @@ int main( int argc, char* argv[] )
   }
 
 
-  //////////////////////////////////////////////////////////////////////////////
   char lastChar = inputBundlesFilename[ inputBundlesFilename.size() - 1 ] ;
   if ( lastChar == '/' )
   {
@@ -2486,11 +2491,15 @@ int main( int argc, char* argv[] )
 
   /////////////////////////////// Getting format ///////////////////////////////
   std::string format ;
+  std::string inputBundlesMinfPath ;
   if ( endswith( inputBundlesFilename, ".bundles" ) ||
                               endswith( inputBundlesFilename, ".bundlesdata" ) )
   {
 
     format = ".bundles" ;
+
+    inputBundlesMinfPath = replaceExtension( inputBundlesFilename,
+                                                                  ".bundles" ) ;
 
   }
   else if ( endswith( inputBundlesFilename, ".trk" ) )
@@ -2498,14 +2507,25 @@ int main( int argc, char* argv[] )
 
     format = ".trk" ;
 
+    inputBundlesMinfPath = replaceExtension( inputBundlesFilename, ".minf" ) ;
+
   }
   else if ( endswith( inputBundlesFilename, ".tck" ) )
   {
 
     format = ".tck" ;
 
+    inputBundlesMinfPath = replaceExtension( inputBundlesFilename, ".minf" ) ;
+
   }
   // Already checked at the begginig of main if extension is one of those format
+
+  if ( is_file( inputBundlesMinfPath ) )
+  {
+
+    haveMinf = true ;
+
+  }
 
 
   //////////////// Preparing atlas bundles paths (tmpAtlasDir) /////////////////
@@ -3943,6 +3963,7 @@ int main( int argc, char* argv[] )
 
   std::string regroupedRecognizedBundledataPath =
                                       regroupedRecognizedBundledataOss.str() ;
+
   regroupedRecognizedBundlesData.write(
                                     regroupedRecognizedBundledataPath.c_str(),
                                     regroupedRecognizedBundles ) ;
@@ -3966,6 +3987,20 @@ int main( int argc, char* argv[] )
 
 
   ////////////////////////////////// Cleaning //////////////////////////////////
+  if ( !haveMinf )
+  {
+
+    std::vector<std::string> tmpMinfFiles = getFilesInDirectoryWithExtension(
+                                                    outputDirectory, ".minf" ) ;
+    for ( std::string minfFile : tmpMinfFiles )
+    {
+
+      rmfile( minfFile ) ;
+
+    }
+
+  }
+  
   if ( keepTmpFiles )
   {
 
