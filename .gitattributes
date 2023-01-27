@@ -1,5 +1,11 @@
 /volatile/Atlases/Nicole/HCP/EsbaBundles.zip filter=lfs diff=lfs merge=lfs -text
 *.zip filter=lfs diff=lfs merge=lfs -text
+“*.dict” filter=lfs diff=lfs merge=lfs -text
+“*.bundles” filter=lfs diff=lfs merge=lfs -text
+“*.bundlesdata” filter=lfs diff=lfs merge=lfs -text
+“*.trk” filter=lfs diff=lfs merge=lfs -text
+“*.tck” filter=lfs diff=lfs merge=lfs -text
+“*.txt” filter=lfs diff=lfs merge=lfs -text
 *.tck filter=lfs diff=lfs merge=lfs -text
 *.bundles filter=lfs diff=lfs merge=lfs -text
 *.trk filter=lfs diff=lfs merge=lfs -text
