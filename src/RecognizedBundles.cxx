@@ -330,6 +330,8 @@ void RecognizedBundles::MDADLabeling(
                                                         nbPoints - 1 ) + i ] ) ;
         }
 
+
+	
         float tmpDist1 = 0 ;
         float tmpDist2 = 0 ;
         for ( int i = 0 ; i < 3 ; i++ )
@@ -362,6 +364,8 @@ void RecognizedBundles::MDADLabeling(
           continue ;
 
         }
+
+	
 
 
         ////////////////////////////////////////////////////////////////////////
