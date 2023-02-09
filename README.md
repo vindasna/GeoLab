@@ -50,34 +50,26 @@ The contents of this repository are released under Apache-2.0 license.
    Edit the startup ~/.bashrc or /etc/bash.bashrc file manually by adding this line :
    
    `$ export PATH=/<edit as appropriate>/GeoLab/build/bin:$PATH`
+   `$ export ESBA_DIR=/<edit as appropriate>/GeoLab/Atlas`
 
 5. Check installation :
  
    `$ ProjectAtlasGeoLab -h`
 
-6. If you are using a virtual environment for python, change the first line in {GeoLab Path}/build/bin/analyseAtlasBundle.py :
+6. If you are using a virtual environment for python, change the first line in {GeoLab Path}/build/bin/*.py FILES :
    
    `$ #!/usr/bin/python3 (original line)`    --->    `$ #!{your python binary}`     
  
 
 ## Usage example on ESBA atlas
 
-To extract the bundles of the ESBA atlas from a subject you first need to compute the tractogram (.tck/.trk/.bundles), register it to MNI space (recommended : image-based with ANTs) and resample it to 15 points per fiber. If you use .tck/.trk you need to create a ".minf" for the file :
+To extract the bundles of the ESBA atlas from a subject you first need to compute the tractogram (.tck/.trk/.bundles), register it to MNI space (recommended : image-based with ANTs) and resample it to 15 points per fiber. Then use the ProjectAtlasGeoLab command :
 
-    `$ createMinf -o {path to tractogram without extension}.minf -f ${format}`
-
-Then use the ProjectAtlasGeoLab command :
-
-    `$ ProjectAtlasGeoLab -i input${format} -a atlasDir -ref mni_icbm152_t1_tal_nlin_asym_09c_brain.nii -o outputDir -nbPoints 15 -an Neigborhood${format2} -anc Centroids${format2} -nbThreads ${nbThreads}` 
+    `$ ProjectAtlasGeoLab -i input${format} -o outputDir -nbPoints 15 -nbThreads ${nbThreads}` 
 
 * Replace ${format} with {.trk, .tck, .bundles} according to your tractogram format.
-* Replace ${format2} with {Trk, Tck, Bundles} according to your tractogram format.
 * input${format} : subject's tractogram (.tck/.trk/.bundles)
-* atlasDir : Path to your atlas directory.
-* mni_icbm152_t1_tal_nlin_asym_09c_brain.nii : path to the reference image mni_icbm152_t1_tal_nlin_asym_09c_brain.nii
 * outputDir : directory where to save the results.
-* Neigborhood${format2} : found in ./Atlas/*.zip.
-* Centroids${format2} : found in ./Atlas/*.zip.
 * ${nbThreads} : number of threads to use for OpenMP.
  
 
@@ -134,3 +126,5 @@ Then create the ".minf" file for your input if necessary and use the ProjectAtla
 * CentroidsAtlas : outDirCentroidsAtlas.
 * ${nbThreads} : number of threads to use for OpenMP.
     
+## For windows
+GeoLab will soon be available for windows as a docker container. 
