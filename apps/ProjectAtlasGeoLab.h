@@ -14,6 +14,7 @@
 #include <unistd.h>
 
 #include <iostream>
+#include <cstdlib>
 #include <fstream>
 #include <sstream>
 #include <vector>
@@ -89,6 +90,8 @@ bool doClassical = true ;
 bool keepTmpFiles = false ;
 
 bool haveMinf = false ;
+
+std::string default_ESBA_DIR ;
 
 
 ////////////////////////////////////////////////////////////////////////////////

@@ -14,6 +14,7 @@
 #include <unistd.h>
 
 #include <iostream>
+#include <cstdlib>
 #include <fstream>
 #include <sstream>
 #include <vector>
@@ -1491,6 +1492,22 @@ int main( int argc, char* argv[] )
   std::cout << "Number of cores in the system : " << nbCores << std::endl ;
 
   //////////////////////////////////////////////////////////////////////////////
+  char lastChar ;
+  default_ESBA_DIR = std::getenv( "ESBA_DIR" ) ;
+  if ( default_ESBA_DIR.size() > 0 )
+  {
+
+    lastChar = default_ESBA_DIR[ default_ESBA_DIR.size() - 1 ] ;
+    if ( lastChar != '/' )
+    {
+
+      default_ESBA_DIR = default_ESBA_DIR + "/" ;
+
+    }
+
+  }
+
+  //////////////////////////////////////////////////////////////////////////////
   ///////////////////////////// Checking arguments /////////////////////////////
   //////////////////////////////////////////////////////////////////////////////
 
@@ -1511,7 +1528,7 @@ int main( int argc, char* argv[] )
   }
 
 
-  char lastChar = inputBundlesFilename[ inputBundlesFilename.size() - 1 ] ;
+  lastChar = inputBundlesFilename[ inputBundlesFilename.size() - 1 ] ;
   if ( lastChar == '/' )
   {
 
@@ -1534,26 +1551,104 @@ int main( int argc, char* argv[] )
   }
 
 
+  /// Getting format
+  std::string format ;
+  std::string formatUpper ;
+  std::string inputBundlesMinfPath ;
+  if ( endswith( inputBundlesFilename, ".bundles" ) ||
+                              endswith( inputBundlesFilename, ".bundlesdata" ) )
+  {
+
+    format = ".bundles" ;
+    formatUpper = "Bundles" ;
+
+    inputBundlesMinfPath = replaceExtension( inputBundlesFilename,
+                                                                  ".bundles" ) ;
+
+  }
+  else if ( endswith( inputBundlesFilename, ".trk" ) )
+  {
+
+    format = ".trk" ;
+    formatUpper = "Trk" ;
+
+    inputBundlesMinfPath = replaceExtension( inputBundlesFilename, ".minf" ) ;
+
+  }
+  else if ( endswith( inputBundlesFilename, ".tck" ) )
+  {
+
+    format = ".tck" ;
+    formatUpper = "Tck" ;
+
+    inputBundlesMinfPath = replaceExtension( inputBundlesFilename, ".minf" ) ;
+
+  }
+  // Already checked at the begginig of main if extension is one of those format
+
+  if ( is_file( inputBundlesMinfPath ) )
+  {
+
+    haveMinf = true ;
+
+  }
+
+
   ////////////////////////////// Atlas directory ///////////////////////////////
-  std::string atlasDirectory( argv[ index_atlas + 1 ] ) ;
-  lastChar = atlasDirectory[ atlasDirectory.size() - 1 ] ;
-  if ( lastChar != '/' )
+  std::string atlasDirectory ;
+  if ( index_atlas )
   {
 
-    atlasDirectory = atlasDirectory + "/" ;
+    atlasDirectory = argv[ index_atlas + 1 ] ;
+    lastChar = atlasDirectory[ atlasDirectory.size() - 1 ] ;
+    if ( lastChar != '/' )
+    {
+
+      atlasDirectory = atlasDirectory + "/" ;
+
+    }
+    if ( !is_dir( atlasDirectory ) )
+    {
+
+      std::stringstream outMessageOss ;
+
+      outMessageOss << "ERROR : Atlas directory " << atlasDirectory << " does not"
+                                                      << " exists " << std::endl ;
+      std::string outMessage = outMessageOss.str() ;
+      throw( std::invalid_argument( outMessage ) ) ;
+
+    }
 
   }
-  if ( !is_dir( atlasDirectory ) )
+  else
   {
 
-    std::stringstream outMessageOss ;
+    std::stringstream atlasDirectoryOss  ;
+    atlasDirectoryOss << default_ESBA_DIR << "Esba" << formatUpper ;
+    atlasDirectory = atlasDirectoryOss.str() ;
+    lastChar = atlasDirectory[ atlasDirectory.size() - 1 ] ;
+    if ( lastChar != '/' )
+    {
 
-    outMessageOss << "ERROR : Atlas directory " << atlasDirectory << " does not"
-                                                    << " exists " << std::endl ;
-    std::string outMessage = outMessageOss.str() ;
-    throw( std::invalid_argument( outMessage ) ) ;
+      atlasDirectory = atlasDirectory + "/" ;
+
+    }
+    if ( !is_dir( atlasDirectory ) )
+    {
+
+      std::stringstream outMessageOss ;
+
+      outMessageOss << "ERROR : Atlas directory " << atlasDirectory << " does "
+                    << "not exists, it seems the environment variable ESBA_DIR "
+                    << "was not correctly set" << std::endl ;
+      std::string outMessage = outMessageOss.str() ;
+      throw( std::invalid_argument( outMessage ) ) ;
+
+    }
+
 
   }
+
   /////////////////////////////// Reference image //////////////////////////////
   std::string referenceFilename( argv[ index_reference + 1 ] ) ;
   lastChar = referenceFilename[ referenceFilename.size() - 1 ] ;
@@ -1907,16 +2002,16 @@ int main( int argc, char* argv[] )
 
     toleranceP = std::stof( argv[ index_tolP + 1 ] ) ;
 
-    if ( toleranceP < -1 || toleranceP > 1 )
-    {
-
-      std::stringstream outMessageOss ;
-      outMessageOss << "Error argument : -tolP must be in [-1;1]" << std::endl ;
-      std::string outMessage = outMessageOss.str() ;
-      throw( std::invalid_argument( outMessage ) ) ;
-
-
-    }
+    // if ( toleranceP < -1 || toleranceP > 1 )
+    // {
+    //
+    //   std::stringstream outMessageOss ;
+    //   outMessageOss << "Error argument : -tolP must be in [-1;1]" << std::endl ;
+    //   std::string outMessage = outMessageOss.str() ;
+    //   throw( std::invalid_argument( outMessage ) ) ;
+    //
+    //
+    // }
 
   }
 
@@ -1925,16 +2020,16 @@ int main( int argc, char* argv[] )
 
     toleranceThr = std::stof( argv[ index_tolThr + 1 ] ) ;
 
-    if ( toleranceThr < -1 || toleranceThr > 1 )
-    {
-
-      std::stringstream outMessageOss ;
-      outMessageOss << "Error argument : -tolThr must be in [-1;1]"
-                                                                  << std::endl ;
-      std::string outMessage = outMessageOss.str() ;
-      throw( std::invalid_argument( outMessage ) ) ;
-
-    }
+    // if ( toleranceThr < -1 || toleranceThr > 1 )
+    // {
+    //
+    //   std::stringstream outMessageOss ;
+    //   outMessageOss << "Error argument : -tolThr must be in [-1;1]"
+    //                                                               << std::endl ;
+    //   std::string outMessage = outMessageOss.str() ;
+    //   throw( std::invalid_argument( outMessage ) ) ;
+    //
+    // }
 
   }
 
@@ -1943,16 +2038,16 @@ int main( int argc, char* argv[] )
 
     toleranceMaxAngle = std::stof( argv[ index_tolMaxAngle + 1 ] ) ;
 
-    if ( toleranceMaxAngle < -1 || toleranceMaxAngle > 1 )
-    {
-
-      std::stringstream outMessageOss ;
-      outMessageOss << "Error argument : -tolMaxAng must be in [-1;1]"
-                                                                  << std::endl ;
-      std::string outMessage = outMessageOss.str() ;
-      throw( std::invalid_argument( outMessage ) ) ;
-
-    }
+    // if ( toleranceMaxAngle < -1 || toleranceMaxAngle > 1 )
+    // {
+    //
+    //   std::stringstream outMessageOss ;
+    //   outMessageOss << "Error argument : -tolMaxAng must be in [-1;1]"
+    //                                                               << std::endl ;
+    //   std::string outMessage = outMessageOss.str() ;
+    //   throw( std::invalid_argument( outMessage ) ) ;
+    //
+    // }
 
   }
 
@@ -1962,16 +2057,16 @@ int main( int argc, char* argv[] )
     toleranceMaxDirectionAngle = std::stof( argv[
                                             index_tolMaxDirectionAngle + 1 ] ) ;
 
-    if ( toleranceMaxDirectionAngle < -1 || toleranceMaxDirectionAngle > 1 )
-    {
-
-      std::stringstream outMessageOss ;
-      outMessageOss << "Error argument : -tolMaxDirAng must be in [-1;1]"
-                                                                  << std::endl ;
-      std::string outMessage = outMessageOss.str() ;
-      throw( std::invalid_argument( outMessage ) ) ;
-
-    }
+    // if ( toleranceMaxDirectionAngle < -1 || toleranceMaxDirectionAngle > 1 )
+    // {
+    //
+    //   std::stringstream outMessageOss ;
+    //   outMessageOss << "Error argument : -tolMaxDirAng must be in [-1;1]"
+    //                                                               << std::endl ;
+    //   std::string outMessage = outMessageOss.str() ;
+    //   throw( std::invalid_argument( outMessage ) ) ;
+    //
+    // }
 
   }
 
@@ -1980,18 +2075,18 @@ int main( int argc, char* argv[] )
 
     toleranceMinShapeAngle = std::stof( argv[ index_tolMinShapeAngle + 1 ] ) ;
 
-    if ( toleranceMinShapeAngle < -1 || toleranceMinShapeAngle > 1 )
-    {
-
-      std::stringstream outMessageOss ;
-      outMessageOss << "Error argument : -tolMinShapeAng must be in [-1;1]"
-                                                                  << std::endl ;
-      std::string outMessage = outMessageOss.str() ;
-      throw( std::invalid_argument( outMessage ) ) ;
-
-
-
-    }
+    // if ( toleranceMinShapeAngle < -1 || toleranceMinShapeAngle > 1 )
+    // {
+    //
+    //   std::stringstream outMessageOss ;
+    //   outMessageOss << "Error argument : -tolMinShapeAng must be in [-1;1]"
+    //                                                               << std::endl ;
+    //   std::string outMessage = outMessageOss.str() ;
+    //   throw( std::invalid_argument( outMessage ) ) ;
+    //
+    //
+    //
+    // }
 
   }
 
@@ -2000,16 +2095,16 @@ int main( int argc, char* argv[] )
 
     toleranceMaxShapeAngle = std::stof( argv[ index_tolMaxShapeAngle + 1 ] ) ;
 
-    if ( toleranceMaxShapeAngle < -1 || toleranceMaxShapeAngle > 1 )
-    {
-
-      std::stringstream outMessageOss ;
-      outMessageOss << "Error argument : -tolManShapeAng must be in [-1;1]"
-                                                                  << std::endl ;
-      std::string outMessage = outMessageOss.str() ;
-      throw( std::invalid_argument( outMessage ) ) ;
-
-    }
+    // if ( toleranceMaxShapeAngle < -1 || toleranceMaxShapeAngle > 1 )
+    // {
+    //
+    //   std::stringstream outMessageOss ;
+    //   outMessageOss << "Error argument : -tolManShapeAng must be in [-1;1]"
+    //                                                               << std::endl ;
+    //   std::string outMessage = outMessageOss.str() ;
+    //   throw( std::invalid_argument( outMessage ) ) ;
+    //
+    // }
 
   }
 
@@ -2018,16 +2113,16 @@ int main( int argc, char* argv[] )
 
     toleranceLenght = std::stof( argv[ index_tolLenght + 1 ] ) ;
 
-    if ( toleranceLenght < -1 || toleranceLenght > 1 )
-    {
-
-      std::stringstream outMessageOss ;
-      outMessageOss << "Error argument : -tolLenght must be in [-1;1]"
-                                                                  << std::endl ;
-      std::string outMessage = outMessageOss.str() ;
-      throw( std::invalid_argument( outMessage ) ) ;
-
-    }
+    // if ( toleranceLenght < -1 || toleranceLenght > 1 )
+    // {
+    //
+    //   std::stringstream outMessageOss ;
+    //   outMessageOss << "Error argument : -tolLenght must be in [-1;1]"
+    //                                                               << std::endl ;
+    //   std::string outMessage = outMessageOss.str() ;
+    //   throw( std::invalid_argument( outMessage ) ) ;
+    //
+    // }
 
   }
 
@@ -2036,16 +2131,16 @@ int main( int argc, char* argv[] )
   {
 
     toleranceThrComputeNeighborhood = std::stof( argv[ index_tolThrCN + 1 ] ) ;
-    if ( toleranceThrComputeNeighborhood <= 0 )
-    {
-
-      std::stringstream outMessageOss ;
-      outMessageOss << "ERROR : argument -tolThrCN must be greater than 0"
-                                                                  << std::endl ;
-      std::string outMessage = outMessageOss.str() ;
-      throw( std::invalid_argument( outMessage ) ) ;
-
-    }
+    // if ( toleranceThrComputeNeighborhood <= 0 )
+    // {
+    //
+    //   std::stringstream outMessageOss ;
+    //   outMessageOss << "ERROR : argument -tolThrCN must be greater than 0"
+    //                                                               << std::endl ;
+    //   std::string outMessage = outMessageOss.str() ;
+    //   throw( std::invalid_argument( outMessage ) ) ;
+    //
+    // }
 
   }
   else
@@ -2061,16 +2156,16 @@ int main( int argc, char* argv[] )
     toleranceDistanceBetweenMedialPoints = std::stof(
                                           argv[ index_tolDistBetMedPts + 1 ] ) ;
 
-    if ( toleranceDistanceBetweenMedialPoints < -1 )
-    {
-
-      std::stringstream outMessageOss ;
-      outMessageOss << "Error argument : -tolDBMP must be greater than -1"
-                                                                  << std::endl ;
-      std::string outMessage = outMessageOss.str() ;
-      throw( std::invalid_argument( outMessage ) ) ;
-
-    }
+    // if ( toleranceDistanceBetweenMedialPoints < -1 )
+    // {
+    //
+    //   std::stringstream outMessageOss ;
+    //   outMessageOss << "Error argument : -tolDBMP must be greater than -1"
+    //                                                               << std::endl ;
+    //   std::string outMessage = outMessageOss.str() ;
+    //   throw( std::invalid_argument( outMessage ) ) ;
+    //
+    // }
 
   }
   else
@@ -2488,44 +2583,6 @@ int main( int argc, char* argv[] )
 
   }
 
-
-  /////////////////////////////// Getting format ///////////////////////////////
-  std::string format ;
-  std::string inputBundlesMinfPath ;
-  if ( endswith( inputBundlesFilename, ".bundles" ) ||
-                              endswith( inputBundlesFilename, ".bundlesdata" ) )
-  {
-
-    format = ".bundles" ;
-
-    inputBundlesMinfPath = replaceExtension( inputBundlesFilename,
-                                                                  ".bundles" ) ;
-
-  }
-  else if ( endswith( inputBundlesFilename, ".trk" ) )
-  {
-
-    format = ".trk" ;
-
-    inputBundlesMinfPath = replaceExtension( inputBundlesFilename, ".minf" ) ;
-
-  }
-  else if ( endswith( inputBundlesFilename, ".tck" ) )
-  {
-
-    format = ".tck" ;
-
-    inputBundlesMinfPath = replaceExtension( inputBundlesFilename, ".minf" ) ;
-
-  }
-  // Already checked at the begginig of main if extension is one of those format
-
-  if ( is_file( inputBundlesMinfPath ) )
-  {
-
-    haveMinf = true ;
-
-  }
 
 
   //////////////// Preparing atlas bundles paths (tmpAtlasDir) /////////////////
@@ -4000,7 +4057,7 @@ int main( int argc, char* argv[] )
     }
 
   }
-  
+
   if ( keepTmpFiles )
   {
 

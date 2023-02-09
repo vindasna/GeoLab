@@ -522,13 +522,13 @@ int main( int argc, char* argv[] )
 
     toleranceP = std::stof( argv[ index_tolP + 1 ] ) ;
 
-    if ( toleranceP < -1 || toleranceP > 1 )
-    {
-
-      std::cout << "Error argument : -tolP must be in [-1;1]" << std::endl ;
-      exit( 1 ) ;
-
-    }
+    // if ( toleranceP < -1 || toleranceP > 1 )
+    // {
+    //
+    //   std::cout << "Error argument : -tolP must be in [-1;1]" << std::endl ;
+    //   exit( 1 ) ;
+    //
+    // }
 
   }
 
@@ -537,13 +537,13 @@ int main( int argc, char* argv[] )
 
     toleranceThr = std::stof( argv[ index_tolThr + 1 ] ) ;
 
-    if ( toleranceThr < -1 || toleranceThr > 1 )
-    {
-
-      std::cout << "Error argument : -tolThr must be in [-1;1]" << std::endl ;
-      exit( 1 ) ;
-
-    }
+    // if ( toleranceThr < -1 || toleranceThr > 1 )
+    // {
+    //
+    //   std::cout << "Error argument : -tolThr must be in [-1;1]" << std::endl ;
+    //   exit( 1 ) ;
+    //
+    // }
 
   }
 
@@ -552,13 +552,13 @@ int main( int argc, char* argv[] )
 
     toleranceMaxAngle = std::stof( argv[ index_tolMaxAngle + 1 ] ) ;
 
-    if ( toleranceMaxAngle < -1 || toleranceMaxAngle > 1 )
-    {
-
-      std::cout << "Error argument : -tolMaxAng must be in [-1;1]" << std::endl ;
-      exit( 1 ) ;
-
-    }
+    // if ( toleranceMaxAngle < -1 || toleranceMaxAngle > 1 )
+    // {
+    //
+    //   std::cout << "Error argument : -tolMaxAng must be in [-1;1]" << std::endl ;
+    //   exit( 1 ) ;
+    //
+    // }
 
   }
 
@@ -568,14 +568,14 @@ int main( int argc, char* argv[] )
     toleranceMaxDirectionAngle = std::stof( argv[
                                             index_tolMaxDirectionAngle + 1 ] ) ;
 
-    if ( toleranceMaxDirectionAngle < -1 || toleranceMaxDirectionAngle > 1 )
-    {
-
-      std::cout << "Error argument : -tolMaxDirAng must be in [-1;1]"
-                                                                  << std::endl ;
-      exit( 1 ) ;
-
-    }
+    // if ( toleranceMaxDirectionAngle < -1 || toleranceMaxDirectionAngle > 1 )
+    // {
+    //
+    //   std::cout << "Error argument : -tolMaxDirAng must be in [-1;1]"
+    //                                                               << std::endl ;
+    //   exit( 1 ) ;
+    //
+    // }
 
   }
 
@@ -584,14 +584,14 @@ int main( int argc, char* argv[] )
 
     toleranceMinShapeAngle = std::stof( argv[ index_tolMinShapeAngle + 1 ] ) ;
 
-    if ( toleranceMinShapeAngle < -1 || toleranceMinShapeAngle > 1 )
-    {
-
-      std::cout << "Error argument : -tolMinShapeAng must be in [-1;1]"
-                                                                  << std::endl ;
-      exit( 1 ) ;
-
-    }
+    // if ( toleranceMinShapeAngle < -1 || toleranceMinShapeAngle > 1 )
+    // {
+    //
+    //   std::cout << "Error argument : -tolMinShapeAng must be in [-1;1]"
+    //                                                               << std::endl ;
+    //   exit( 1 ) ;
+    //
+    // }
 
   }
 
@@ -600,14 +600,14 @@ int main( int argc, char* argv[] )
 
     toleranceMaxShapeAngle = std::stof( argv[ index_tolMaxShapeAngle + 1 ] ) ;
 
-    if ( toleranceMaxShapeAngle < -1 || toleranceMaxShapeAngle > 1 )
-    {
-
-      std::cout << "Error argument : -tolMaxShapeAng must be in [-1;1]"
-                                                                  << std::endl ;
-      exit( 1 ) ;
-
-    }
+    // if ( toleranceMaxShapeAngle < -1 || toleranceMaxShapeAngle > 1 )
+    // {
+    //
+    //   std::cout << "Error argument : -tolMaxShapeAng must be in [-1;1]"
+    //                                                               << std::endl ;
+    //   exit( 1 ) ;
+    //
+    // }
 
   }
 
@@ -616,14 +616,14 @@ int main( int argc, char* argv[] )
 
     toleranceLenght = std::stof( argv[ index_tolLenght + 1 ] ) ;
 
-    if ( toleranceLenght < -1 || toleranceLenght > 1 )
-    {
-
-      std::cout << "Error argument : -tolLenght must be in [-1;1]"
-                                                                  << std::endl ;
-      exit( 1 ) ;
-
-    }
+    // if ( toleranceLenght < -1 || toleranceLenght > 1 )
+    // {
+    //
+    //   std::cout << "Error argument : -tolLenght must be in [-1;1]"
+    //                                                               << std::endl ;
+    //   exit( 1 ) ;
+    //
+    // }
 
   }
 
@@ -633,14 +633,14 @@ int main( int argc, char* argv[] )
     toleranceDistanceBetweenMedialPoints = std::stof(
                                           argv[ index_tolDistBetMedPts + 1 ] ) ;
 
-    if ( toleranceDistanceBetweenMedialPoints < -1 )
-    {
-
-      std::cout << "Error argument : -tolDBMP must be greater than -1"
-                                                                  << std::endl ;
-      exit( 1 ) ;
-
-    }
+    // if ( toleranceDistanceBetweenMedialPoints < -1 )
+    // {
+    //
+    //   std::cout << "Error argument : -tolDBMP must be greater than -1"
+    //                                                               << std::endl ;
+    //   exit( 1 ) ;
+    //
+    // }
 
   }
 
