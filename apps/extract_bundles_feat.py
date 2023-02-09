@@ -73,7 +73,7 @@ def get_cmd_line_args():
     required.add_argument(
         "-o", "--output",
         type=str, required=True, metavar="<path>",
-        help=( "Output prefix" ) )
+        help=( "Output file path" ) )
 
     # Optional arguments
     parser.add_argument(
@@ -115,11 +115,16 @@ def readBundlesFile( bundle_filename, verbose ):
         print (f'Reading ... ... {bundle_filename}')
 
     # Checking extension bundle_filename
-    if bundle_filename.replace(".bundles", "") == bundle_filename:
-        bundle_filename = f'{bundle_filename}.bundles'
-    else:
-        if bundle_filename.replace(".bundlesdata","") != bundle_filename:
-            bundle_filename = bundle_filename.replace(".bundlesdata",".bundles")
+    if bundle_filename.endswith( ".bundles" ) :
+        bundle_data_filename = bundle_filename.replace( ".bundles",
+                                                                 "bundlesdata" )
+    else if ( bundle_filename.endswith( ".bundlesdata" ) ) :
+        bundle_data_filename = bundle_filename
+        bundle_filename = bundle_filename.replace( ".bundlesdata", "bundles" )
+    else :
+        print( "ERROR : the only tractogram format supported is .bundles/"
+                                                                ".bundlesdata" )
+        sys.exit( 1 )
 
     ns = dict()
     exec(open(bundle_filename).read(), ns)
@@ -144,7 +149,7 @@ def readBundlesFile( bundle_filename, verbose ):
     bundle = []
     nPoints = []
     if curves_count > 0:
-       f = open(bundle_filename.replace(".bundles", ".bundlesdata"),'rb')
+       f = open(bundle_data_filename,'rb')
        for curve in range(curves_count):
            p = np.fromfile(f, dtype=np.int32, count=1)
            nPoints.append(p[0])
@@ -157,9 +162,9 @@ def readBundlesFile( bundle_filename, verbose ):
              print ("Number of points per curve not equal...")
              n_points = nPoints
     else:
-          ns = dict()
-          exec(open(bundle_filename + '.bundles').read(), ns)
-          n_points = (ns[ 'attributes' ][ 'number_of_points' ])
+          print( f"ERROR : problem reading {bundle_filename} or its "
+                 f"corresponding .bundlesdata file" )
+          sys.exit( 1 )
 
     return bundle, curves_count, n_points, labels, resolution, size
 
@@ -176,11 +181,19 @@ def main() :
 
     input_tractogram_path = inputs[ "input" ]
 
-    output_prefix = inputs[ "output" ]
+    if ( not input_tractogram_path.endswith( ".bundles" ) and
+                        not input_tractogram_path.endswith( ".bundlesdata" ) ) :
+        print( f"ERROR : the only input tractogram supported is .bundles" )
+        sys.exit( 1 )
 
-    k_fold = 5
 
-    output_feat_marix = f"{output_prefix}featMatrix.h5"
+    output_file = inputs[ "output" ]
+    if ( not input.endswith( ".h5" ) ) :
+        print( f"ERROR : the only output tractogram supported is .h5" )
+        sys.exit( 1 )
+
+
+    output_feat_marix = f"{output_file}"
 
     # Transforming .bundles -> .h5
     if verbose :
