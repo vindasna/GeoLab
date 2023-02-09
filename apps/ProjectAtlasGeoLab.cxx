@@ -2686,6 +2686,8 @@ int main( int argc, char* argv[] )
     std::cout << "\ttoleranceLenght : " << toleranceLenght << std::endl ;
     std::cout << "\ttoleranceDistanceBetweenMedialPoints : "
                           << toleranceDistanceBetweenMedialPoints << std::endl ;
+    std::cout << "\ttoleranceThrComputeNeighborhood : "
+                               << toleranceThrComputeNeighborhood << std::endl ;
 
   }
 

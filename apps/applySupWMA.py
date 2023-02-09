@@ -15,9 +15,6 @@ import torch
 import torch.nn.parallel
 import torch.utils.data
 
-from utils.model_supcon import PointNet_SupCon, PointNet_Classifier
-from utils.model import PointNetCls
-from utils.dataset import TestDataset
 
 #---- For printing colors in terminal ----#
 class bcolors:
@@ -109,6 +106,11 @@ def get_cmd_line_args():
         "-ld", "--labels-dictionary",
         type=is_file, required=True, metavar="<path>",
         help=( "Path to the labels dictionary (.txt) " ) )
+
+    required.add_argument(
+        "-spw", "--supWMA",
+        type=is_dir, required=True, metavar="<path>",
+        help=( "Path to SupWMA" ) )
 
     required.add_argument(
         "-o", "--output",
@@ -341,9 +343,9 @@ def load_model_supWMA( encoder_params, encoder_weight_path,
 
     # load weights
     encoder.load_state_dict( torch.load( encoder_weight_path ) )
-    
+
     classifer.load_state_dict( torch.load( classifier_weight_path ) )
-    
+
     return encoder, classifer
 
 
@@ -511,6 +513,13 @@ def main() :
     encoder_weight_path = inputs[ "encoder_weights" ]
 
     classifier_weight_path = inputs[ "classifier_weights" ]
+
+    supWMA_modulePath = inputs[ "supWMA" ]
+
+    # We need to import the modules here after getting SupWMA module path
+    from utils.model_supcon import PointNet_SupCon, PointNet_Classifier
+    from utils.model import PointNetCls
+    from utils.dataset import TestDataset
 
 
     output_dir = inputs[ "output" ]
