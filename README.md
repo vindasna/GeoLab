@@ -26,6 +26,7 @@ The contents of this repository are released under Apache-2.0 license.
 - Setproctitle >= 1.2.3
 - fitter >= 1.5.1
 - nibabel >= 3.2.2
+- SupWMA if you want to apply the SupWMA trained with the ESBA atlas.
 
 ## Quick install
 
@@ -170,7 +171,7 @@ With :
 If you want to reproduce the result of the paper, the semi-ground truth is in the SGT folder.
 
 
-## Apply SupWMA model trained on ESBA atlas
+## Apply SupWMA model trained with ESBA atlas
 
 
 
