@@ -34,40 +34,40 @@ The contents of this repository are released under Apache-2.0 license.
 2. In ./GeoLab/CMakeLists.txt change in line 19 ("set(ENV{PYTHONPATH} "PATH_TO_YOUR_PYTHON_MODULES")") PATH_TO_YOUR_PYTHON_MODULES to the path with your python modules (for default python in ubuntu you can delete the line or change for : /home/nv264568/.local/lib/python3.6/site-packages)
 3. Clone Git repository and compile:
 
-   `$ git clone https://github.com/vindasna/GeoLab`
+    $ git clone https://github.com/vindasna/GeoLab
    
-   `$ cd GeoLab`
+    $ cd GeoLab
    
-   `$ mkdir build`
+    $ mkdir build
    
-   `$ cd build`
+    $ cd build
    
-   `$ cmake ..`
+    $ cmake ..
    
-   `$ make`
+    $ make
    
 
 4. Configure PATH :
    Edit the startup ~/.bashrc or /etc/bash.bashrc file manually by adding this line :
    
-   `$ export PATH=/<edit as appropriate>/GeoLab/build/bin:$PATH`
+    $ export PATH=/<edit as appropriate>/GeoLab/build/bin:$PATH
    
-   `$ export ESBA_DIR=/<edit as appropriate>/GeoLab/Atlas`
+    $ export ESBA_DIR=/<edit as appropriate>/GeoLab/Atlas
 
 5. Check installation :
  
-   `$ ProjectAtlasGeoLab -h`
+    $ ProjectAtlasGeoLab -h
 
 6. If you are using a virtual environment for python, change the first line in {GeoLab Path}/build/bin/*.py FILES :
    
-   `$ #!/usr/bin/python3 (original line)`    --->    `$ #!{your python binary}`     
+    $ #!/usr/bin/python3 (original line)    --->    $ #!{your python binary} 
  
 
 ## Usage example on ESBA atlas
 
 To extract the bundles of the ESBA atlas from a subject you first need to compute the tractogram (.tck/.trk/.bundles), register it to MNI space (recommended : image-based with ANTs) and resample it to 15 points per fiber. Then use the ProjectAtlasGeoLab command :
 
-    `$ ProjectAtlasGeoLab -i input${format} -o outputDir -nbPoints 15 -nbThreads ${nbThreads}` 
+    $ ProjectAtlasGeoLab -i input${format} -o outputDir -nbPoints 15 -nbThreads ${nbThreads}
 
 * Replace ${format} with {.trk, .tck, .bundles} according to your tractogram format.
 * input${format} : subject's tractogram (.tck/.trk/.bundles)
@@ -81,7 +81,7 @@ First, you'll need to resample your atlas to a fixed number of points per fiber,
 
 You'll need to analyse your atlas to get the bundle-specific thresholds **this step can be done only once** :
 
-    `$ analyseAtlasBundle.py -i atlasDir -f ${format} -r referenceImage.nii`
+    $ analyseAtlasBundle.py -i atlasDir -f ${format} -r referenceImage.nii
 
 * Replace ${format} with {.trk, .tck, .bundles} according to your tractogram format.
 * atlasDir : Path to your atlas directory.
@@ -90,14 +90,14 @@ You'll need to analyse your atlas to get the bundle-specific thresholds **this s
 
 You'll also need to precompute the full atlas (all bundles in one single file), the atlas neighborhood and the atlas centroids :
 
-    `// Compute full atlas`
-    `& fuseAtlas -i atlasDir -o outDirFullAtlas -f ${format}`
+    // Compute full atlas
+    $ fuseAtlas -i atlasDir -o outDirFullAtlas -f ${format}
 
-    `// Compute atlas neighborhood`
-    `& computeNeighborhood -i outDirFullAtlas/fullAtlas${format} -o outDirNeighborhoodAtlas -r referenceImage.nii`
+    // Compute atlas neighborhood
+    $ computeNeighborhood -i outDirFullAtlas/fullAtlas${format} -o outDirNeighborhoodAtlas -r referenceImage.nii
 
-    `// Compute atlas centroids`
-    `& computeCentroids -i outDirNeighborhoodAtlas -o outDirCentroidsAtlas -r referenceImage.nii -nbPoints ${nbPoints} -nbThreads ${nbThreads} -f ${format}`
+    // Compute atlas centroids
+    $ computeCentroids -i outDirNeighborhoodAtlas -o outDirCentroidsAtlas -r referenceImage.nii -nbPoints ${nbPoints} -nbThreads ${nbThreads} -f ${format}
     
 * Replace ${format} with {.trk, .tck, .bundles} according to your tractogram format.
 * atlasDir : Path to your atlas directory.
@@ -110,7 +110,7 @@ You'll also need to precompute the full atlas (all bundles in one single file), 
 
 Then use the ProjectAtlasGeoLab command :
 
-    `$ ProjectAtlasGeoLab -i input${format} -a atlasDir -ref referenceImage.nii -o outputDir -nbPoints 15 -an Neigborhood -anc Centroids -nbThreads ${nbThreads}`
+    $ ProjectAtlasGeoLab -i input${format} -a atlasDir -ref referenceImage.nii -o outputDir -nbPoints 15 -an Neigborhood -anc Centroids -nbThreads ${nbThreads}
 
 
 * Replace ${format} with {.trk, .tck, .bundles} according to your tractogram format.
@@ -131,7 +131,7 @@ Your labelled data should be in the form of two files :
 * 
     `fiber_index_k : label_i`
     
-    `          ...          `
+    `           ...           `
     
     `fiber_index_l : label_j`
         
@@ -147,7 +147,7 @@ Your labelled data should be in the form of two files :
     
     `label_name_i : label_i`
     
-    `          ...          `
+    `           ...          ` 
     
     `label_name_j : label_j`
 
@@ -159,7 +159,7 @@ Your labelled data should be in the form of two files :
     
 Once you have those files you can use the following command :
     
-    `$ scoresPredictedSGT.py -pl labels.txt -pd labels.dict -tl trueLabels.txt -td trueLabels.dict -o outDir`
+    $ scoresPredictedSGT.py -pl labels.txt -pd labels.dict -tl trueLabels.txt -td trueLabels.dict -o outDir
 
 With : 
   * labels.txt : file produced by ProjectAtlasGeoLab, saved in output directory of ProjectAtlasGeoLab.
@@ -175,15 +175,15 @@ If you want to reproduce the result of the paper, the semi-ground truth is in th
 
 First you need to extract the features for SupWMA with extract_bundles_feat.py command :
 
-    `$ extract_bundles_feat.py -i SGT.bundles -o outSGT.h5 -v 1`
+    $ extract_bundles_feat.py -i SGT.bundles -o outSGT.h5 -v 1
 
 With :
-    * SGT.bundles : path to your input tractogram in .bundles format (compatibility with other formats will be added soon)
-    * outSGT.h5 : path of the output file which must be .h5
+  * SGT.bundles : path to your input tractogram in .bundles format (compatibility with other formats will be added soon)
+  * outSGT.h5 : path of the output file which must be .h5
 
 Then you can use the applySupWMA command :
 
-    `$ applySupWMA.py -t tractogram.bundles -f tractogram.h5 -ep encoderParameters.pickle -ew encoderWeights.pth -cw classifierWeights.pth -ln labelNames.h5 -ld labelsDictSupWMA.txt -spw SupWMA_path -o outDir`
+    $ applySupWMA.py -t tractogram.bundles -f tractogram.h5 -ep encoderParameters.pickle -ew encoderWeights.pth -cw classifierWeights.pth -ln labelNames.h5 -ld labelsDictSupWMA.txt -spw SupWMA_path -o outDir
 
 With :
   * tractogram.bundles : your input tractogram in .bundles (compatibility with other formats will be added soon)
