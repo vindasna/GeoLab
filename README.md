@@ -121,8 +121,6 @@ Then use the ProjectAtlasGeoLab command :
 * CentroidsAtlas : outDirCentroidsAtlas.
 * ${nbThreads} : number of threads to use for OpenMP.
 
-If you want to reproduce the result of the paper, the semi-ground truth is in the SGT folder.
-
 
 ## To compute the scores of prediction on labelled data
 
@@ -169,6 +167,7 @@ With :
   * trueLabels.dict : your labelled data as explained above.
   * outDir : directory where to save scoresPerBundle.tsv file. This file contains the scores per bundle (label).
 
+If you want to reproduce the result of the paper, the semi-ground truth is in the SGT folder.
 
 
 ## For windows
