@@ -290,16 +290,6 @@ def writeBundlesdataFile(file_name, bundle, n_points):
     return(0)
 
 def convertBundleVectorToMatrix( bundle, curves_count, nbPoints ) :
-    # bundle_matrix = np.zeros( ( curves_count, nbPoints, 3 ) )
-    # for curve in range( curves_count ) :
-    #     for point in range( nbPoints ) :
-    #         for i in range( 3 ) :
-    #             if np.isnan( bundle[ curve ][ 3 * point + i ] ) :
-    #                 print( f"\nERROR : NaN value in bundle {bundle_name}" )
-    #                 sys.exit( 1 )
-    #             bundle_matrix[ curve, point, i ] = bundle[ curve ][
-    #                                                              3 * point + i ]
-
     bundle_matrix = np.array( bundle ).reshape( ( curves_count, nbPoints, 3 ) )
     return( bundle_matrix )
 
@@ -314,7 +304,7 @@ def load_test_data( feat_path, label_names_path, test_batch_size, num_workers,
                                                                  script_name ) :
     # We need to import the modules here after getting SupWMA module path
     from utils.dataset import TestDataset
-    
+
     """Load test data and labels name in model"""
     # Put test data into loader
     test_dataset = TestDataset( feat_path, None, label_names_path, script_name)
