@@ -173,7 +173,11 @@ If you want to reproduce the result of the paper, the semi-ground truth is in th
 
 ## Apply SupWMA model trained with ESBA atlas
 
+applySupWMA.py -t tractogram.bundles -f tractogram.h5 -ep encoderParameters.pickle -ew encoderWeights.pth -cw classifierWeights.pth -ln labelNames.h5 -ld labelsDictSupWMA.txt -spw SupWMA_path -o outDir
 
+With :
+  * tractogram.bundles : your input tractogram in .bundles (compatibility with other formats will be added soon)
+  * tractogram.h5 : the output of 
 
 
 ## For windows
