@@ -170,6 +170,11 @@ With :
 If you want to reproduce the result of the paper, the semi-ground truth is in the SGT folder.
 
 
+## Apply SupWMA model trained on ESBA atlas
+
+
+
+
 ## For windows
 
 GeoLab will soon be available for windows as a docker container. 
