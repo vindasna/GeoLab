@@ -78,8 +78,6 @@ To extract the bundles of the ESBA atlas from a subject you first need to comput
 
 First, you'll need to resample your atlas to a fixed number of points per fiber, if your atlas is in .tck format you can use MRTrix's command tckreample.
 
-If yout atlas is in .tck/.trk format you'll need to create a ".minf" file for each of the ".tck/.trk" files in your atlas. You can use the createMinf command as in the example ***Usage example on ESBA atlas***.
-
 You'll need to analyse your atlas to get the bundle-specific thresholds **this step can be done only once** :
 
     `$ analyseAtlasBundle.py -i atlasDir -f ${format} -r referenceImage.nii`
@@ -109,16 +107,12 @@ You'll also need to precompute the full atlas (all bundles in one single file), 
 * ${nbThreads} : number of threads to use for OpenMP.
 
 
-Then create the ".minf" file for your input if necessary and use the ProjectAtlasGeoLab command :
+Then use the ProjectAtlasGeoLab command :
 
-    `// Do if ".minf` for input does not exists
-    `$ createMinf -o {path to tractogram without extension}.minf -f ${format}`
-    `// Parcellation`
     `$ ProjectAtlasGeoLab -i input${format} -a atlasDir -ref referenceImage.nii -o outputDir -nbPoints 15 -an Neigborhood -anc Centroids -nbThreads ${nbThreads}` 
 
 
 * Replace ${format} with {.trk, .tck, .bundles} according to your tractogram format.
-* Replace ${format2} with {Trk, Tck, Bundles} according to your tractogram format.
 * input${format} : subject's tractogram (.tck/.trk/.bundles)
 * atlasDir : Path to your atlas directory (after analysing it with analyseAtlasBundle).
 * referenceImage.nii : path to the reference .nii where the atlas is
@@ -126,6 +120,13 @@ Then create the ".minf" file for your input if necessary and use the ProjectAtla
 * NeigborhoodAtlas : outDirNeighborhoodAtlas.
 * CentroidsAtlas : outDirCentroidsAtlas.
 * ${nbThreads} : number of threads to use for OpenMP.
-    
+
+
+## To compute the scores of prediction on labelled data
+
+
+
+
 ## For windows
+
 GeoLab will soon be available for windows as a docker container. 
