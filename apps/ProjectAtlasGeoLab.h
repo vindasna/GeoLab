@@ -60,12 +60,8 @@ bool saveBundlesSeparetly = true ;
 bool force = false ;
 int nbThreads = 0 ;
 int nbThreadsUsed ;
-int minimumNumberFibers = 20 ;
-// int minimumNumberFibers = 1 ;
-// float thrPercentageSimilarity = 0.05 ;
-// float thrPercentageSimilarity = 0.50 ;
-// float thrPercentageSimilarity = 0.50 ;
-// float thrPercentageSimilarity = 0.05 ;
+// int minimumNumberFibers = 20 ;
+int minimumNumberFibers = 1 ;
 float thrPercentageSimilarity = 0.00001 ;
 
 bool isFullAtlas = false ;
@@ -74,14 +70,14 @@ bool isAtlasNeighborhood = false ;
 
 float toleranceP = 0.0 ;
 float toleranceThr = 0.0 ;
-float toleranceMaxAngle = 0.0 ;
-float toleranceMaxDirectionAngle = 0.0 ;
-float toleranceMinShapeAngle = 0.0 ;
-float toleranceMaxShapeAngle = 0.0 ;
+float toleranceMaxAngle = 1.0 ;
+float toleranceMaxDirectionAngle = 1.0 ;
+float toleranceMinShapeAngle = 1.0 ;
+float toleranceMaxShapeAngle = 1.0 ;
 float toleranceLenght = 0.0 ;
 float toleranceDistanceBetweenMedialPoints = 1.0 ;
 
-float toleranceThrComputeNeighborhood = 2.0 ;
+float toleranceThrComputeNeighborhood = 6.0 ;
 
 float adjacencyForCompareBundles = 5.0 ; // In mm
 
