@@ -173,11 +173,28 @@ If you want to reproduce the result of the paper, the semi-ground truth is in th
 
 ## Apply SupWMA model trained with ESBA atlas
 
-applySupWMA.py -t tractogram.bundles -f tractogram.h5 -ep encoderParameters.pickle -ew encoderWeights.pth -cw classifierWeights.pth -ln labelNames.h5 -ld labelsDictSupWMA.txt -spw SupWMA_path -o outDir
+First you need to extract the features for SupWMA with extract_bundles_feat.py command :
+
+    `$ extract_bundles_feat.py -i SGT.bundles -o outSGT.h5 -v 1`
+
+With :
+    * SGT.bundles : path to your input tractogram in .bundles format (compatibility with other formats will be added soon)
+    * outSGT.h5 : path of the output file which must be .h5
+
+Then you can use the applySupWMA command :
+
+    `$ applySupWMA.py -t tractogram.bundles -f tractogram.h5 -ep encoderParameters.pickle -ew encoderWeights.pth -cw classifierWeights.pth -ln labelNames.h5 -ld labelsDictSupWMA.txt -spw SupWMA_path -o outDir`
 
 With :
   * tractogram.bundles : your input tractogram in .bundles (compatibility with other formats will be added soon)
-  * tractogram.h5 : the output of 
+  * tractogram.h5 : the output of extract_bundles_feat.py command.
+  * encoderParameters.pickle : found in GeoLab/TrainedSupWMA
+  * encoderWeights.pth : found in GeoLab/TrainedSupWMA
+  * classifierWeights.pth : found in GeoLab/TrainedSupWMA
+  * labelNames.h5 : found in GeoLab/TrainedSupWMA
+  * labelsDictSupWMA.txt :found in GeoLab/TrainedSupWMA
+  * SupWMA_path : path to where you cloned the SupWMA repository.
+  * outDir : output directory where to save the results.
 
 
 ## For windows
