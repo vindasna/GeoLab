@@ -117,10 +117,10 @@ def readBundlesFile( bundle_filename, verbose ):
     # Checking extension bundle_filename
     if bundle_filename.endswith( ".bundles" ) :
         bundle_data_filename = bundle_filename.replace( ".bundles",
-                                                                 "bundlesdata" )
-    else if ( bundle_filename.endswith( ".bundlesdata" ) ) :
+                                                                ".bundlesdata" )
+    elif ( bundle_filename.endswith( ".bundlesdata" ) ) :
         bundle_data_filename = bundle_filename
-        bundle_filename = bundle_filename.replace( ".bundlesdata", "bundles" )
+        bundle_filename = bundle_filename.replace( ".bundlesdata", ".bundles" )
     else :
         print( "ERROR : the only tractogram format supported is .bundles/"
                                                                 ".bundlesdata" )
@@ -188,7 +188,7 @@ def main() :
 
 
     output_file = inputs[ "output" ]
-    if ( not input.endswith( ".h5" ) ) :
+    if ( not output_file.endswith( ".h5" ) ) :
         print( f"ERROR : the only output tractogram supported is .h5" )
         sys.exit( 1 )
 
