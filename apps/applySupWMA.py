@@ -45,6 +45,12 @@ python3 countSuccessfulSubjects.py \
 
 """
 
+
+################################################################################
+
+supWMA_modulePath = ""
+
+################################################################################
 def is_file(filepath):
     """ Check file's existence - argparse 'file' argument.
     """
@@ -306,6 +312,9 @@ def convertBundleMatrixToVector( bundle_matrix, curves_count, nbPoints ) :
 
 def load_test_data( feat_path, label_names_path, test_batch_size, num_workers,
                                                                  script_name ) :
+    # We need to import the modules here after getting SupWMA module path
+    from utils.dataset import TestDataset
+    
     """Load test data and labels name in model"""
     # Put test data into loader
     test_dataset = TestDataset( feat_path, None, label_names_path, script_name)
@@ -326,6 +335,9 @@ def load_test_data( feat_path, label_names_path, test_batch_size, num_workers,
 
 
 def load_model_point_net( num_classes, classifier_weight_path ):
+    # We need to import the modules here after getting SupWMA module path
+    from utils.model import PointNetCls
+
     classifer = PointNetCls( k = num_classes )
 
     classifer.load_state_dict( torch.load( classifier_weight_path ) )
@@ -335,6 +347,9 @@ def load_model_point_net( num_classes, classifier_weight_path ):
 
 def load_model_supWMA( encoder_params, encoder_weight_path,
                                          classifier_weight_path, num_classes ) :
+    # We need to import the modules here after getting SupWMA module path
+    from utils.model_supcon import PointNet_SupCon, PointNet_Classifier
+
     encoder = PointNet_SupCon( head=encoder_params[ 'head_name' ],
                     feat_dim=encoder_params[ 'encoder_feat_num' ] ).to( device )
     # print( '{} use first feature transform for encoder'.format(
@@ -516,10 +531,7 @@ def main() :
 
     supWMA_modulePath = inputs[ "supWMA" ]
 
-    # We need to import the modules here after getting SupWMA module path
-    from utils.model_supcon import PointNet_SupCon, PointNet_Classifier
-    from utils.model import PointNetCls
-    from utils.dataset import TestDataset
+    sys.path.insert( 0, supWMA_modulePath )
 
 
     output_dir = inputs[ "output" ]

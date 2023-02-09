@@ -2249,12 +2249,7 @@ int main( int argc, char* argv[] )
     // }
 
   }
-  else
-  {
 
-    toleranceThrComputeNeighborhood = 2.0 ;
-
-  }
 
   if ( index_tolDistBetMedPts )
   {
