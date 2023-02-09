@@ -50,6 +50,7 @@ The contents of this repository are released under Apache-2.0 license.
    Edit the startup ~/.bashrc or /etc/bash.bashrc file manually by adding this line :
    
    `$ export PATH=/<edit as appropriate>/GeoLab/build/bin:$PATH`
+   
    `$ export ESBA_DIR=/<edit as appropriate>/GeoLab/Atlas`
 
 5. Check installation :
