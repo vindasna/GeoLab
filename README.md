@@ -124,11 +124,38 @@ Then use the ProjectAtlasGeoLab command :
 
 ## To compute the scores of prediction on labelled data
 
-Your labelled data should be in the form of two files :
+Your labelled data should be in the form of two files.
 
-    - Hello
- 
- test
+    * .txt -> labels for each fiber in the form of :
+    
+        `fiber_index_k : label_i`
+        
+        `          ...          `
+        
+        `fiber_index_l : label_j`
+        
+        With : 
+        
+            * label_i, ..., label_j integers.
+            
+            * fiber_index_l is the index of the fiber in the tractogram used as input for segmentation.
+        
+        If a fiber has multiple labels you just need to have several lines for that fiber.
+        
+        
+    * .dict -> dictionary for the labels in the form of :
+    
+        `label_name_i : label_i`
+        
+        `          ...          `
+        
+        `label_name_j : label_j`
+
+        With : 
+        
+            * label_i, ..., label_j the same integers as in the .txt.
+            
+            * label_name_i, ..., label_name_j the names of the labels.
 
 
 ## For windows
