@@ -121,6 +121,8 @@ Then use the ProjectAtlasGeoLab command :
 * CentroidsAtlas : outDirCentroidsAtlas.
 * ${nbThreads} : number of threads to use for OpenMP.
 
+If you want to reproduce the result of the paper, the semi-ground truth is in the SGT folder.
+
 
 ## To compute the scores of prediction on labelled data
 
