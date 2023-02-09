@@ -684,7 +684,9 @@ def server_program() :
             if not processTmp.is_alive() :
                 processTmp.terminate()
                 del processList[ processIndex ]
-            processIndex += 1
+                # processIndex is not increase because we removed an element
+            else :
+                processIndex += 1
 
         if ( logFilePath ) :
             logFile.close()

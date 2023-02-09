@@ -208,12 +208,13 @@ def getLabelFromBundleName( bundlesDict, bundleName ) :
 
 
 def saveScoresPerBundle( sensitivities,
-                          specificities,
-                          accuracies,
-                          precisions,
-                          jaccards,
-                          labelsNames,
-                          out_scores_per_bundle_path ) :
+                         specificities,
+                         accuracies,
+                         precisions,
+                         jaccards,
+                         f1_scores,
+                         labelsNames,
+                         out_scores_per_bundle_path ) :
 
     # Sorting dictionary in alphabetical order
     _tmpDict = {}
@@ -232,6 +233,7 @@ def saveScoresPerBundle( sensitivities,
     accLen = len( accuracies )
     preLen = len( precisions )
     jacLen = len( jaccards )
+    f1Len = len( f1_scores )
     lnLen = len( sortedLabelsNames )
     if ( senLen != speLen ) :
         print( f"ERROR in saveScoresPerBundle() : Specificities must be the "
@@ -250,6 +252,10 @@ def saveScoresPerBundle( sensitivities,
         print( f"ERROR in saveScoresPerBundle() : jaccards must be the same "
                f"size as sensitivities, got {jacLen} and {senLen} respectivly" )
         sys.exit( 1 )
+    if ( senLen != f1Len ) :
+        print( "ERROR in saveScoresPerBundle() : f1-scores must be the same"
+               f" size as sensitivities, got {f1Len} and {senLen} respectivly" )
+        sys.exit( 1 )
     if ( senLen != lnLen ) :
         print( "ERROR in saveScoresPerBundle() : labels names must be the same"
                f" size as sensitivities, got {lnLen} and {senLen} respectivly" )
@@ -259,7 +265,7 @@ def saveScoresPerBundle( sensitivities,
 
     with open( out_scores_per_bundle_path, 'w' ) as f :
         f.write( "BundleName\tSensitivity\tSpecificity\tAccuracy\tPrecision\t"
-                 "Jaccard\n" )
+                 "Jaccard\tF1-score\n" )
         # for i in range( nbBundles ) :
         for i in sortedLabelsNames :
             _sensitivity = sensitivities[ i ]
@@ -267,9 +273,10 @@ def saveScoresPerBundle( sensitivities,
             _accuracy = accuracies[ i ]
             _precision = precisions[ i ]
             _jaccard = jaccards[ i ]
+            _f1_score = f1_scores[ i ]
             _lableName = sortedLabelsNames[ i ]
             f.write( f"{_lableName}\t{_sensitivity}\t{_specificity}\t"
-                     f"{_accuracy}\t{_precision}\t{_jaccard}\n" )
+                     f"{_accuracy}\t{_precision}\t{_jaccard}\t{_f1_score}\n" )
 
     #--------------------------------------------------------------------------#
     mean_sen = np.mean( sensitivities )
@@ -287,12 +294,16 @@ def saveScoresPerBundle( sensitivities,
     mean_jac = np.mean( jaccards )
     std_jac = np.std( jaccards )
 
+    mean_f1 = np.mean( f1_scores )
+    std_f1 = np.std( f1_scores )
+
     print( f"Scores per bundles ( mean +- std ) :\n"
            f" Sensitivity : {mean_sen} +- {std_sen} \n"
            f" Specificity : {mean_spe} +- {std_spe} \n"
            f" Accuracy : {mean_acc} +- {std_acc} \n"
            f" Precision : {mean_pre} +- {std_pre} \n"
-           f" Jaccard : {mean_jac} +- {std_jac}" )
+           f" Jaccard : {mean_jac} +- {std_jac}\n"
+           f" F1-score : {mean_pre} +- {std_pre}" )
 
 def saveConfusionMatrix( confusion_matrix_model, path ) :
     with open( path, 'w' ) as f :
@@ -468,6 +479,7 @@ def comparePredictionToTrue( realLabelsPath, realDictPath, predictedLabelsPath,
     accuracies = []
     precisions = []
     jaccards = []
+    f1_scores = []
     nbLabelsNewDict = len( newPredictedDict.keys() )
     print( "Computing scores... " )
     for _label in newPredictedDict :
@@ -477,22 +489,29 @@ def comparePredictionToTrue( realLabelsPath, realDictPath, predictedLabelsPath,
         _accuracy = computeAccuracy( confusion_matrix_model, _label )
         _precision = computePrecision( confusion_matrix_model, _label )
         _jaccard = computeJaccard( confusion_matrix_model, _label )
+        if ( _sensitivity + _precision == 0 ) :
+            _f1_score = 0
+        else :
+            _f1_score = ( 2 * ( _sensitivity * _precision ) / ( _sensitivity +
+                                                                  _precision ) )
 
         sensitivities.append( _sensitivity )
         specificities.append( _specificity )
         accuracies.append( _accuracy )
         precisions.append( _precision )
         jaccards.append( _jaccard )
+        f1_scores.append( _f1_score )
 
     print( "\nDone" )
 
     saveScoresPerBundle( sensitivities,
-                          specificities,
-                          accuracies,
-                          precisions,
-                          jaccards,
-                          newPredictedDict,
-                          out_scores_per_bundle_path )
+                         specificities,
+                         accuracies,
+                         precisions,
+                         jaccards,
+                         f1_scores,
+                         newPredictedDict,
+                         out_scores_per_bundle_path )
 
 
 

@@ -1367,21 +1367,23 @@ int main( int argc, char* argv[] )
 
     std::cout << "Function to register bundles using RecoBundles method : \n"
               << "-i : Path to the input tractogram \n"
-              << "-a : Path to the directory with the atlas \n"
-              << "-ref : Path to the reference image where the tractogram is \n"
               << "-o : Path to the output directory \n"
               << "-nbPoints : Number of points per fiber (same number for all "
               << "fibers) \n"
+              << "[-a] : Path to the directory with the atlas, must be given if"
+              << " not using the ESBA atlas \n"
+              << "[-ref] : Path to the reference image where the tractogram is, "
+              << "must be given if other than MNI152 \n"
               << "[-cc] : Path to the clientComputeCentroids.py file \n"
               << "[-rb] : Path to the clientRegisterBundles.py file \n"
               << "[-ods] : Path to the dipyServer.py file \n"
               << "[-cds] : Path to the clientCloseServer.py file \n"
               << "[-fa] : Path to full atlas tractogram (mandatory for global "
-              << "SLR or if -anc is to given) \n"
+              << "SLR or if -anc is to given for other than ESBA atlas) \n"
               << "[-an] : Path to the atlas neighborhoods (must be given is -fa"
-              << " is not given)\n"
+              << " is not given if other than ESBA atlas)\n"
               << "[-anc] : Path to the atlas neighborhoods centroids (must be "
-              << "given is -fa is not given)\n"
+              << "given is -fa is not given if other than ESBA atlas)\n"
               << "[-thrCov] : Threshold to keep bundles where coverage is "
               << "greater than thrCov (default : 0 -> keep all bundles ) \n"
               << "[-thrDBMP] : Threshold for maximum distance between medial "
@@ -1434,38 +1436,6 @@ int main( int argc, char* argv[] )
   {
 
     std::cout << "-i argument required ..." << std::endl ;
-    exit( 1 ) ;
-
-  }
-
-  if ( !index_atlas )
-  {
-
-    std::cout << "-a argument required ..." << std::endl ;
-    exit( 1 ) ;
-
-  }
-
-  if ( !index_fa && !index_anc )
-  {
-
-    std::cout << "At least -fa or -anc must be given ..." << std::endl ;
-    exit( 1 ) ;
-
-  }
-
-  if ( !index_fa && !index_an )
-  {
-
-    std::cout << "At least -fa or -an must be given ..." << std::endl ;
-    exit( 1 ) ;
-
-  }
-
-  if ( !index_reference )
-  {
-
-    std::cout << "-ref argument required ..." << std::endl ;
     exit( 1 ) ;
 
   }
@@ -1646,44 +1616,94 @@ int main( int argc, char* argv[] )
 
     }
 
-
   }
 
   /////////////////////////////// Reference image //////////////////////////////
-  std::string referenceFilename( argv[ index_reference + 1 ] ) ;
-  lastChar = referenceFilename[ referenceFilename.size() - 1 ] ;
-  if ( lastChar == '/' )
+  std::string referenceFilename ;
+  if ( index_reference )
   {
 
-    referenceFilename = referenceFilename.substr( 0,
+    referenceFilename = argv[ index_reference + 1 ] ;
+    lastChar = referenceFilename[ referenceFilename.size() - 1 ] ;
+    if ( lastChar == '/' )
+    {
+
+      referenceFilename = referenceFilename.substr( 0,
                                                 referenceFilename.size() - 1 ) ;
 
-  }
-  if ( !endswith( referenceFilename, ".nii" ) )
-  {
+    }
+    if ( !endswith( referenceFilename, ".nii" ) )
+    {
 
-    std::string outMessage = "The only reference image format supported is "\
-                             ".nii\n" ;
-    throw( std::invalid_argument( outMessage ) ) ;
+      std::string outMessage = "The only reference image format supported is "\
+                               ".nii\n" ;
+      throw( std::invalid_argument( outMessage ) ) ;
+
+    }
+    else
+    {
+
+      std::cout << "Reference image : OK " << std::endl ;
+
+    }
+
+    if ( !is_file( referenceFilename ) )
+    {
+
+      std::stringstream outMessageOss ;
+      outMessageOss << "ERROR : Reference image file " << referenceFilename
+                                            << " does not exists" << std::endl ;
+      std::string outMessage = outMessageOss.str() ;
+      throw( std::invalid_argument( outMessage ) ) ;
+
+    }
 
   }
   else
   {
 
-    std::cout << "Reference image : OK " << std::endl ;
+    std::stringstream referenceFilenameOss  ;
+    referenceFilenameOss << default_ESBA_DIR
+                         << "mni_icbm152_t1_tal_nlin_asym_09c_brain.nii" ;
+    referenceFilename = referenceFilenameOss.str() ;
+    lastChar = referenceFilename[ referenceFilename.size() - 1 ] ;
+    if ( lastChar == '/' )
+    {
+
+      referenceFilename = referenceFilename.substr( 0,
+                                                referenceFilename.size() - 1 ) ;
+
+    }
+    if ( !endswith( referenceFilename, ".nii" ) )
+    {
+
+      std::string outMessage = "The only reference image format supported is "\
+                               ".nii\n" ;
+      throw( std::invalid_argument( outMessage ) ) ;
+
+    }
+    else
+    {
+
+      std::cout << "Reference image : OK " << std::endl ;
+
+    }
+
+    if ( !is_file( referenceFilename ) )
+    {
+
+      std::stringstream outMessageOss ;
+      outMessageOss << "ERROR : Reference image file " << referenceFilename
+                    << " does not exists it seems the environment variable "
+                    << "ESBA_DIR was not correctly set" << std::endl ;
+      std::string outMessage = outMessageOss.str() ;
+      throw( std::invalid_argument( outMessage ) ) ;
+
+    }
+
 
   }
 
-  if ( !is_file( referenceFilename ) )
-  {
-
-    std::stringstream outMessageOss ;
-    outMessageOss << "ERROR : Reference image file " << referenceFilename
-                                            << " does not exists" << std::endl ;
-    std::string outMessage = outMessageOss.str() ;
-    throw( std::invalid_argument( outMessage ) ) ;
-
-  }
 
   ////////////////////////////// Output directory //////////////////////////////
   std::string outputDirectory( argv[ index_output + 1 ] ) ;
@@ -1846,7 +1866,145 @@ int main( int argc, char* argv[] )
   ///////////////////////// Number of points per fiber /////////////////////////
   nbPointsPerFiber = std::stoi( argv[ index_nbPoints + 1 ] ) ;
 
+
+  ///////////////////////////// Atlas neighborhood /////////////////////////////
+  std::string atlasNeighborhoodDirectory ;
+  if ( index_an )
+  {
+
+    isAtlasNeighborhood = true ;
+
+    atlasNeighborhoodDirectory = argv[ index_anc + 1 ] ;
+    lastChar = atlasNeighborhoodDirectory[ atlasNeighborhoodDirectory.size()
+                                                                         - 1 ] ;
+    if ( lastChar != '/' )
+    {
+
+      atlasNeighborhoodDirectory = atlasNeighborhoodDirectory + "/" ;
+
+    }
+    if ( !is_dir( atlasNeighborhoodDirectory ) )
+    {
+
+      std::stringstream outMessageOss ;
+      outMessageOss << "ERROR : Atlas neighborhood centroids directory "
+                    << atlasNeighborhoodDirectory << " does not exists "
+                    << std::endl ;
+      std::string outMessage = outMessageOss.str() ;
+      throw( std::invalid_argument( outMessage ) ) ;
+
+    }
+
+  }
+  else
+  {
+
+    std::stringstream atlasNeighborhoodDirectoryOss ;
+    atlasNeighborhoodDirectoryOss << default_ESBA_DIR << "Neighborhood"
+                                                                << formatUpper ;
+    atlasNeighborhoodDirectory = atlasNeighborhoodDirectoryOss.str() ;
+
+    lastChar = atlasNeighborhoodDirectory[ atlasNeighborhoodDirectory.size()
+                                                                         - 1 ] ;
+    if ( lastChar != '/' )
+    {
+
+      atlasNeighborhoodDirectory = atlasNeighborhoodDirectory + "/" ;
+
+    }
+    if ( !is_dir( atlasNeighborhoodDirectory ) )
+    {
+
+      std::stringstream outMessageOss ;
+      outMessageOss << "WARNING : Default atlas neighborhood directory "
+                    << atlasNeighborhoodDirectory << " does not exists, you "
+                    << "might not have set the ESBA_DIR environment variable"
+                    << "correctly, the atlas neighborhood will be computed on "
+                    << "the fly" << std::endl ;
+      std::string outMessage = outMessageOss.str() ;
+      std::cout << outMessage ;
+
+    }
+    else
+    {
+
+      isAtlasNeighborhood = true ;
+
+    }
+
+  }
+
+  //////////////////////// Atlas neighborhood centroids ////////////////////////
+  std::string atlasNeighborhoodCentroidsDirectory ;
+  if ( index_anc )
+  {
+
+    isAtlasNeighborhoodCentroids = true ;
+
+    atlasNeighborhoodCentroidsDirectory = argv[ index_anc + 1 ] ;
+    lastChar = atlasNeighborhoodCentroidsDirectory[
+                              atlasNeighborhoodCentroidsDirectory.size() - 1 ] ;
+    if ( lastChar != '/' )
+    {
+
+      atlasNeighborhoodCentroidsDirectory = atlasNeighborhoodCentroidsDirectory
+                                                                         + "/" ;
+
+    }
+    if ( !is_dir( atlasNeighborhoodCentroidsDirectory ) )
+    {
+
+      std::stringstream outMessageOss ;
+      outMessageOss << "ERROR : Atlas neighborhood centroids directory "
+                   << atlasNeighborhoodCentroidsDirectory << " does not exists "
+                   << std::endl ;
+      std::string outMessage = outMessageOss.str() ;
+      throw( std::invalid_argument( outMessage ) ) ;
+
+    }
+
+  }
+  else
+  {
+
+    std::stringstream atlasNeighborhoodCentroidsDirectoryOss ;
+    atlasNeighborhoodCentroidsDirectoryOss << default_ESBA_DIR << "Centroids"
+                                                                << formatUpper ;
+    atlasNeighborhoodCentroidsDirectory =
+                                  atlasNeighborhoodCentroidsDirectoryOss.str() ;
+    lastChar = atlasNeighborhoodCentroidsDirectory[
+                              atlasNeighborhoodCentroidsDirectory.size() - 1 ] ;
+    if ( lastChar != '/' )
+    {
+
+      atlasNeighborhoodCentroidsDirectory = atlasNeighborhoodCentroidsDirectory
+                                                                         + "/" ;
+
+    }
+    if ( !is_dir( atlasNeighborhoodCentroidsDirectory ) )
+    {
+
+      std::stringstream outMessageOss ;
+      outMessageOss << "WARNING : Default atlas neighborhood centroids "
+                    << "directory "<< atlasNeighborhoodCentroidsDirectory
+                    << "does not exists, you might not have set the ESBA_DIR "
+                    << "environment variable correctly, the atlas neighborhood"
+                    << "centroids will be computed on the fly" << std::endl ;
+      std::string outMessage = outMessageOss.str() ;
+      std::cout << outMessage ;
+
+    }
+    else
+    {
+
+      isAtlasNeighborhoodCentroids = true ;
+
+    }
+
+  }
+
   ///////////////////////////////// Full atlas /////////////////////////////////
+  // Must be after Checking -an and -anc
   std::string fullAtlasFilename ;
   if ( index_fa )
   {
@@ -1896,65 +2054,13 @@ int main( int argc, char* argv[] )
     }
 
   }
-
-  ///////////////////////////// Atlas neighborhood /////////////////////////////
-  std::string atlasNeighborhoodDirectory ;
-  if ( index_an )
+  else if ( !index_fa && !isAtlasNeighborhood && !isAtlasNeighborhoodCentroids )
   {
 
-    isAtlasNeighborhood = true ;
+    std::cout << "ERROR : input argument -fa must be given if -anc and -an "
+              << "are not give" << std::endl ;
+    exit( 1 ) ;
 
-    atlasNeighborhoodDirectory = argv[ index_anc + 1 ] ;
-    lastChar = atlasNeighborhoodDirectory[ atlasNeighborhoodDirectory.size()
-                                                                         - 1 ] ;
-    if ( lastChar != '/' )
-    {
-
-      atlasNeighborhoodDirectory = atlasNeighborhoodDirectory + "/" ;
-
-    }
-    if ( !is_dir( atlasNeighborhoodDirectory ) )
-    {
-
-      std::stringstream outMessageOss ;
-      outMessageOss << "ERROR : Atlas neighborhood centroids directory "
-                    << atlasNeighborhoodDirectory << " does not exists "
-                    << std::endl ;
-      std::string outMessage = outMessageOss.str() ;
-      throw( std::invalid_argument( outMessage ) ) ;
-
-    }
-
-  }
-
-  //////////////////////// Atlas neighborhood centroids ////////////////////////
-  std::string atlasNeighborhoodCentroidsDirectory ;
-  if ( index_anc )
-  {
-
-    isAtlasNeighborhoodCentroids = true ;
-
-    atlasNeighborhoodCentroidsDirectory = argv[ index_anc + 1 ] ;
-    lastChar = atlasNeighborhoodCentroidsDirectory[
-                              atlasNeighborhoodCentroidsDirectory.size() - 1 ] ;
-    if ( lastChar != '/' )
-    {
-
-      atlasNeighborhoodCentroidsDirectory = atlasNeighborhoodCentroidsDirectory
-                                                                         + "/" ;
-
-    }
-    if ( !is_dir( atlasNeighborhoodCentroidsDirectory ) )
-    {
-
-      std::stringstream outMessageOss ;
-      outMessageOss << "ERROR : Atlas neighborhood centroids directory "
-                   << atlasNeighborhoodCentroidsDirectory << " does not exists "
-                   << std::endl ;
-      std::string outMessage = outMessageOss.str() ;
-      throw( std::invalid_argument( outMessage ) ) ;
-
-    }
 
   }
 

@@ -1,6 +1,8 @@
 #!/usr/bin/python3
 import sys, os, subprocess, shutil
 
+import time
+
 import pickle
 
 import numpy as np
@@ -9,7 +11,6 @@ import matplotlib.pyplot as plt
 
 from sklearn import metrics
 from sklearn.linear_model import LinearRegression, Ridge
-# from sklearn.preprocessing import PolynomialFeatures, SplineTransformer
 from sklearn.preprocessing import PolynomialFeatures
 from sklearn.metrics import mean_squared_error, r2_score
 import statsmodels.api as sm
@@ -21,6 +22,9 @@ from sklearn.pipeline import make_pipeline
 import piecewise_regression
 
 import pwlf
+
+from multiprocessing import Process
+from multiprocessing import Lock
 
 import argparse
 import textwrap
@@ -40,42 +44,13 @@ class bcolors:
 
 #-----------------------------------------#
 measures_options = [ "FA", "MD", "OD", "ICVF", "ISOVF" ]
-
-# bundles_options = ['atlas_lh_IP-SP_1', 'atlas_rh_Op-SF_0', 'atlas_lh_Tr-Ins_0',
-# 'atlas_lh_Op-SF_0', 'atlas_lh_PoC-PrC_0', 'atlas_lh_PrC-Ins_0',
-# 'atlas_rh_RMF-SF_0', 'atlas_rh_IT-MT_2', 'atlas_lh_PoCi-SF_0',
-# 'atlas_rh_PrC-SP_0', 'atlas_rh_PoC-SM_0', 'atlas_rh_PoC-SP_1',
-# 'atlas_rh_Fu-LO_1', 'atlas_rh_Cu-Li_0', 'atlas_lh_MOF-ST_0',
-# 'atlas_rh_MOF-ST_0', 'atlas_rh_CMF-SF_1', 'atlas_lh_ST-Ins_0',
-# 'atlas_lh_PoC-PrC_3', 'atlas_lh_IP-LO_1', 'atlas_lh_Or-Ins_0',
-# 'atlas_lh_Op-Ins_0', 'atlas_rh_SP-SM_0', 'atlas_lh_IP-IT_0',
-# 'atlas_lh_Tr-SF_0', 'atlas_rh_SM-Ins_0', 'atlas_lh_CMF-PrC_0',
-# 'atlas_lh_IP-SM_0', 'atlas_rh_Or-Ins_0', 'atlas_rh_RMF-SF_1',
-# 'atlas_rh_Op-PrC_0', 'atlas_rh_PrC-SM_0','atlas_rh_PoCi-PrCu_2',
-# 'atlas_lh_PoC-PrC_1','atlas_lh_LOF-Or_0', 'atlas_lh_RMF-SF_1',
-# 'atlas_lh_CMF-SF_0', 'atlas_rh_MT-SM_0','atlas_lh_RAC-SF_1',
-# 'atlas_rh_IP-SM_0','atlas_rh_MT-ST_0', 'atlas_rh_PoC-SP_0',
-# 'atlas_rh_IP-IT_0', 'atlas_rh_PoC-PrC_2','atlas_lh_PrC-SF_0',
-# 'atlas_lh_LOF-RMF_0','atlas_rh_IP-LO_0', 'atlas_lh_PrC-SM_0',
-# 'atlas_lh_PoC-Ins_0', 'atlas_rh_CMF-SF_0','atlas_rh_Tr-Ins_0',
-# 'atlas_lh_PoC-SM_0','atlas_rh_IC-PrCu_0', 'atlas_lh_MT-SM_0',
-# 'atlas_lh_IT-MT_0', 'atlas_rh_LOF-RMF_1','atlas_lh_IP-SP_0',
-# 'atlas_lh_ST-TT_0','atlas_lh_LOF-ST_0', 'atlas_lh_Op-PrC_0',
-# 'atlas_lh_CMF-Op_0', 'atlas_lh_PoCi-PrCu_1','atlas_rh_RAC-SF_0',
-# 'atlas_rh_Op-Tr_0','atlas_lh_SP-SM_0', 'atlas_lh_RMF-SF_0',
-# 'atlas_lh_PoCi-RAC_0', 'atlas_rh_Tr-SF_0','atlas_lh_IP-MT_0',
-# 'atlas_rh_LOF-MOF_0','atlas_lh_CMF-PrC_1', 'atlas_rh_IP-MT_0',
-# 'atlas_rh_CMF-RMF_0', 'atlas_rh_CMF-PrC_1','atlas_rh_PoCi-PrCu_1',
-# 'atlas_lh_LOF-RMF_1','atlas_rh_LOF-ST_0', 'atlas_rh_PrC-Ins_0',
-# 'atlas_lh_CMF-RMF_0', 'atlas_lh_SM-Ins_0','atlas_rh_ST-TT_0',
-# 'atlas_lh_PoC-SM_1','atlas_rh_CMF-PrC_0', 'atlas_lh_PoC-PrC_2',
-# 'atlas_rh_CAC-PrCu_0', 'atlas_rh_PoCi-RAC_0','atlas_rh_IP-SP_0',
-# 'atlas_lh_CAC-PrCu_0','atlas_rh_IT-MT_1', 'atlas_lh_CMF-PoC_0',
-# 'atlas_rh_LOF-RMF_0', 'atlas_lh_Fu-LO_0','atlas_rh_Op-Ins_0',
-# 'atlas_lh_IC-PrCu_0','atlas_rh_PoC-PrC_1', 'atlas_rh_CAC-PoCi_0',
-# 'atlas_lh_PoCi-PrCu_0', 'atlas_rh_PoC-PrC_0','atlas_lh_MT-ST_0',
-# 'atlas_rh_LO-SP_0' ]
-#-----------------------------------------#
+slope_dict = {}
+verbose = 0
+# To have reproductible results
+_seed = 100
+np.random.seed( _seed )
+standartOut = sys.stdout
+standartErr = sys.stderr
 
 
 DOC = """
@@ -135,12 +110,6 @@ def get_cmd_line_args():
                                                                "ukb-dti-dir" ) )
 
     required.add_argument(
-        "-bc", "--baseline-characteristics",
-        type=is_file, required=True, metavar="<path>",
-        help=( "Path to the .tsv file with baseline characteristics of "
-                                                   "subjects in ukb-dti-dir" ) )
-
-    required.add_argument(
         "-o", "--out",
         type=str, required=True, metavar="<path>",
         help=( "Output directory where to save plots" ) )
@@ -159,6 +128,12 @@ def get_cmd_line_args():
                                                                     "ISOVF)" ) )
 
     # Optional arguments
+    parser.add_argument(
+        "-nbThreads", "--nbThreads",
+        type=int, default = 4,
+        help=("Chose the number of process to launch at the same time with "
+              "multiprocessing (default : 4)"))
+
     parser.add_argument(
         "-v", "--verbose",
         type=int, choices=[0, 1, 2], default=0,
@@ -306,42 +281,6 @@ def polynomialRegression( X, y ) :
     plt.clf()
     plt.close()
     sys.exit( 1 )
-
-# def bSplineRegression( X, y ) :
-#     # Knots ~ breakpoints
-#     # model = make_pipeline(SplineTransformer(n_knots = 3, degree = 1 ),
-#     #                                                      Ridge( alpha = 1e-3 ) )
-#     model = make_pipeline(SplineTransformer(n_knots = 3, degree = 1 ),
-#                                                             LinearRegression() )
-#     model.fit( X.reshape( -1, 1 ), y.reshape( -1, 1 ) )
-#
-#     # _y = model.predict( X.reshape( -1, 1 ) )
-#
-#     _X = np.linspace( np.min( X ), np.max( X ), 500 )
-#     _y = model.predict( _X.reshape( -1, 1 ) )
-#
-#
-#
-# #     splt = SplineTransformer( n_knots=3, degree=1 ).fit( X.reshape( -1, 1 ) )
-# #     plt.plot( X, splt.transform( X.reshape( -1, 1 ) ), "o" )
-# #     print( "x"*100 )
-# #     print( splt.n_features_out_ )
-# #     # plt.legend(axes[1].lines, [f"spline {n}" for n in range(3)])
-# #     # plt.set_title("SplineTransformer")
-# #
-# # #   plot knots of spline
-# #     knots = splt.bsplines_[0].t
-# #     plt .vlines(knots[1:-1], ymin=0, ymax=0.8, linestyles="dashed")
-# #     plt.show()
-# #     sys.exit( 0 )
-#
-#     plt.plot( X, y, "bo" )
-#     # plt.plot( X, _y, "r-" )
-#     plt.plot( _X, _y, "r-" )
-#     plt.show()
-#     plt.clf()
-#     plt.close()
-#     sys.exit( 1 )
 
 
 def testHeteroskedasticity( X, y ) :
@@ -493,14 +432,101 @@ def getSlopesAndInterceptsPiecewise( piecewiseModel ) :
 
     return( b1, a1, b2, a2, breakpoint )
 
-    # _X = np.linspace( np.min( X ), np.max( X ), 500 )
-    # _y = np.where( _X < breakpoint1, a1 * _X + b1, a2 * _X + b2 )
-    #
-    # plt.plot( X, y, "bo" )
-    # plt.plot( _X, _y, "r-" )
-    # plt.show()
-    # plt.clf()
-    # plt.close()
+
+def piecewiseRegressionPerBundle( data_dict, bundle, output_dir, measure,
+                                                           logFilePath, lock ) :
+    outPath = os.path.join( output_dir, f"{bundle}.png" )
+    if os.path.isfile( outPath ) :
+        return
+
+    if ( verbose < 2 ) :
+        logFile = open( logFilePath, 'a' )
+        sys.stderr = logFile
+        sys.stdout = logFile
+
+    age_data = data_dict[ bundle ][ 0 ]
+    measure_data = data_dict[ bundle ][ 1 ]
+    subject_id_data = data_dict[ bundle ][ 2 ]
+
+    X = np.array( age_data )
+    y = np.array( measure_data )
+
+    if ( X.shape[ 0 ] != y.shape[ 0 ] ) :
+        if ( verbose < 2 ) :
+            sys.stderr = standartErr
+            sys.stdout = standartOut
+        return
+    else :
+        if ( X.shape[ 0 ] < 3 ) :
+            if ( verbose < 2 ) :
+                sys.stderr = standartErr
+                sys.stdout = standartOut
+            return
+
+
+    pw_fit = piecewise_regression.Fit( X, y, n_breakpoints = 1,
+                      max_iterations = 100, tolerance = 1e-5, n_boot = 100 )
+    # Saving figure
+    p_values = [ 1 ] * 5
+    try :
+        _p_values = getPValuesPiecewiseRegression( pw_fit )
+        print( f"\n{bcolors.OKBLUE}Bundle : {bundle}{bcolors.ENDC}" )
+        b1, a1, b2, a2, breakpoint = getSlopesAndInterceptsPiecewise(
+                                                                    pw_fit )
+        savePiecewiseRegresionPlot( pw_fit, X, y, outPath, measure )
+        p_values = _p_values
+    except :
+        my_pwlf = pwlf.PiecewiseLinFit(X, y, seed = _seed )
+        #  my_pwlf = pwlf.PiecewiseLinFit( X, y )
+        res = my_pwlf.fit(2)
+        b1 = my_pwlf.intercepts[ 0 ]
+        a1 = my_pwlf.slopes[ 0 ]
+        b2 = my_pwlf.intercepts[ 1 ]
+        a2 = my_pwlf.slopes[ 1 ]
+        breakpoint = my_pwlf.fit_breaks[ 1 ]
+
+        _p_values = my_pwlf.p_values(method='non-linear', step_size=1e-4)
+
+        print( f"\n{bcolors.OKBLUE}Bundle : {bundle}{bcolors.ENDC}" )
+        savePiecewiseRegresionPlot( my_pwlf, X, y,outPath, measure )
+        p_values = _p_values
+
+
+    _change_model = False
+    for _p in p_values :
+        if _p == "-" :
+            _p = 0
+        if float( _p ) > 0.05 :
+            _change_model = True
+
+        if _change_model :
+            my_pwlf_continous = pwlf.PiecewiseLinFit(X, y, seed = _seed )
+            res = my_pwlf_continous.fit(1)
+            b1 = b2 = my_pwlf_continous.intercepts[ 0 ]
+            a1 = a2 = my_pwlf_continous.slopes[ 0 ]
+            breakpoint = np.min( X )
+
+            _X = np.linspace( np.min( X ), np.max( X ), 500 )
+            _y = my_pwlf_continous.predict( _X )
+            printSummaryPwlf( my_pwlf_continous, X, y )
+            plt.plot( X, y, "bo" )
+            plt.plot( _X, _y, "r-" )
+            plt.xlabel( "Age" )
+            plt.ylabel( measure )
+
+            plt.savefig( outPath, dpi = 300, bbox_inches = "tight" )
+            plt.clf()
+            break
+
+    with lock :
+        slope_dict[ bundle ] = { "b1" : b1, "a1" : a1, "b2" : b2, "a2" : a2,
+                                                     "breakpoint" : breakpoint }
+
+    if ( verbose < 2 ) :
+        sys.stderr = standartErr
+        sys.stdout = standartOut
+
+    return
 
 def main() :
     """
@@ -513,8 +539,6 @@ def main() :
     atlas_dir = inputs[ "atlas" ]
 
     tsv_file = inputs[ "tsv" ]
-
-    baseline_characteristics_path = inputs[ "baseline_characteristics" ]
 
     output_dir = inputs[ "out" ]
     if not os.path.isdir( output_dir ) :
@@ -529,8 +553,18 @@ def main() :
 
     format = inputs[ "format" ]
 
+    nbThreads = inputs[ "nbThreads" ]
+    if ( nbThreads < 1 ) :
+        print( f"ERROR : argument -nbThreads must be greater than 0 but got "
+               f"{nbThreads}" )
+        exit( 1 )
+
 
     ############################################################################
+    logFilePath = os.path.join( output_dir, "log.txt" )
+    if os.path.isfile( logFilePath ) :
+        os.remove( logFilePath )
+
     subjects = os.listdir( ukb_dti_dir )
     nbSubjects = len( subjects )
 
@@ -550,22 +584,17 @@ def main() :
 
     out_data_dict_path = os.path.join( output_dir, f"{measure}AndAge.txt" )
     print( f"Fusing DTI mean of {measure} in {out_data_dict_path}" )
+    # getFileForPlotMiguelCommand = [ "/ccc/workflash/cont003/n4h00001/vindasna/pieceWiseRegressionScripts/getFileForPlotsRegression",
     getFileForPlotMiguelCommand = [ "getFileForPlotsRegression",
                                     "-ukb-dti", ukb_dti_dir,
                                     "-m", measure,
                                     "-tsv",  tsv_file,
                                     "-o", out_data_dict_path ]
-    run_sh_process( getFileForPlotMiguelCommand, shell = True )
+    if not os.path.isfile( out_data_dict_path ) :
+        run_sh_process( getFileForPlotMiguelCommand, shell = True )
 
     data_dict = readFileWithMeansMeasure( out_data_dict_path )
     nbBundles = len( data_dict )
-
-    baseline_characteristics_dict = readBaselineCharacteristics(
-                                        baseline_characteristics_path, verbose )
-
-    # To have reproductible results
-    _seed = 100
-    np.random.seed( _seed )
 
     count_bundle = 1
     print( "Saving plot and models..." )
@@ -574,151 +603,36 @@ def main() :
     nbBundlesWithDti = 0
     bundlesWithSignificantAgeSexInteraction = []
     slope_dict = {}
+
+    processList = []
+    lock = Lock()
     for bundle in data_dict :
-        if verbose == 1 :
-            print( f"Bundle : [{count_bundle}/{nbBundles}]", end = "\r" )
-        else :
-            print( f"Bundle : [{count_bundle}/{nbBundles}]" )
-            # pass
+        p = Process( target = piecewiseRegressionPerBundle, args = [ data_dict,
+               bundle, output_dir, measure, logFilePath, lock ], daemon = True )
+        p.start()
+        processList.append( p )
 
-        ########################################################################
-        # if bundle != "atlas_lh_CMF-Op_0" :
-        # if bundle != "atlas_rh_PoCi-PrCu_1" :
-        # if bundle != "atlas_lh_Fu-LO_0" :
-        # if bundle != "atlas_rh_RAC-SF_0" :
-        # if bundle != "atlas_rh_LOF-MOF_0" and bundle != "atlas_rh_PrC-Ins_0" and bundle != "atlas_lh_LOF-RMF_0" and bundle != "atlas_rh_PrC-Ins_0" :
-        # if bundle != "atlas_rh_LOF-MOF_0" :
-        #     count_bundle += 1
-        #     continue
-        ########################################################################
+        while ( len( processList ) >= nbThreads ) :
+            print( f"Waiting for ressources, max number of threads reached : "
+                   f"{len( processList )} | Bundle : [{count_bundle}/"
+                   f"{nbBundles}]", end = "\r", flush = True )
 
-        age_data = data_dict[ bundle ][ 0 ]
-        measure_data = data_dict[ bundle ][ 1 ]
-        subject_id_data = data_dict[ bundle ][ 2 ]
-        sex_data = [ float( baseline_characteristics_dict[ subject_id.replace(
-                   "sub-", "" ) ][ "sex" ] ) for subject_id in subject_id_data ]
+            processIndex = 0
+            for processTmp in processList :
+                if not processTmp.is_alive() :
+                    processTmp.terminate()
+                    del processList[ processIndex ]
+                    # processIndex is not increase because we removed an element
+                else :
+                    processIndex += 1
 
-        X = np.array( age_data )
-        y = np.array( measure_data )
-
-        # polynomialRegression( X, y )
-        # bSplineRegression( X, y )
-        # testHeteroskedasticity( X, y )
-
-
-        ############### Select best number of breakking points #################
-        # max_breakpoints = 5
-        # pw_fit_models = piecewise_regression.model_selection.ModelSelection(
-        #                                 X, y, max_breakpoints = max_breakpoints,
-        #                                 max_iterations = 100, tolerance = 1e-05,
-        #                                 min_distance_between_breakpoints = 0.01,
-        #                                 min_distance_to_edge = 0.02,
-        #                                 verbose = True )
-        # _i = 0
-        # for _summary in pw_fit_models.model_summaries :
-        #     print( f"{bcolors.OKBLUE}Model with {_i} breakpoints"
-        #                                                      f"{bcolors.ENDC}" )
-        #     for _key in _summary :
-        #         if _key == "estimates" :
-        #             try :
-        #                 print( f"{_key}")
-        #                 for _key2 in _summary[ _key ] :
-        #                     print( f"{_key2}" )
-        #                     for _key3 in _summary[ _key ][ _key2 ] :
-        #                         print( f"\t\t{_key3} : {_summary[ _key ][ _key2 ][ _key3 ]}" )
-        #             except :
-        #                 print( f"{_key}\t{_summary[ _key ]} " )
-        #     # print( _summary )
-        #     _i += 1
-        # # for _i in range( max_breakpoints ) :
-        # #     print( f"{bcolors.OKBLUE}Model with {_i} breakpoints "
-        # #                                                      f"{bcolors.ENDC}" )
-        # #     _model = pw_fit_models.models[ _i ]
-        # #     _model.summary()
-        # sys.exit( 1 )
-        ########################################################################
-
-        pw_fit = piecewise_regression.Fit( X, y, n_breakpoints = 1,
-                          max_iterations = 100, tolerance = 1e-5, n_boot = 100 )
-        # Saving figure
-        outPath = os.path.join( output_dir, f"{bundle}.png" )
-        p_values = [ 1 ] * 5
-        try :
-            _p_values = getPValuesPiecewiseRegression( pw_fit )
-            print( f"\n{bcolors.OKBLUE}Bundle : {bundle}{bcolors.ENDC}" )
-            b1, a1, b2, a2, breakpoint = getSlopesAndInterceptsPiecewise(
-                                                                        pw_fit )
-            savePiecewiseRegresionPlot( pw_fit, X, y, outPath, measure )
-            p_values = _p_values
-            # sys.exit( 1 )
-        except :
-            # mod = sm.OLS( y, X )
-            # my_pwlf = mod.fit()
-
-
-            my_pwlf = pwlf.PiecewiseLinFit(X, y, seed = _seed )
-            #  my_pwlf = pwlf.PiecewiseLinFit( X, y )
-            res = my_pwlf.fit(2)
-            b1 = my_pwlf.intercepts[ 0 ]
-            a1 = my_pwlf.slopes[ 0 ]
-            b2 = my_pwlf.intercepts[ 1 ]
-            a2 = my_pwlf.slopes[ 1 ]
-            breakpoint = my_pwlf.fit_breaks[ 1 ]
-
-            _p_values = my_pwlf.p_values(method='non-linear', step_size=1e-4)
-
-            print( f"\n{bcolors.OKBLUE}Bundle : {bundle}{bcolors.ENDC}" )
-            savePiecewiseRegresionPlot( my_pwlf, X, y,outPath, measure )
-            p_values = _p_values
-
-
-        _change_model = False
-        for _p in p_values :
-            if _p == "-" :
-                _p = 0
-            if float( _p ) > 0.05 :
-                _change_model = True
-
-            if _change_model :
-                my_pwlf_continous = pwlf.PiecewiseLinFit(X, y, seed = _seed )
-                res = my_pwlf_continous.fit(1)
-                b1 = b2 = my_pwlf_continous.intercepts[ 0 ]
-                a1 = a2 = my_pwlf_continous.slopes[ 0 ]
-                breakpoint = np.min( X )
-
-                _X = np.linspace( np.min( X ), np.max( X ), 500 )
-                _y = my_pwlf_continous.predict( _X )
-                printSummaryPwlf( my_pwlf_continous, X, y )
-                plt.plot( X, y, "bo" )
-                plt.plot( _X, _y, "r-" )
-                plt.xlabel( "Age" )
-                plt.ylabel( measure )
-
-                plt.savefig( outPath, dpi = 300, bbox_inches = "tight" )
-                plt.clf()
-                # plt.show()
-                # plt.clf()
-                # plt.close()
-                break
-
-        slope_dict[ bundle ] = { "b1" : b1, "a1" : a1, "b2" : b2, "a2" : a2,
-                                                     "breakpoint" : breakpoint }
-
-        """
-        # Plot the data, fit, breakpoints and confidence intervals
-        pw_fit.plot_data(color="grey", s=20)
-        # Pass in standard matplotlib keywords to control any of the plots
-        pw_fit.plot_fit(color="red", linewidth=4)
-        pw_fit.plot_breakpoints()
-        pw_fit.plot_breakpoint_confidence_intervals()
-        plt.xlabel("x")
-        plt.ylabel("y")
-        plt.show()
-        plt.clf()
-        """
+        print( f"Bundle : [{count_bundle}/{nbBundles}]" + " " * 75, end = "\r" )
 
 
         count_bundle += 1
+
+    for processTmp in processList:
+        processTmp.join()
 
 
     output_slopes = os.path.join( output_dir, f"slopes.pickle" )
@@ -728,4 +642,7 @@ def main() :
 
 
 if __name__ == "__main__" :
+    t1 = time.time()
     main()
+    duration = time.time() - t1
+    print( f"Duration : {duration} s" )

@@ -74,6 +74,10 @@ bool saveUnlabeled = false ;
 int nbThreads = 0 ;
 int nbThreadsUsed ;
 
+bool haveMinf = false ;
+
+std::string default_ESBA_DIR ;
+
 
 ////////////////////////////////////////////////////////////////////////////////
 void fillArrayPointer( float* array,

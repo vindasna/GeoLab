@@ -200,10 +200,11 @@ int main( int argc, char* argv[] )
 
     std::cout << "Function to convert bundles format : \n"
               << "-i : Input tractogram from which to extract bundles \n"
-              << "-a : Directory with the atlas (one file per bundle) \n"
               << "-o : Output directory to save the extracted bundles \n"
               << "-l : Name to give to the labels files ( name.txt and"
               << "name.dict) \n"
+              << "[-a] : Directory with the atlas (one file per bundle), must "
+              << "be given if other than ESBA atlas \n"
               << "[-p] : Threshold for the distance between the centers of the "
               << "track in the atlas and the track in the tractogram. It "
               << "impacts if the MMEA distance is computed for a fiber which "
@@ -275,14 +276,6 @@ int main( int argc, char* argv[] )
 
   }
 
-  if ( !index_atlas )
-  {
-
-    std::cout << "-a argument required ..." << std::endl ;
-    exit( 1 ) ;
-
-  }
-
   if ( !index_output )
   {
 
@@ -298,6 +291,24 @@ int main( int argc, char* argv[] )
     exit( 1 ) ;
 
   }
+
+
+  //////////////////////////////////////////////////////////////////////////////
+  char lastChar ;
+  default_ESBA_DIR = std::getenv( "ESBA_DIR" ) ;
+  if ( default_ESBA_DIR.size() > 0 )
+  {
+
+    lastChar = default_ESBA_DIR[ default_ESBA_DIR.size() - 1 ] ;
+    if ( lastChar != '/' )
+    {
+
+      default_ESBA_DIR = default_ESBA_DIR + "/" ;
+
+    }
+
+  }
+  //////////////////////////////////////////////////////////////////////////////
 
   if ( index_p )
   {
@@ -860,7 +871,7 @@ int main( int argc, char* argv[] )
   /////////////////////////////////////////////////////////////////////////////
 
   std::string inputBundlesFilename( argv[ index_input + 1 ] ) ;
-  char lastChar = inputBundlesFilename[ inputBundlesFilename.size() - 1 ] ;
+  lastChar = inputBundlesFilename[ inputBundlesFilename.size() - 1 ] ;
   if ( lastChar == '/' )
   {
 
@@ -869,12 +880,100 @@ int main( int argc, char* argv[] )
 
   }
 
-  std::string atlasDirectory( argv[ index_atlas + 1 ] ) ;
-  lastChar = atlasDirectory[ atlasDirectory.size() - 1 ] ;
-  if ( lastChar != '/' )
+  /// Getting format
+  std::string format ;
+  std::string formatUpper ;
+  std::string inputBundlesMinfPath ;
+  if ( endswith( inputBundlesFilename, ".bundles" ) ||
+                              endswith( inputBundlesFilename, ".bundlesdata" ) )
   {
 
-    atlasDirectory = atlasDirectory + "/" ;
+    format = ".bundles" ;
+    formatUpper = "Bundles" ;
+
+    inputBundlesMinfPath = replaceExtension( inputBundlesFilename,
+                                                                  ".bundles" ) ;
+
+  }
+  else if ( endswith( inputBundlesFilename, ".trk" ) )
+  {
+
+    format = ".trk" ;
+    formatUpper = "Trk" ;
+
+    inputBundlesMinfPath = replaceExtension( inputBundlesFilename, ".minf" ) ;
+
+  }
+  else if ( endswith( inputBundlesFilename, ".tck" ) )
+  {
+
+    format = ".tck" ;
+    formatUpper = "Tck" ;
+
+    inputBundlesMinfPath = replaceExtension( inputBundlesFilename, ".minf" ) ;
+
+  }
+  // Already checked at the begginig of main if extension is one of those format
+
+  if ( is_file( inputBundlesMinfPath ) )
+  {
+
+    haveMinf = true ;
+
+  }
+
+  // Atlas directory
+
+  std::string atlasDirectory ;
+  if ( index_atlas )
+  {
+
+    atlasDirectory = argv[ index_atlas + 1 ] ;
+    lastChar = atlasDirectory[ atlasDirectory.size() - 1 ] ;
+    if ( lastChar != '/' )
+    {
+
+      atlasDirectory = atlasDirectory + "/" ;
+
+    }
+    if ( !is_dir( atlasDirectory ) )
+    {
+
+      std::stringstream outMessageOss ;
+
+      outMessageOss << "ERROR : Atlas directory " << atlasDirectory << " does not"
+                                                      << " exists " << std::endl ;
+      std::string outMessage = outMessageOss.str() ;
+      throw( std::invalid_argument( outMessage ) ) ;
+
+    }
+
+  }
+  else
+  {
+
+    std::stringstream atlasDirectoryOss  ;
+    atlasDirectoryOss << default_ESBA_DIR << "Esba" << formatUpper ;
+    atlasDirectory = atlasDirectoryOss.str() ;
+    lastChar = atlasDirectory[ atlasDirectory.size() - 1 ] ;
+    if ( lastChar != '/' )
+    {
+
+      atlasDirectory = atlasDirectory + "/" ;
+
+    }
+    if ( !is_dir( atlasDirectory ) )
+    {
+
+      std::stringstream outMessageOss ;
+
+      outMessageOss << "ERROR : Atlas directory " << atlasDirectory << " does "
+                    << "not exists, it seems the environment variable ESBA_DIR "
+                    << "was not correctly set" << std::endl ;
+      std::string outMessage = outMessageOss.str() ;
+      throw( std::invalid_argument( outMessage ) ) ;
+
+    }
 
   }
 
@@ -917,10 +1016,8 @@ int main( int argc, char* argv[] )
 
   }
 
-
-
   BundlesData inputTractogram( inputBundlesFilename.c_str() ) ;
-  BundlesMinf inputTractogramInfo( inputBundlesFilename.c_str() ) ;
+  BundlesMinf inputTractogramInfo( inputBundlesMinfPath.c_str() ) ;
 
   //   xxxxxxxxxxxxxxxxxxxxxxxxxx Reading Atlas xxxxxxxxxxxxxxxxxxxxxxxxxx   //
 
