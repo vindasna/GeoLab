@@ -127,6 +127,8 @@ Then use the ProjectAtlasGeoLab command :
 Your labelled data should be in the form of two files :
 
     - Hello
+ 
+ test
 
 
 ## For windows
