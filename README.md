@@ -110,7 +110,7 @@ You'll also need to precompute the full atlas (all bundles in one single file), 
 
 Then use the ProjectAtlasGeoLab command :
 
-    $ ProjectAtlasGeoLab -i input${format} -a atlasDir -ref referenceImage.nii -o outputDir -nbPoints 15 -an Neigborhood -anc Centroids -nbThreads ${nbThreads}
+    $ ProjectAtlasGeoLab -i input${format} -a atlasDir -ref referenceImage.nii -o outputDir -nbPoints 15 -an NeigborhoodAtlas -anc CentroidsAtlas -nbThreads ${nbThreads}
 
 
 * Replace ${format} with {.trk, .tck, .bundles} according to your tractogram format.
