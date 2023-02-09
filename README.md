@@ -155,6 +155,18 @@ Your labelled data should be in the form of two files :
     * label_i, ..., label_j the same integers as in the .txt.
             
     * label_name_i, ..., label_name_j the names of the labels.
+    
+Once you have those files you can use the following command :
+    
+    `$ scoresPredictedSGT.py -pl labels.txt -pd labels.dict -tl trueLabels.txt -td trueLabels.dict -o outDir`
+
+With : 
+  * labels.txt : file produced by ProjectAtlasGeoLab, saved in output directory of ProjectAtlasGeoLab.
+  * labels.dict : file produced by ProjectAtlasGeoLab, saved in output directory of ProjectAtlasGeoLab.
+  * trueLabels.txt : your labelled data as explained above.
+  * trueLabels.dict : your labelled data as explained above.
+  * outDir : directory where to save scoresPerBundle.tsv file. This file contains the scores per bundle (label).
+
 
 
 ## For windows
