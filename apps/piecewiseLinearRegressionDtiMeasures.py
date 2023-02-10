@@ -608,7 +608,14 @@ def main() :
     maxAbsSlopeBundle = ""
     nbBundlesWithDti = 0
     bundlesWithSignificantAgeSexInteraction = []
-    slope_dict = {}
+
+
+    output_slopes = os.path.join( output_dir, f"slopes.pickle" )
+    if os.path.isfile( output_slopes ) :
+        with open( output_slopes, "rb" ) as f:
+        slope_dict = pickle.load( f )
+    else :
+        slope_dict = {}
 
     if ( bundleName ) :
         if ( not bundleName in data_dict.keys() ) :
@@ -649,8 +656,7 @@ def main() :
         processTmp.join()
 
 
-    output_slopes = os.path.join( output_dir, f"slopes.pickle" )
-    pickle.dump(slope_dict, open( output_slopes, 'wb' ) )
+    pickle.dump( slope_dict, open( output_slopes, 'wb' ) )
 
     print( "\nDone" )
 
