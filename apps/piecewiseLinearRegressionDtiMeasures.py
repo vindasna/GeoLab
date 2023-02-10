@@ -518,11 +518,16 @@ def piecewiseRegressionPerBundle( data_dict, bundle, output_dir, measure,
             plt.clf()
             break
 
+
+    # Rewrite the next part as the lock.locked might not be necessary
+    while lock.locked() :
+        pass
     with lock :
         slope_dict[ bundle ] = { "b1" : b1, "a1" : a1, "b2" : b2, "a2" : a2,
                                                      "breakpoint" : breakpoint }
         output_slopes = os.path.join( output_dir, f"slopes.pickle" )
         pickle.dump( slope_dict, open( output_slopes, 'wb' ) )
+
 
     if ( verbose < 2 ) :
         sys.stderr = standartErr
@@ -613,7 +618,7 @@ def main() :
     output_slopes = os.path.join( output_dir, f"slopes.pickle" )
     if os.path.isfile( output_slopes ) :
         with open( output_slopes, "rb" ) as f:
-        slope_dict = pickle.load( f )
+            slope_dict = pickle.load( f )
     else :
         slope_dict = {}
 
