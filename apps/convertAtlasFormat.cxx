@@ -62,10 +62,12 @@ int main( int argc, char* argv[] )
 
   const auto start_time = std::chrono::system_clock::now() ;
 
-  int index_input, index_output, index_input_format, index_output_format,
-                        index_nbPoints, index_force, index_verbose, index_help ;
+  int index_input, index_reference, index_output, index_input_format,
+                         index_output_format, index_nbPoints, index_force,
+                                                     index_verbose, index_help ;
 
   index_input = getFlagPosition( argc, argv, "-i") ;
+  index_reference =   getFlagPosition( argc, argv, "-r" ) ;
   index_output = getFlagPosition( argc, argv, "-o") ;
   index_input_format = getFlagPosition( argc, argv, "-if") ;
   index_output_format = getFlagPosition( argc, argv, "-of") ;
@@ -79,6 +81,7 @@ int main( int argc, char* argv[] )
 
     std::cout << "Function to register bundles using RecoBundles method : \n"
               << "-i : Path to the input directory containing the bundles \n"
+              << "-r : Reference image of the bundles \n"
               << "-o : Path to the output directory \n"
               << "-if : input bundles format among .bundles/.trk/.tck \n"
               << "-of : ouput bundles format among .bundles/.trk/.tck \n"
@@ -95,6 +98,14 @@ int main( int argc, char* argv[] )
   {
 
     std::cout << "-i argument required ..." << std::endl ;
+    exit( 1 ) ;
+
+  }
+
+  if ( !index_reference )
+  {
+
+    std::cout << "-r argument required ..." << std::endl ;
     exit( 1 ) ;
 
   }
@@ -142,6 +153,35 @@ int main( int argc, char* argv[] )
   {
 
     std::cout << "ERROR : input directory path " << inputDirectoryPath
+              << " does not exists" << std::endl ;
+    exit( 1 ) ;
+
+  }
+
+  ////////////////////////////// Reference image ///////////////////////////////
+  referenceImagePath = argv[ index_reference + 1 ] ;
+  lastChar = referenceImagePath[ referenceImagePath.size() - 1 ] ;
+  if ( lastChar == '/' )
+  {
+
+    referenceImagePath = referenceImagePath.substr( 0,
+                                               referenceImagePath.size() - 1 ) ;
+
+  }
+
+  if ( !endswith( referenceImagePath, ".nii" ) )
+  {
+
+    std::cout << "ERROR : reference image " << referenceImagePath
+              << " must be in .nii format" << std::endl ;
+    exit( 1 ) ;
+
+  }
+
+  if ( !is_file( referenceImagePath ) )
+  {
+
+    std::cout << "ERROR : reference image " << referenceImagePath
               << " does not exists" << std::endl ;
     exit( 1 ) ;
 
@@ -299,19 +339,28 @@ int main( int argc, char* argv[] )
                            getFilesInDirectoryWithExtension( inputDirectoryPath,
                                                                  inputFormat ) ;
 
-  std::vector<std::string> bundlesPathsOutDir ;
+  int nbBundles = bundlesPathsAtlasDir.size() ;
+
+  int counter = 1 ;
   for ( std::string _s : bundlesPathsAtlasDir )
   {
-    std::cout << _s << std::endl ;
+
+    printf( "\rProcessing : [ %d  /  %d ]", counter, nbBundles ) ;
+
     std::string bundleName = getFilenameNoExtension( _s ) ;
     std::stringstream outBundlePathOss ;
     outBundlePathOss << outputDirectoryPath << bundleName << outputFormat ;
-    std::cout << outBundlePathOss.str() << "\n" << std::endl ;
-    bundlesPathsOutDir.push_back( outBundlePathOss.str() ) ;
 
+    convertBundlesFormat( _s, outBundlePathOss.str(), referenceImagePath, force,
+                                                                           0 ) ;
+
+    counter++ ;
 
   }
 
+  std::cout << "\nDone" << std::endl ;
+
+  return 0 ;
 
 
 }

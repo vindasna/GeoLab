@@ -38,8 +38,8 @@ bool isTrkFormat = false ;
 bool isTckFormat = false ;
 
 std::string inputDirectoryPath ;
-std::string outputDirectoryPath ;
 std::string referenceImagePath ;
+std::string outputDirectoryPath ;
 int nbPointsPerFiber = 0 ;
 bool force = false ;
 

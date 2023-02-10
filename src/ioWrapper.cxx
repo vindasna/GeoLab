@@ -1516,7 +1516,7 @@ void convertBundlesFormat( const std::string& inputBundles,
                            int verbose )
 {
 
-  std::string convertBundleFormatsFile = "convertBundleFormatsFile" ;
+  std::string convertBundleFormatsFile = "ConvertBundleFormat" ;
 
   std::ostringstream commandOss ;
   commandOss << convertBundleFormatsFile << "  "
@@ -1539,6 +1539,7 @@ void convertBundlesFormat( const std::string& inputBundles,
     }
 
   }
+
   int isFail = run_sh_process( command ) ;
   if ( isFail )
   {
