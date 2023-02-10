@@ -129,6 +129,13 @@ def get_cmd_line_args():
 
     # Optional arguments
     parser.add_argument(
+        "-bn", "--bundle-name",
+        type=str, default = None,
+        help=("Name of the bundle to plot, it has to be the name of a "
+              "bundle in the atlas directory withouth extension (default : "
+              "save plot for all bundles)"))
+
+    parser.add_argument(
         "-nbThreads", "--nbThreads",
         type=int, default = 4,
         help=("Chose the number of process to launch at the same time with "
@@ -342,20 +349,15 @@ def savePiecewiseRegresionPlot( piecewiseModel, X, y, outPath, measure ) :
 
     plt.savefig( outPath, dpi = 300, bbox_inches = "tight" )
     plt.clf()
-    # plt.show()
-    # plt.clf()
-    # plt.close()
-    # sys.exit( 0 )
+
 
 
 def saveLinearRegressionPlot( sm_model, X, y, outPath, measure ) :
     _X = np.linspace( np.min( X ), np.max( X ), np.max( X ) - np.min( X ) )
     try :
         _y = sm_model.predict( _X )
-        # _y = sm_model.predict( X )
     except :
         _y = sm_model.predict( _X.reshape( -1, 1 ) )
-        # _y = sm_model.predict( X.reshape( -1, 1 ) )
 
 
     plt.plot( X, y, "bo" )
@@ -365,8 +367,6 @@ def saveLinearRegressionPlot( sm_model, X, y, outPath, measure ) :
 
     plt.savefig( outPath, dpi = 300, bbox_inches = "tight" )
     plt.clf()
-    # plt.show()
-    # sys.exit( 0 )
 
 def printSummaryPiecewiceRegression( pw_fit, X, y ) :
     const =  pw_fit.get_results()[ "estimates" ][ "const" ][ "estimate" ]
@@ -521,6 +521,8 @@ def piecewiseRegressionPerBundle( data_dict, bundle, output_dir, measure,
     with lock :
         slope_dict[ bundle ] = { "b1" : b1, "a1" : a1, "b2" : b2, "a2" : a2,
                                                      "breakpoint" : breakpoint }
+        output_slopes = os.path.join( output_dir, f"slopes.pickle" )
+        pickle.dump( slope_dict, open( output_slopes, 'wb' ) )
 
     if ( verbose < 2 ) :
         sys.stderr = standartErr
@@ -559,7 +561,11 @@ def main() :
                f"{nbThreads}" )
         exit( 1 )
 
+    bundleName = inputs[ "bundle_name" ]
 
+
+    ############################################################################
+    lock = Lock() # Create lock for critical regions for multiprocessing
     ############################################################################
     logFilePath = os.path.join( output_dir, "log.txt" )
     if os.path.isfile( logFilePath ) :
@@ -604,8 +610,16 @@ def main() :
     bundlesWithSignificantAgeSexInteraction = []
     slope_dict = {}
 
+    if ( bundleName ) :
+        if ( not bundleName in data_dict.keys() ) :
+            print( f"ERROR : argument of --bundle-name -> {bundleName} is not "
+                   "in keys of data_dict" )
+            exit( 1 )
+        piecewiseRegressionPerBundle( data_dict, bundleName, output_dir,
+                                                    measure, logFilePath, lock )
+        return
+
     processList = []
-    lock = Lock()
     for bundle in data_dict :
         p = Process( target = piecewiseRegressionPerBundle, args = [ data_dict,
                bundle, output_dir, measure, logFilePath, lock ], daemon = True )

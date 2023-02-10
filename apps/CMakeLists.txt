@@ -25,3 +25,5 @@ configure_file(scoresPredictedSGT.py ${CMAKE_BINARY_DIR}/bin/scoresPredictedSGT.
 configure_file(applySupWMA.py ${CMAKE_BINARY_DIR}/bin/applySupWMA.py COPYONLY FILE_PERMISSIONS OWNER_EXECUTE OWNER_WRITE OWNER_READ )
 configure_file(piecewiseLinearRegressionDtiMeasures.py ${CMAKE_BINARY_DIR}/bin/piecewiseLinearRegressionDtiMeasures.py COPYONLY FILE_PERMISSIONS OWNER_EXECUTE OWNER_WRITE OWNER_READ )
 configure_file(extract_bundles_feat.py ${CMAKE_BINARY_DIR}/bin/extract_bundles_feat.py COPYONLY FILE_PERMISSIONS OWNER_EXECUTE OWNER_WRITE OWNER_READ )
+configure_file(recoBundlesLabelsToGeoLab.py ${CMAKE_BINARY_DIR}/bin/recoBundlesLabelsToGeoLab.py COPYONLY FILE_PERMISSIONS OWNER_EXECUTE OWNER_WRITE OWNER_READ )
+configure_file(statisticsComparisonWithAtlas.py ${CMAKE_BINARY_DIR}/bin/statisticsComparisonWithAtlas.py COPYONLY FILE_PERMISSIONS OWNER_EXECUTE OWNER_WRITE OWNER_READ )

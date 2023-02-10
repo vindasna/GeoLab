@@ -48,6 +48,7 @@ BundlesMinf::BundlesMinf( const BundlesMinf& bundlesInfo )
   this->isBundles = bundlesInfo.isBundles ;
   this->isTck = bundlesInfo.isTck ;
   this->isTrk = bundlesInfo.isTrk ;
+  this->haveMinf = bundlesInfo.haveMinf ;
 
   // Information common to all formats
   this->curves_count = bundlesInfo.curves_count ;
