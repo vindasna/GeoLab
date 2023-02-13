@@ -279,37 +279,37 @@ def saveScoresPerBundle( sensitivities,
                      f"{_accuracy}\t{_precision}\t{_jaccard}\t{_f1_score}\n" )
 
     #--------------------------------------------------------------------------#
-    # mean_sen = np.mean( sensitivities )
-    mean_sen = np.median( sensitivities )
+    mean_sen = np.mean( sensitivities )
+    median_sen = np.median( sensitivities )
     std_sen = np.std( sensitivities )
 
-    # mean_spe = np.mean( specificities )
-    mean_spe = np.median( specificities )
+    mean_spe = np.mean( specificities )
+    median_spe = np.median( specificities )
     std_spe = np.std( specificities )
 
-    # mean_acc = np.mean( accuracies )
-    mean_acc = np.median( accuracies )
+    mean_acc = np.mean( accuracies )
+    median_acc = np.median( accuracies )
     std_acc = np.std( accuracies )
 
-    # mean_pre = np.mean( precisions )
-    mean_pre = np.median( precisions )
+    mean_pre = np.mean( precisions )
+    median_pre = np.median( precisions )
     std_pre = np.std( precisions )
 
-    # mean_jac = np.mean( jaccards )
-    mean_jac = np.median( jaccards )
+    mean_jac = np.mean( jaccards )
+    median_jac = np.median( jaccards )
     std_jac = np.std( jaccards )
 
-    # mean_f1 = np.mean( f1_scores )
-    mean_f1 = np.median( f1_scores )
+    mean_f1 = np.mean( f1_scores )
+    median_f1 = np.median( f1_scores )
     std_f1 = np.std( f1_scores )
 
-    print( f"Scores per bundles ( mean +- std ) :\n"
-           f" Sensitivity : {mean_sen} +- {std_sen} \n"
-           f" Specificity : {mean_spe} +- {std_spe} \n"
-           f" Accuracy : {mean_acc} +- {std_acc} \n"
-           f" Precision : {mean_pre} +- {std_pre} \n"
-           f" Jaccard : {mean_jac} +- {std_jac}\n"
-           f" F1-score : {mean_f1} +- {std_f1}" )
+    print( f"Scores per bundles ( mean (median) +- std ) :\n"
+           f" Sensitivity : {mean_sen} ({median_sen}) +- {std_sen} \n"
+           f" Specificity : {mean_spe} ({median_spe}) +- {std_spe} \n"
+           f" Accuracy : {mean_acc} ({median_acc}) +- {std_acc} \n"
+           f" Precision : {mean_pre} ({median_pre}) +- {std_pre} \n"
+           f" Jaccard : {mean_jac} ({median_jac}) +- {std_jac}\n"
+           f" F1-score : {mean_f1} ({median_f1}) +- {std_f1}" )
 
 def saveConfusionMatrix( confusion_matrix_model, path ) :
     with open( path, 'w' ) as f :

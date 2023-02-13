@@ -461,6 +461,13 @@ def tractography_parcellation( input_tractogram_path,
     run_sh_process( cmd = tractographyParcellation_command, shell = True )
 
 
+    # Copying labels dictionary
+    if ( os.path.isfile( labels_dictionary_path ) ) :
+        dstFile = os.path.join( os.path.dirname( output_cluster_folder ),
+                                                       "predicted_labels.dict" )
+        shutil.copy( labels_dictionary_path, dstFile )
+
+
     # Reading dictionary with labels names
     file = open( labels_dictionary_path, "r" )
     lines = file.readlines()
@@ -474,13 +481,23 @@ def tractography_parcellation( input_tractogram_path,
     clusters = os.listdir( output_cluster_folder )
     for cluster in clusters :
         if cluster.endswith( ".bundles" ) :
-            key = cluster.replace( "cluster_", "" )
-            key = key.replace( ".bundles", "" )
+            # key = cluster.replace( "cluster_", "" )
+            # key = key.replace( ".bundles", "" )
             old_cluster_name = os.path.join( output_cluster_folder, cluster )
+            # new_cluster_name = os.path.join( output_cluster_folder,
+            #                            f"{labels_dictionary[ key ]}.bundles" )
             new_cluster_name = os.path.join( output_cluster_folder,
-                                         f"{labels_dictionary[ key ]}.bundles" )
-            os.rename( old_cluster_name, new_cluster_name )
-            os.rename( f"{old_cluster_name}data", f"{new_cluster_name}data" )
+                                             cluster.replace( "cluster_", "" ) )
+            print( "" )
+            print( old_cluster_name )
+            print( new_cluster_name )
+            print( "" )
+
+            if ( not os.path.isfile( new_cluster_name ) ) :
+                os.rename( old_cluster_name, new_cluster_name )
+            if ( not os.path.isfile( f"{new_cluster_name}data" ) ) :
+                os.rename( f"{old_cluster_name}data",
+                                                     f"{new_cluster_name}data" )
 
 
 
