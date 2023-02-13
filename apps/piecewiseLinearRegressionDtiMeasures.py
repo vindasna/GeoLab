@@ -23,8 +23,7 @@ import piecewise_regression
 
 import pwlf
 
-from multiprocessing import Process
-from multiprocessing import Lock
+from multiprocessing import Process, Lock, Manager, Value
 
 import argparse
 import textwrap
@@ -42,15 +41,20 @@ class bcolors:
     BOLD = '\033[1m'
     UNDERLINE = '\033[4m'
 
-#-----------------------------------------#
+#------------------------------ Global variables ------------------------------#
+
 measures_options = [ "FA", "MD", "OD", "ICVF", "ISOVF" ]
 slope_dict = {}
 verbose = 0
+
 # To have reproductible results
 _seed = 100
 np.random.seed( _seed )
+
 standartOut = sys.stdout
 standartErr = sys.stderr
+
+processCounter = 0
 
 
 DOC = """
@@ -435,6 +439,8 @@ def getSlopesAndInterceptsPiecewise( piecewiseModel ) :
 
 def piecewiseRegressionPerBundle( data_dict, bundle, output_dir, measure,
                                                            logFilePath, lock ) :
+    global verbose, processCounter, slope_dict, measures_options, standartOut, \
+                                                                     standartErr
     outPath = os.path.join( output_dir, f"{bundle}.png" )
     if os.path.isfile( outPath ) :
         return
@@ -518,15 +524,17 @@ def piecewiseRegressionPerBundle( data_dict, bundle, output_dir, measure,
             plt.clf()
             break
 
-
-    # Rewrite the next part as the lock.locked might not be necessary
-    while lock.locked() :
-        pass
     with lock :
+        # processCounter.value += 1
+        # print( "xxxxxxxxxxxxxxxxxxxxxxxxxxx" )
+        # print( f"Process : {processCounter.value}" )
+        # print( "xxxxxxxxxxxxxxxxxxxxxxxxxxx" )
         slope_dict[ bundle ] = { "b1" : b1, "a1" : a1, "b2" : b2, "a2" : a2,
                                                      "breakpoint" : breakpoint }
         output_slopes = os.path.join( output_dir, f"slopes.pickle" )
-        pickle.dump( slope_dict, open( output_slopes, 'wb' ) )
+
+        tmpSlopes_dict = dict( slope_dict )
+        pickle.dump( tmpSlopes_dict, open( output_slopes, 'wb' ) )
 
 
     if ( verbose < 2 ) :
@@ -535,7 +543,16 @@ def piecewiseRegressionPerBundle( data_dict, bundle, output_dir, measure,
 
     return
 
+def readSlopes( path ) :
+    with open( path, "rb" ) as f :
+        slope_dict = pickle.load( f )
+    return( slope_dict )
+
+
+
 def main() :
+    global verbose, processCounter, slope_dict, measures_options, standartOut, \
+                                                                     standartErr
     """
     Parse the command line.
     """
@@ -571,6 +588,8 @@ def main() :
 
     ############################################################################
     lock = Lock() # Create lock for critical regions for multiprocessing
+    manager = Manager() # Multiprocessing shared variable
+    # processCounter = Value( 'i', 0 ) # Multiprocessing shared variable
     ############################################################################
     logFilePath = os.path.join( output_dir, "log.txt" )
     if os.path.isfile( logFilePath ) :
@@ -617,10 +636,9 @@ def main() :
 
     output_slopes = os.path.join( output_dir, f"slopes.pickle" )
     if os.path.isfile( output_slopes ) :
-        with open( output_slopes, "rb" ) as f:
-            slope_dict = pickle.load( f )
+        slope_dict = manager.dict( readSlopes( output_slopes ) )
     else :
-        slope_dict = {}
+        slope_dict = manager.dict()
 
     if ( bundleName ) :
         if ( not bundleName in data_dict.keys() ) :
@@ -632,7 +650,8 @@ def main() :
         return
 
     processList = []
-    for bundle in data_dict :
+    # for bundle in data_dict :
+    for bundle in bundles_options :
         p = Process( target = piecewiseRegressionPerBundle, args = [ data_dict,
                bundle, output_dir, measure, logFilePath, lock ], daemon = True )
         p.start()
@@ -661,7 +680,11 @@ def main() :
         processTmp.join()
 
 
-    pickle.dump( slope_dict, open( output_slopes, 'wb' ) )
+    tmpSlopes_dict = dict( slope_dict )
+    pickle.dump( tmpSlopes_dict, open( output_slopes, 'wb' ) )
+
+    test_Dict = readSlopes( output_slopes )
+    print( test_Dict )
 
     print( "\nDone" )
 
