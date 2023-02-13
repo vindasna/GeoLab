@@ -114,15 +114,19 @@ def main() :
     dictComparison = readComparisonWithAtlas( input_tsv_path )
 
     coverageMean = np.mean( dictComparison[ "Coverage" ] )
+    coverageMedian = np.median( dictComparison[ "Coverage" ] )
     coverageStd = np.std( dictComparison[ "Coverage" ] )
     adjacencyMean = np.mean( dictComparison[ "Adjacency" ] )
+    adjacencyMedian = np.median( dictComparison[ "Adjacency" ] )
     adjacencyStd = np.std( dictComparison[ "Adjacency" ] )
     overlapMean = np.mean( dictComparison[ "Overlap" ] )
+    overlapMedian = np.median( dictComparison[ "Overlap" ] )
     overlapStd = np.std( dictComparison[ "Overlap" ] )
 
-    print( f"GeoLab :\nCoverage : {coverageMean} +- {coverageStd}"
-           f"\nAdjacency : {adjacencyMean} +- {adjacencyStd}"
-           f"\nOverlap : {overlapMean} +- {overlapStd}" )
+    print( f"Scores per bundles ( mean (median) +- std ) :\n"
+           f"Coverage : {coverageMean}({coverageMedian}) +- {coverageStd} \n"
+           f"Adjacency : {adjacencyMean}({adjacencyMedian}) +- {adjacencyStd}\n"
+           f"Overlap : {overlapMean}({overlapMedian}) +- {overlapStd}" )
 
 if __name__ == "__main__" :
     main()
