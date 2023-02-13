@@ -657,10 +657,13 @@ def main() :
         p.start()
         processList.append( p )
 
+        printMessage = True
         while ( len( processList ) >= nbThreads ) :
-            print( f"Waiting for ressources, max number of threads reached : "
-                   f"{len( processList )} | Bundle : [{count_bundle}/"
-                   f"{nbBundles}]", end = "\r", flush = True )
+            if ( printMessage ) :
+                print( f"Waiting for ressources, max number of threads reached "
+                       f": {len( processList )} | Bundle : [{count_bundle}/"
+                       f"{nbBundles}]", end = "\r", flush = True )
+                printMessage = False
 
             processIndex = 0
             for processTmp in processList :
