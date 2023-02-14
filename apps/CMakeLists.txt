@@ -28,3 +28,5 @@ configure_file(extract_bundles_feat.py ${CMAKE_BINARY_DIR}/bin/extract_bundles_f
 configure_file(recoBundlesLabelsToGeoLab.py ${CMAKE_BINARY_DIR}/bin/recoBundlesLabelsToGeoLab.py COPYONLY FILE_PERMISSIONS OWNER_EXECUTE OWNER_WRITE OWNER_READ )
 configure_file(statisticsComparisonWithAtlas.py ${CMAKE_BINARY_DIR}/bin/statisticsComparisonWithAtlas.py COPYONLY FILE_PERMISSIONS OWNER_EXECUTE OWNER_WRITE OWNER_READ )
 configure_file(countFoundBundles.py ${CMAKE_BINARY_DIR}/bin/countFoundBundles.py COPYONLY FILE_PERMISSIONS OWNER_EXECUTE OWNER_WRITE OWNER_READ )
+configure_file(showColorCodedBundles.py ${CMAKE_BINARY_DIR}/bin/showColorCodedBundles.py COPYONLY FILE_PERMISSIONS OWNER_EXECUTE OWNER_WRITE OWNER_READ )
+configure_file(showColorCodedBundlesByAge.py ${CMAKE_BINARY_DIR}/bin/showColorCodedBundlesByAge.py COPYONLY FILE_PERMISSIONS OWNER_EXECUTE OWNER_WRITE OWNER_READ )
