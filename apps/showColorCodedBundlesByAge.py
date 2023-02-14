@@ -78,7 +78,13 @@ def get_cmd_line_args():
         "-m", "--measure-dict",
         type=is_file, required=True, metavar="<path>",
         help=( "Path to the .pickle file containing the dictionary with "
-               "the values of the measure per bundle with piecewise model" ) )
+               "the values of the measure slopes per bundle " ) )
+
+    required.add_argument(
+        "-ma", "--measure-age",
+        type=is_file, required=True, metavar="<path>",
+        help=( "Path to the .txt containing the measure with age "
+                                    "(usually called ${Measure}AndAge.txt) " ) )
 
     required.add_argument(
         "-age", "--age",
@@ -119,6 +125,35 @@ def run_sh_process( cmd, shell = False ) :
     return( output_cmd )
 
 
+def readFileWithMeansMeasure( path ) :
+    data_dict = {}
+    i = 0
+    with open( path, "r" ) as f :
+        for line in f :
+            if line.endswith( ":\n" ) :
+                bundleName = line.replace( ":\n", "" )
+                if bundleName not in data_dict.keys() :
+                    data_dict[ bundleName ] = [ [], [], [], 0 ]
+            else:
+                if line != "" and line != "\n\n" and line != "\n" :
+                    infoSubject = line.split( "\t" )
+                    try :
+                        data_dict[ bundleName ][ 0 ].append( int(
+                                                            infoSubject[ 0 ] ) )
+                        data_dict[ bundleName ][ 1 ].append( float(
+                                                            infoSubject[ 1 ] ) )
+                        data_dict[ bundleName ][ 2 ].append(
+                                          infoSubject[ 2 ].replace( "\n", "" ) )
+                        data_dict[ bundleName ][ 3 ] += 1
+                    except :
+                        print( f"|{line}|" )
+                        sys.exit()
+            i += 1
+
+    return( data_dict )
+
+
+
 def main() :
     """
     Parse the command line.
@@ -129,7 +164,18 @@ def main() :
 
     dict_values_path = inputs[ "measure_dict" ]
 
+    measure_with_age_path = inputs[ "measure_age" ]
+
     age = inputs[ "age" ]
+
+
+    ############################################################################
+    measure_with_age_dict = readFileWithMeansMeasure( measure_with_age_path )
+
+    measure_population_mean_per_bundle = {}
+    for bundleName in measure_with_age_dict.keys() :
+        measure_population_mean_per_bundle[ bundleName ] = np.mean(
+                                      measure_with_age_dict[ bundleName ][ 1 ] )
 
     bundles_names = os.listdir( bundles_dir )
     with open(dict_values_path, 'rb') as handle:
@@ -153,8 +199,8 @@ def main() :
     #     print( f"ERROR : age is greater than maximum age {age_max}" )
     #     sys.exit( 1 )
 
-    measure_min = min( [ min( measure_values_1 ), min( measure_values_2 ) ] )
-    measure_max = max( [ max( measure_values_1 ), max( measure_values_2 ) ] )
+    # measure_min = min( [ min( measure_values_1 ), min( measure_values_2 ) ] )
+    # measure_max = max( [ max( measure_values_1 ), max( measure_values_2 ) ] )
 
 
     _streamlines = []
@@ -168,17 +214,25 @@ def main() :
             for fiber in bundle_data.streamlines :
                 _streamlines.append( fiber )
             if dict_values[ _bundle_name ][ "breakpoint" ] < age :
-                tmpMeasureValue = [ dict_values[ _bundle_name ][ "a2" ] ]
+                tmpMeasureValue = dict_values[ _bundle_name ][ "a2" ]
+                # tmpMeasureValue = ( 100 *
+                #             ( dict_values[ _bundle_name ][ "a2" ] /
+                #             measure_population_mean_per_bundle[ bundleName ] ) )
 
             else :
-                tmpMeasureValue = [ dict_values[ _bundle_name ][ "a1" ] ]
+                tmpMeasureValue = dict_values[ _bundle_name ][ "a1" ]
+                # tmpMeasureValue = ( 100 *
+                #             ( dict_values[ _bundle_name ][ "a1" ] /
+                #             measure_population_mean_per_bundle[ bundleName ] ) )
 
-            _measure_values += nbStreamlines * tmpMeasureValue
+            _measure_values += nbStreamlines * [ tmpMeasureValue ]
 
     for _bundle_name in dict_values :
         _a1 = dict_values[ _bundle_name ][ "a1" ]
         _a2 = dict_values[ _bundle_name ][ "a2" ]
         print( f"{_bundle_name} : {_a1}\t|\t{_a2}" )
+        # tmpMeasure = measure_population_mean_per_bundle[ _bundle_name ]
+        # print( f"{_bundle_name} : {tmpMeasure}" )
 
     measure_min = min( _measure_values )
     measure_max = max( _measure_values )
@@ -192,27 +246,24 @@ def main() :
     _streamlines = np.array( _streamlines )
     _measure_values = np.array( _measure_values )
     zeroInNormalizedSlope = ( - measure_min ) / ( measure_max - measure_min )
-    meanPopulation = np.mean(_measure_values )
 
-    percentageChange = _measure_values / meanPopulation * 100
-    measure_min = min( percentageChange )
-    measure_max = max( percentageChange )
-    zeroInNormalizedSlope = ( - measure_min ) / ( measure_max - measure_min )
+    # tmpCounter = 0
+    # for tmpValue in np.unique( _measure_values ) :
+    #     print( f"{tmpCounter} : {tmpValue}" )
+    #     tmpCounter += 1
 
 
-    print( "Value in colormap\tTrue slope value" )
-    print( f"0 -> {measure_min}" )
-    print( f"1 -> {measure_max}" )
-    print( f"{zeroInNormalizedSlope} -> 0" )
+    print( "\nValue in colormap\tTrue slope value" )
+    print( f"0                \t{measure_min}" )
+    print( f"1                \t{measure_max}" )
+    print( f"{zeroInNormalizedSlope}                \t0" )
 
     hue = (0.5, 0.5)  # blue only
     saturation = (0.0, 1.0)  # black to white
     lut_cmap = actor.colormap_lookup_table( scale_range = ( measure_min,
                                                                  measure_max ) )
 
-    # stream_actor2 = actor.line( _streamlines, _measure_values, linewidth=0.5,
-    #                                                   lookup_colormap=lut_cmap )
-    stream_actor2 = actor.line( _streamlines, percentageChange, linewidth=0.5,
+    stream_actor2 = actor.line( _streamlines, _measure_values, linewidth=0.5,
                                                       lookup_colormap=lut_cmap )
     # stream_actor2 = actor.line(bundle.streamlines, fa, linewidth=0.1)
 
