@@ -769,6 +769,10 @@ def piecewiseRegressionPerBundle( data_dict, bundle, output_dir, measure,
         _X = np.linspace( np.min( X ), np.max( X ), 500 )
         _y = linearFittedModel.predict( _X.reshape( -1, 1 ) )
 
+        b1 = b2 = linearFittedModel.coef_
+        a1 = a2 = linearFittedModel.intercept_
+        breakpoint = np.min( X )
+
 
 
         plt.plot( x, y, "bo" )
