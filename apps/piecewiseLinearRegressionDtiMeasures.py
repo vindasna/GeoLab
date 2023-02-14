@@ -592,15 +592,17 @@ def piecewiseRegressionPerBundle( data_dict, bundle, output_dir, measure,
                 logFile.close()
             return
 
-    quartiles_y = np.quantile( y, [ 0.0, 0.25, 0.5, 0.75, 1 ] )
-    quartiles_x = np.quantile( x, [ 0.0, 0.25, 0.5, 0.75, 1 ] )
+    # quartiles_y = np.quantile( y, [ 0.0, 0.25, 0.5, 0.75, 1 ] )
+    # quartiles_x = np.quantile( x, [ 0.0, 0.25, 0.5, 0.75, 1 ] )
+    quartiles_y = np.quantile( y, [ 0.0, 0.1, 0.5, 0.9, 1 ] )
+    quartiles_x = np.quantile( x, [ 0.0, 0.1, 0.5, 0.9, 1 ] )
     # q25 = quartiles_x[ 1 ]
-    # q25 = quartiles_y[ 1 ]
-    q25 = quartiles_y[ 0 ]
+    q25 = quartiles_y[ 1 ]
+    # q25 = quartiles_y[ 0 ]
 
     # q75 = quartiles_x[ 3 ]
-    # q75 = quartiles_y[ 3 ]
-    q75 = quartiles_y[ 4 ]
+    q75 = quartiles_y[ 3 ]
+    # q75 = quartiles_y[ 4 ]
 
     X = []
     Y = []
@@ -639,6 +641,8 @@ def piecewiseRegressionPerBundle( data_dict, bundle, output_dir, measure,
     for tmpAge in X :
         weights.append( nbSubjectsByAge_dict[ tmpAge ] )
     weights = np.array( weights )
+    # weights = 1 / ( weights / weights.max() )
+    weights = ( weights / weights.max() )
 
     if ( X.shape[ 0 ] != weights.shape[ 0 ] ) :
         if ( verbose < 2 ) :
