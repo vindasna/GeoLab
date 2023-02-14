@@ -132,8 +132,8 @@ def get_cmd_line_args():
         "-f", "--format",
         type=str, required=True, metavar="<string>", choices=[ ".bundles",
         ".bundlesdata", ".trk", ".tck" ],
-        help=( "Name of the measure to plot (options : FA, MD, OD, ICVF, "
-                                                                    "ISOVF)" ) )
+        help=( "Format of the atlas to chose among [ .bundles, .bundlesdata, "
+               ".trk, .tck ]" ) )
 
     # Optional arguments
     parser.add_argument(
@@ -538,6 +538,12 @@ def getSlopesAndInterceptsPiecewise( piecewiseModel ) :
     return( b1, a1, b2, a2, breakpoint )
 
 
+def computeLinearRegresionWithWeights( X, Y, weights ) :
+    regr = LinearRegression()
+    regr.fit( X, Y, weights )
+    return( regr )
+
+
 def piecewiseRegressionPerBundle( data_dict, bundle, output_dir, measure,
                                                            logFilePath, lock ) :
     global verbose, processCounter, seed, slope_dict_piecewise, \
@@ -586,7 +592,6 @@ def piecewiseRegressionPerBundle( data_dict, bundle, output_dir, measure,
                 logFile.close()
             return
 
-
     quartiles_y = np.quantile( y, [ 0.0, 0.25, 0.5, 0.75, 1 ] )
     quartiles_x = np.quantile( x, [ 0.0, 0.25, 0.5, 0.75, 1 ] )
     # q25 = quartiles_x[ 1 ]
@@ -622,6 +627,25 @@ def piecewiseRegressionPerBundle( data_dict, bundle, output_dir, measure,
                 sys.stdout = standartOut
                 logFile.close()
             return
+
+    nbSubjectsByAge_dict = {}
+    for tmpAge in X :
+        if tmpAge in nbSubjectsByAge_dict.keys() :
+            nbSubjectsByAge_dict[ tmpAge ] += 1
+        else :
+            nbSubjectsByAge_dict[ tmpAge ] = 1
+
+    weights = []
+    for tmpAge in X :
+        weights.append( nbSubjectsByAge_dict[ tmpAge ] )
+    weights = np.array( weights )
+
+    if ( X.shape[ 0 ] != weights.shape[ 0 ] ) :
+        if ( verbose < 2 ) :
+            sys.stderr = standartErr
+            sys.stdout = standartOut
+            logFile.close()
+        return
 
     if not onlyLinear :
         if not os.path.isfile( outPiecewisePath )  :
@@ -731,15 +755,22 @@ def piecewiseRegressionPerBundle( data_dict, bundle, output_dir, measure,
         return
 
     else :
-        my_pwlf_continous = pwlf.PiecewiseLinFit(X, Y, seed = _seed )
-        res = my_pwlf_continous.fit(1)
-        b1 = b2 = my_pwlf_continous.intercepts[ 0 ]
-        a1 = a2 = my_pwlf_continous.slopes[ 0 ]
-        breakpoint = np.min( X )
+        # my_pwlf_continous = pwlf.PiecewiseLinFit(X, Y, seed = _seed )
+        # res = my_pwlf_continous.fit(1)
+        # b1 = b2 = my_pwlf_continous.intercepts[ 0 ]
+        # a1 = a2 = my_pwlf_continous.slopes[ 0 ]
+        # breakpoint = np.min( X )
+        #
+        # _X = np.linspace( np.min( X ), np.max( X ), 500 )
+        # _y = my_pwlf_continous.predict( _X )
+        # printSummaryPwlf( my_pwlf_continous, X, Y )
 
+        linearFittedModel = computeLinearRegresionWithWeights( X, Y, weights )
         _X = np.linspace( np.min( X ), np.max( X ), 500 )
-        _y = my_pwlf_continous.predict( _X )
-        printSummaryPwlf( my_pwlf_continous, X, Y )
+        _y = linearFittedModel.predict( _X )
+
+
+
         plt.plot( x, y, "bo" )
         plt.plot( _X, _y, "r-" )
         plt.xlabel( "Age" )
