@@ -594,8 +594,8 @@ def piecewiseRegressionPerBundle( data_dict, bundle, output_dir, measure,
 
     # quartiles_y = np.quantile( y, [ 0.0, 0.25, 0.5, 0.75, 1 ] )
     # quartiles_x = np.quantile( x, [ 0.0, 0.25, 0.5, 0.75, 1 ] )
-    quartiles_y = np.quantile( y, [ 0.0, 0.1, 0.5, 0.9, 1 ] )
-    quartiles_x = np.quantile( x, [ 0.0, 0.1, 0.5, 0.9, 1 ] )
+    quartiles_y = np.quantile( y, [ 0.0, 0.25, 0.5, 0.75, 1 ] )
+    quartiles_x = np.quantile( x, [ 0.0, 0.25, 0.5, 0.75, 1 ] )
     # q25 = quartiles_x[ 1 ]
     q25 = quartiles_y[ 1 ]
     # q25 = quartiles_y[ 0 ]
