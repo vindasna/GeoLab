@@ -171,7 +171,7 @@ def main() :
                 tmpMeasureValue = [ dict_values[ _bundle_name ][ "a2" ] ]
 
             else :
-                tmppMeasurealue = [ dict_values[ _bundle_name ][ "a1" ] ]
+                tmpMeasureValue = [ dict_values[ _bundle_name ][ "a1" ] ]
 
             _measure_values += nbStreamlines * tmpMeasureValue
 
