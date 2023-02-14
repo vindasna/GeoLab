@@ -302,10 +302,17 @@ def main() :
 
         age_min = np.min( X )
         age_max = np.max( X )
+        mean_age = np.mean( X )
+        median_age = np.median( X )
+        std_age = np.std( X )
         print( f"Age min : {age_min}\t|\tAge max : {age_max}" )
+        print( f"Mean age : {mean_age}" )
+        print( f"Median age : {median_age}" )
+        print( f"Standar deviation age : {std_age}" )
 
         ########################################################################
-        sampling = round( len( X ) / 4 )
+        # sampling = round( len( X ) / 4 )
+        sampling = round( len( X ) / 8 )
         if sampling == 1 : # To avoid division by 0 later
             sampling = 2
         minSamples = X.min()
