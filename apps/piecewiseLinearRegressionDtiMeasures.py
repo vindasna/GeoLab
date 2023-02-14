@@ -767,7 +767,7 @@ def piecewiseRegressionPerBundle( data_dict, bundle, output_dir, measure,
 
         linearFittedModel = computeLinearRegresionWithWeights( X, Y, weights )
         _X = np.linspace( np.min( X ), np.max( X ), 500 )
-        _y = linearFittedModel.predict( _X )
+        _y = linearFittedModel.predict( _X.reshape( -1, 1 ) )
 
 
 
