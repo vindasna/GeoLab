@@ -135,12 +135,12 @@ def main() :
     with open(dict_values_path, 'rb') as handle:
         dict_values = pickle.load( handle )
 
-    fa_values_1 = []
-    fa_values_2 = []
+    measure_values_1 = []
+    measure_values_2 = []
     breakpoints = []
     for bundle_name in dict_values :
-        fa_values_1.append( float( dict_values[ bundle_name ][ "a1" ] ) )
-        fa_values_2.append( float( dict_values[ bundle_name ][ "a2" ] ) )
+        measure_values_1.append( float( dict_values[ bundle_name ][ "a1" ] ) )
+        measure_values_2.append( float( dict_values[ bundle_name ][ "a2" ] ) )
         breakpoints.append( float( dict_values[ bundle_name ][
                                                               "breakpoint" ] ) )
 
@@ -153,12 +153,12 @@ def main() :
     #     print( f"ERROR : age is greater than maximum age {age_max}" )
     #     sys.exit( 1 )
 
-    fa_min = min( [ min( fa_values_1 ), min( fa_values_2 ) ] )
-    fa_max = max( [ max( fa_values_1 ), max( fa_values_2 ) ] )
+    measure_min = min( [ min( measure_values_1 ), min( measure_values_2 ) ] )
+    measure_max = max( [ max( measure_values_1 ), max( measure_values_2 ) ] )
 
 
     _streamlines = []
-    _fa_values = []
+    _measure_values = []
     for _bundle in bundles_names :
         bundle_path = os.path.join( bundles_dir, _bundle )
         _bundle_name = _bundle.replace( ".trk", "" )
@@ -168,19 +168,20 @@ def main() :
             for fiber in bundle_data.streamlines :
                 _streamlines.append( fiber )
             if dict_values[ _bundle_name ][ "breakpoint" ] < age :
-                _fa_values += nbStreamlines * [ dict_values[ _bundle_name ][
-                                                                        "a2" ] ]
+                tmpMeasureValue = [ dict_values[ _bundle_name ][ "a2" ] ]
+
             else :
-                _fa_values += nbStreamlines * [ dict_values[ _bundle_name ][
-                                                                        "a1" ] ]
+                tmppMeasurealue = [ dict_values[ _bundle_name ][ "a1" ] ]
+
+            _measure_values += nbStreamlines * tmpMeasureValue
 
     for _bundle_name in dict_values :
         _a1 = dict_values[ _bundle_name ][ "a1" ]
         _a2 = dict_values[ _bundle_name ][ "a2" ]
         print( f"{_bundle_name} : {_a1}\t|\t{_a2}" )
 
-    fa_min = min( _fa_values )
-    fa_max = max( _fa_values )
+    measure_min = min( _measure_values )
+    measure_max = max( _measure_values )
 
 
 
@@ -189,18 +190,29 @@ def main() :
 
 
     _streamlines = np.array( _streamlines )
-    _fa_values = np.array( _fa_values )
-    zeroInNormalizedSlope = ( - fa_min ) / ( fa_max - fa_min )
+    _measure_values = np.array( _measure_values )
+    zeroInNormalizedSlope = ( - measure_min ) / ( measure_max - measure_min )
+    meanPopulation = np.mean(_measure_values )
+
+    percentageChange = _measure_values / meanPopulation * 100
+    measure_min = min( percentageChange )
+    measure_max = max( percentageChange )
+    zeroInNormalizedSlope = ( - measure_min ) / ( measure_max - measure_min )
+
+
     print( "Value in colormap\tTrue slope value" )
-    print( f"0 -> {fa_min}" )
-    print( f"1 -> {fa_max}" )
+    print( f"0 -> {measure_min}" )
+    print( f"1 -> {measure_max}" )
     print( f"{zeroInNormalizedSlope} -> 0" )
 
     hue = (0.5, 0.5)  # blue only
     saturation = (0.0, 1.0)  # black to white
-    lut_cmap = actor.colormap_lookup_table( scale_range = ( fa_min, fa_max ) )
+    lut_cmap = actor.colormap_lookup_table( scale_range = ( measure_min,
+                                                                 measure_max ) )
 
-    stream_actor2 = actor.line( _streamlines, _fa_values, linewidth=0.5,
+    # stream_actor2 = actor.line( _streamlines, _measure_values, linewidth=0.5,
+    #                                                   lookup_colormap=lut_cmap )
+    stream_actor2 = actor.line( _streamlines, percentageChange, linewidth=0.5,
                                                       lookup_colormap=lut_cmap )
     # stream_actor2 = actor.line(bundle.streamlines, fa, linewidth=0.1)
 

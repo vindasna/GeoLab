@@ -57,6 +57,9 @@ standartErr = sys.stderr
 
 processCounter = 0
 
+onlyLinear = False
+onlyPiecewise = False
+
 
 DOC = """
 ---------------------------
@@ -139,6 +142,16 @@ def get_cmd_line_args():
         help=("Name of the bundle to plot, it has to be the name of a "
               "bundle in the atlas directory withouth extension (default : "
               "save plot for all bundles)"))
+
+    parser.add_argument(
+        "-ol", "--only-linear",
+        action='store_true', default=False,
+        help=("Only do linear regression and not piecewise)"))
+
+    parser.add_argument(
+        "-opw", "--only-piecewise",
+        action='store_true', default=False,
+        help=("Only do piecewise regression and not linear)"))
 
     parser.add_argument(
         "-nbThreads", "--nbThreads",
@@ -528,13 +541,25 @@ def getSlopesAndInterceptsPiecewise( piecewiseModel ) :
 def piecewiseRegressionPerBundle( data_dict, bundle, output_dir, measure,
                                                            logFilePath, lock ) :
     global verbose, processCounter, seed, slope_dict_piecewise, \
-                                      measures_options, standartOut, standartErr
-    if not os.path.isdir( os.path.join( output_dir, "PieceWise" ) ) :
-        os.mkdir( os.path.join( output_dir, "PieceWise" ) )
-    outPath = os.path.join( output_dir, "PieceWise", f"{bundle}.png" )
+                          slope_dict_linear, measures_options, standartOut, \
+                                          standartErr, onlyLinear, onlyPiecewise
+    if not onlyLinear :
+        piecewiseDir = os.path.join( output_dir, "PieceWise" )
+        if not os.path.isdir( piecewiseDir ) :
+            os.mkdir( piecewiseDir )
+        outPiecewisePath = os.path.join( piecewiseDir, f"{bundle}.png" )
+        if os.path.isfile( outPiecewisePath ) and onlyPiecewise :
+            return
 
-    if os.path.isfile( outPath ) :
-        return
+    if not onlyPiecewise :
+        linearDir = os.path.join( output_dir, "Linear" )
+        if not os.path.isdir( linearDir ) :
+            os.mkdir( linearDir )
+        outLinearPath = os.path.join( linearDir, f"{bundle}.png" )
+        if os.path.isfile( outLinearPath ) and onlyLinear :
+            return
+
+
 
     if ( verbose < 2 ) :
         logFile = open( logFilePath, 'a' )
@@ -598,75 +623,147 @@ def piecewiseRegressionPerBundle( data_dict, bundle, output_dir, measure,
                 logFile.close()
             return
 
+    if not onlyLinear :
+        if not os.path.isfile( outPiecewisePath )  :
+            pw_fit = piecewise_regression.Fit( X, Y, n_breakpoints = 1,
+                              max_iterations = 100, tolerance = 1e-5,
+                                                                  n_boot = 100 )
+            # Saving figure
+            p_values = [ 1 ] * 5
+            try :
+                _p_values = getPValuesPiecewiseRegression( pw_fit )
+                print( f"\n{bcolors.OKBLUE}Bundle : {bundle}{bcolors.ENDC}" )
+                b1, a1, b2, a2, breakpoint = getSlopesAndInterceptsPiecewise(
+                                                                        pw_fit )
+                savePiecewiseRegresionPlot( pw_fit, x, y, outPiecewisePath,
+                                                                       measure )
+                p_values = _p_values
+            except :
+                my_pwlf = pwlf.PiecewiseLinFit(X, Y, seed = _seed )
+                #  my_pwlf = pwlf.PiecewiseLinFit( X, Y )
+                res = my_pwlf.fit(2)
+                b1 = my_pwlf.intercepts[ 0 ]
+                a1 = my_pwlf.slopes[ 0 ]
+                b2 = my_pwlf.intercepts[ 1 ]
+                a2 = my_pwlf.slopes[ 1 ]
+                breakpoint = my_pwlf.fit_breaks[ 1 ]
 
-    pw_fit = piecewise_regression.Fit( X, Y, n_breakpoints = 1,
-                      max_iterations = 100, tolerance = 1e-5, n_boot = 100 )
-    # Saving figure
-    p_values = [ 1 ] * 5
-    try :
-        _p_values = getPValuesPiecewiseRegression( pw_fit )
-        print( f"\n{bcolors.OKBLUE}Bundle : {bundle}{bcolors.ENDC}" )
-        b1, a1, b2, a2, breakpoint = getSlopesAndInterceptsPiecewise( pw_fit )
-        savePiecewiseRegresionPlot( pw_fit, x, y, outPath, measure )
-        p_values = _p_values
-    except :
-        my_pwlf = pwlf.PiecewiseLinFit(X, Y, seed = _seed )
-        #  my_pwlf = pwlf.PiecewiseLinFit( X, Y )
-        res = my_pwlf.fit(2)
-        b1 = my_pwlf.intercepts[ 0 ]
-        a1 = my_pwlf.slopes[ 0 ]
-        b2 = my_pwlf.intercepts[ 1 ]
-        a2 = my_pwlf.slopes[ 1 ]
-        breakpoint = my_pwlf.fit_breaks[ 1 ]
+                _p_values = my_pwlf.p_values(method='non-linear', step_size=1e-4)
 
-        _p_values = my_pwlf.p_values(method='non-linear', step_size=1e-4)
-
-        print( f"\n{bcolors.OKBLUE}Bundle : {bundle}{bcolors.ENDC}" )
-        savePiecewiseRegresionPlot( my_pwlf, x, y, outPath, measure )
-        p_values = _p_values
+                print( f"\n{bcolors.OKBLUE}Bundle : {bundle}{bcolors.ENDC}" )
+                savePiecewiseRegresionPlot( my_pwlf, x, y, outPiecewisePath,
+                                                                       measure )
+                p_values = _p_values
 
 
-    _change_model = False
-    for _p in p_values :
-        if _p == "-" :
-            _p = 0
-        if float( _p ) > 0.05 :
-            _change_model = True
+            _change_model = False
+            for _p in p_values :
+                if _p == "-" :
+                    _p = 0
+                if float( _p ) > 0.05 :
+                    _change_model = True
 
-        if _change_model :
-            my_pwlf_continous = pwlf.PiecewiseLinFit(X, Y, seed = _seed )
-            res = my_pwlf_continous.fit(1)
-            b1 = b2 = my_pwlf_continous.intercepts[ 0 ]
-            a1 = a2 = my_pwlf_continous.slopes[ 0 ]
-            breakpoint = np.min( X )
+                if _change_model :
+                    my_pwlf_continous = pwlf.PiecewiseLinFit( X, Y,
+                                                                  seed = _seed )
+                    res = my_pwlf_continous.fit(1)
+                    b1 = b2 = my_pwlf_continous.intercepts[ 0 ]
+                    a1 = a2 = my_pwlf_continous.slopes[ 0 ]
+                    breakpoint = np.min( X )
 
-            _X = np.linspace( np.min( X ), np.max( X ), 500 )
-            _y = my_pwlf_continous.predict( _X )
-            printSummaryPwlf( my_pwlf_continous, X, Y )
-            plt.plot( x, y, "bo" )
-            plt.plot( _X, _y, "r-" )
-            plt.xlabel( "Age" )
-            plt.ylabel( measure )
+                    _X = np.linspace( np.min( X ), np.max( X ), 500 )
+                    _y = my_pwlf_continous.predict( _X )
+                    printSummaryPwlf( my_pwlf_continous, X, Y )
+                    plt.plot( x, y, "bo" )
+                    plt.plot( _X, _y, "r-" )
+                    plt.xlabel( "Age" )
+                    plt.ylabel( measure )
 
-            plt.savefig( outPath, dpi = 300, bbox_inches = "tight" )
-            plt.clf()
-            break
+                    plt.savefig( outPiecewisePath, dpi = 300,
+                                                         bbox_inches = "tight" )
+                    plt.clf()
+                    break
 
-    with lock :
-        slope_dict_piecewise[ bundle ] = { "b1" : b1, "a1" : a1, "b2" : b2,
+            with lock :
+                slope_dict_piecewise[ bundle ] = { "b1" : b1, "a1" : a1,
+                               "b2" : b2, "a2" : a2, "breakpoint" : breakpoint }
+                output_slopes = os.path.join( output_dir,
+                                                     f"slopesPiecewise.pickle" )
+
+                tmpSlopes_dict = dict( slope_dict_piecewise )
+                pickle.dump( tmpSlopes_dict, open( output_slopes, 'wb' ) )
+
+
+        if not onlyPiecewise :
+            if not os.path.isfile( outLinearPath )  :
+                my_pwlf_continous = pwlf.PiecewiseLinFit(X, Y, seed = _seed )
+                res = my_pwlf_continous.fit(1)
+                b1 = b2 = my_pwlf_continous.intercepts[ 0 ]
+                a1 = a2 = my_pwlf_continous.slopes[ 0 ]
+                breakpoint = np.min( X )
+
+                _X = np.linspace( np.min( X ), np.max( X ), 500 )
+                _y = my_pwlf_continous.predict( _X )
+                printSummaryPwlf( my_pwlf_continous, X, Y )
+                plt.plot( x, y, "bo" )
+                plt.plot( _X, _y, "r-" )
+                plt.xlabel( "Age" )
+                plt.ylabel( measure )
+
+                plt.savefig( outLinearPath, dpi = 300, bbox_inches = "tight" )
+                plt.clf()
+
+                with lock :
+                    slope_dict_linear[ bundle ] = { "b1" : b1, "a1" : a1,
+                               "b2" : b2, "a2" : a2, "breakpoint" : breakpoint }
+                    output_slopes = os.path.join( output_dir,
+                                                        f"slopesLinear.pickle" )
+
+                    tmpSlopes_dict = dict( slope_dict_linear )
+                    pickle.dump( tmpSlopes_dict, open( output_slopes, 'wb' ) )
+
+
+        if ( verbose < 2 ) :
+            sys.stderr = standartErr
+            sys.stdout = standartOut
+            logFile.close()
+
+        return
+
+    else :
+        my_pwlf_continous = pwlf.PiecewiseLinFit(X, Y, seed = _seed )
+        res = my_pwlf_continous.fit(1)
+        b1 = b2 = my_pwlf_continous.intercepts[ 0 ]
+        a1 = a2 = my_pwlf_continous.slopes[ 0 ]
+        breakpoint = np.min( X )
+
+        _X = np.linspace( np.min( X ), np.max( X ), 500 )
+        _y = my_pwlf_continous.predict( _X )
+        printSummaryPwlf( my_pwlf_continous, X, Y )
+        plt.plot( x, y, "bo" )
+        plt.plot( _X, _y, "r-" )
+        plt.xlabel( "Age" )
+        plt.ylabel( measure )
+
+        plt.savefig( outLinearPath, dpi = 300, bbox_inches = "tight" )
+        plt.clf()
+
+        with lock :
+            slope_dict_linear[ bundle ] = { "b1" : b1, "a1" : a1, "b2" : b2,
                                           "a2" : a2, "breakpoint" : breakpoint }
-        output_slopes = os.path.join( output_dir, f"slopesPiecewise.pickle" )
+            output_slopes = os.path.join( output_dir, f"slopesLinear.pickle" )
 
-        tmpSlopes_dict = dict( slope_dict_piecewise )
-        pickle.dump( tmpSlopes_dict, open( output_slopes, 'wb' ) )
+            tmpSlopes_dict = dict( slope_dict_linear )
+            pickle.dump( tmpSlopes_dict, open( output_slopes, 'wb' ) )
 
 
-    if ( verbose < 2 ) :
-        sys.stderr = standartErr
-        sys.stdout = standartOut
-        logFile.close()
+        if ( verbose < 2 ) :
+            sys.stderr = standartErr
+            sys.stdout = standartOut
+            logFile.close()
 
-    return
+        return
+
 
 def readSlopes( path ) :
     with open( path, "rb" ) as f :
@@ -677,7 +774,7 @@ def readSlopes( path ) :
 
 def main() :
     global verbose, processCounter, slope_dict_piecewise, slope_dict_linear, \
-                                      measures_options, standartOut, standartErr
+           measures_options, standartOut, standartErr, onlyLinear, onlyPiecewise
     """
     Parse the command line.
     """
@@ -709,6 +806,10 @@ def main() :
         exit( 1 )
 
     bundleName = inputs[ "bundle_name" ]
+
+    onlyLinear = inputs[ "only_linear" ]
+
+    onlyPiecewise = inputs[ "only_piecewise" ]
 
 
     ############################################################################
@@ -790,10 +891,10 @@ def main() :
         p1.start()
         processList.append( p1 )
 
-        p2 = Process( target = polynomialRegression, args = [ data_dict,
-               bundle, output_dir, measure, logFilePath, lock ], daemon = True )
-        p2.start()
-        processList.append( p2 )
+        # p2 = Process( target = polynomialRegression, args = [ data_dict,
+        #        bundle, output_dir, measure, logFilePath, lock ], daemon = True )
+        # p2.start()
+        # processList.append( p2 )
 
         printMessage = True
         while ( len( processList ) >= nbThreads ) :
@@ -821,9 +922,15 @@ def main() :
         processTmp.join()
 
 
-    tmpSlopes_dict_piecewise = dict( slope_dict_piecewise )
-    pickle.dump( tmpSlopes_dict_piecewise, open( output_slopes_piecewise,
+    if not onlyLinear :
+        tmpSlopes_dict_piecewise = dict( slope_dict_piecewise )
+        pickle.dump( tmpSlopes_dict_piecewise, open( output_slopes_piecewise,
                                                                         'wb' ) )
+
+    if not onlyPiecewise :
+        tmpSlopes_dict_linear = dict( slope_dict_linear )
+        pickle.dump( tmpSlopes_dict_linear, open( output_slopes_linear, 'wb' ) )
+
 
     print( "\nDone" )
 
