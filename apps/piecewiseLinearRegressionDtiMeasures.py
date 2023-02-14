@@ -540,7 +540,7 @@ def getSlopesAndInterceptsPiecewise( piecewiseModel ) :
 
 def computeLinearRegresionWithWeights( X, Y, weights ) :
     regr = LinearRegression()
-    regr.fit( X, Y, weights )
+    regr.fit( X.reshape(-1, 1), Y, weights )
     return( regr )
 
 
