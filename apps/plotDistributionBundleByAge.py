@@ -312,7 +312,7 @@ def main() :
 
         ########################################################################
         # sampling = round( len( X ) / 4 )
-        sampling = round( len( X ) / 8 )
+        sampling = round( len( np.unique( X ) ) )
         if sampling == 1 : # To avoid division by 0 later
             sampling = 2
         minSamples = X.min()
@@ -322,7 +322,8 @@ def main() :
         for i in range( sampling ):
             samplesX[ i ] = ( minSamples + samplesSizeX * i )
 
-        plt.hist( X, samplesX, density = True )
+        # plt.hist( X, samplesX, density = True )
+        plt.hist( X, samplesX )
         plt.show()
         plt.clf()
         plt.close()
