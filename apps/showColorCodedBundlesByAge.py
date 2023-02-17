@@ -36,7 +36,7 @@ Plot the statistical analysis of a bundle
 
 Command example:
 ----------------
-python3 launchTractogramTGCC.py \
+python3 showColorCodedBundlesByAge.py \
 -tsv subjectsForTractogram.tsv \
 -v 1 \
 
@@ -63,7 +63,7 @@ def get_cmd_line_args():
     <argument name> -> <argument value>.
     """
     parser = argparse.ArgumentParser(
-        prog="python3 getAgeSubject.py",
+        prog="python3 showColorCodedBundlesByAge.py",
         description=textwrap.dedent(DOC),
         formatter_class=RawTextHelpFormatter)
 
@@ -80,11 +80,11 @@ def get_cmd_line_args():
         help=( "Path to the .pickle file containing the dictionary with "
                "the values of the measure slopes per bundle " ) )
 
-    required.add_argument(
-        "-ma", "--measure-age",
-        type=is_file, required=True, metavar="<path>",
-        help=( "Path to the .txt containing the measure with age "
-                                    "(usually called ${Measure}AndAge.txt) " ) )
+    # required.add_argument(
+    #     "-ma", "--measure-age",
+    #     type=is_file, required=True, metavar="<path>",
+    #     help=( "Path to the .txt containing the measure with age "
+    #                                 "(usually called ${Measure}AndAge.txt) " ) )
 
     required.add_argument(
         "-age", "--age",
@@ -92,6 +92,11 @@ def get_cmd_line_args():
         help=( "Age to show color coded" ) )
 
     # Optional arguments
+    parser.add_argument(
+        "-wn", "--window-title",
+        type=str, default="showColorCodedBundlesByAge",
+        help="Title for the window (default : showColorCodedBundlesByAge )")
+
     parser.add_argument(
         "-v", "--verbose",
         type=int, choices=[0, 1, 2], default=0,
@@ -164,31 +169,46 @@ def main() :
 
     dict_values_path = inputs[ "measure_dict" ]
 
-    measure_with_age_path = inputs[ "measure_age" ]
+    # measure_with_age_path = inputs[ "measure_age" ]
 
     age = inputs[ "age" ]
 
+    window_title = inputs[ "window_title" ]
+
 
     ############################################################################
-    measure_with_age_dict = readFileWithMeansMeasure( measure_with_age_path )
+    # measure_with_age_dict = readFileWithMeansMeasure( measure_with_age_path )
 
-    measure_population_mean_per_bundle = {}
-    for bundleName in measure_with_age_dict.keys() :
-        measure_population_mean_per_bundle[ bundleName ] = np.mean(
-                                      measure_with_age_dict[ bundleName ][ 1 ] )
+    # measure_population_mean_per_bundle = {}
+    # for bundleName in measure_with_age_dict.keys() :
+    #     measure_population_mean_per_bundle[ bundleName ] = np.mean(
+    #                                   measure_with_age_dict[ bundleName ][ 1 ] )
 
     bundles_names = os.listdir( bundles_dir )
     with open(dict_values_path, 'rb') as handle:
         dict_values = pickle.load( handle )
 
-    measure_values_1 = []
-    measure_values_2 = []
-    breakpoints = []
-    for bundle_name in dict_values :
-        measure_values_1.append( float( dict_values[ bundle_name ][ "a1" ] ) )
-        measure_values_2.append( float( dict_values[ bundle_name ][ "a2" ] ) )
-        breakpoints.append( float( dict_values[ bundle_name ][
-                                                              "breakpoint" ] ) )
+    # measure_values_1 = []
+    # measure_values_2 = []
+    # breakpoints = []
+    # for bundle_name in dict_values :
+    #     try :
+    #         if dict_values[ bundle_name ] == -1 :
+    #             continue
+    #         else :
+    #             measure_values_1.append( float( dict_values[ bundle_name ][
+    #                                                                   "a1" ] ) )
+    #             measure_values_2.append( float( dict_values[ bundle_name ][
+    #                                                                   "a2" ] ) )
+    #             breakpoints.append( float( dict_values[ bundle_name ][
+    #                                                           "breakpoint" ] ) )
+    #     except :
+    #         measure_values_1.append( float( dict_values[ bundle_name ][
+    #                                                                   "a1" ] ) )
+    #         measure_values_2.append( float( dict_values[ bundle_name ][
+    #                                                                   "a2" ] ) )
+    #         breakpoints.append( float( dict_values[ bundle_name ][
+    #                                                           "breakpoint" ] ) )
 
     # age_min = min( breakpoints )
     # age_max = max( breakpoints )
@@ -202,7 +222,6 @@ def main() :
     # measure_min = min( [ min( measure_values_1 ), min( measure_values_2 ) ] )
     # measure_max = max( [ max( measure_values_1 ), max( measure_values_2 ) ] )
 
-
     _streamlines = []
     _measure_values = []
     for _bundle in bundles_names :
@@ -211,34 +230,59 @@ def main() :
         if _bundle_name in dict_values.keys() :
             bundle_data = load_tractogram( bundle_path , "same" )
             nbStreamlines = len( bundle_data )
-            for fiber in bundle_data.streamlines :
-                _streamlines.append( fiber )
-            if dict_values[ _bundle_name ][ "breakpoint" ] < age :
-                tmpMeasureValue = dict_values[ _bundle_name ][ "a2" ]
-                # tmpMeasureValue = ( 100 *
-                #             ( dict_values[ _bundle_name ][ "a2" ] /
-                #             measure_population_mean_per_bundle[ bundleName ] ) )
+            try :
+                if dict_values[ _bundle_name ] == -1 :
+                    continue
+                else :
+                    for fiber in bundle_data.streamlines :
+                        _streamlines.append( fiber )
+                    if dict_values[ _bundle_name ][ "breakpoint" ] < age :
+                        tmpMeasureValue = dict_values[ _bundle_name ][ "a2" ]
+                        # tmpMeasureValue = ( 100 *
+                        #             ( dict_values[ _bundle_name ][ "a2" ] /
+                        #             measure_population_mean_per_bundle[ bundleName ] ) )
 
-            else :
-                tmpMeasureValue = dict_values[ _bundle_name ][ "a1" ]
-                # tmpMeasureValue = ( 100 *
-                #             ( dict_values[ _bundle_name ][ "a1" ] /
-                #             measure_population_mean_per_bundle[ bundleName ] ) )
+                    else :
+                        tmpMeasureValue = dict_values[ _bundle_name ][ "a1" ]
+                        # tmpMeasureValue = ( 100 *
+                        #             ( dict_values[ _bundle_name ][ "a1" ] /
+                        #             measure_population_mean_per_bundle[ bundleName ] ) )
 
-            _measure_values += nbStreamlines * [ tmpMeasureValue ]
+                    _measure_values += nbStreamlines * [ tmpMeasureValue ]
+            except :
+                for fiber in bundle_data.streamlines :
+                    _streamlines.append( fiber )
+                if dict_values[ _bundle_name ][ "breakpoint" ] < age :
+                    tmpMeasureValue = dict_values[ _bundle_name ][ "a2" ]
+                    # tmpMeasureValue = ( 100 *
+                    #             ( dict_values[ _bundle_name ][ "a2" ] /
+                    #             measure_population_mean_per_bundle[ bundleName ] ) )
+
+                else :
+                    tmpMeasureValue = dict_values[ _bundle_name ][ "a1" ]
+                    # tmpMeasureValue = ( 100 *
+                    #             ( dict_values[ _bundle_name ][ "a1" ] /
+                    #             measure_population_mean_per_bundle[ bundleName ] ) )
+
+                _measure_values += nbStreamlines * [ tmpMeasureValue ]
 
     for _bundle_name in dict_values :
-        _a1 = dict_values[ _bundle_name ][ "a1" ]
-        _a2 = dict_values[ _bundle_name ][ "a2" ]
-        print( f"{_bundle_name} : {_a1}\t|\t{_a2}" )
-        # tmpMeasure = measure_population_mean_per_bundle[ _bundle_name ]
-        # print( f"{_bundle_name} : {tmpMeasure}" )
+        try :
+            if dict_values[ _bundle_name ] == -1 :
+                continue
+            else :
+                _a1 = dict_values[ _bundle_name ][ "a1" ]
+                _a2 = dict_values[ _bundle_name ][ "a2" ]
+                print( f"{_bundle_name} : {_a1}\t|\t{_a2}" )
+        except :
+            _a1 = dict_values[ _bundle_name ][ "a1" ]
+            _a2 = dict_values[ _bundle_name ][ "a2" ]
+            print( f"{_bundle_name} : {_a1}\t|\t{_a2}" )
+            # tmpMeasure = measure_population_mean_per_bundle[ _bundle_name ]
+            # print( f"{_bundle_name} : {tmpMeasure}" )
 
     measure_min = min( _measure_values )
     measure_max = max( _measure_values )
-
-
-
 
     scene = window.Scene()
 
@@ -258,8 +302,8 @@ def main() :
     print( f"1                \t{measure_max}" )
     print( f"{zeroInNormalizedSlope}                \t0" )
 
-    hue = (0.5, 0.5)  # blue only
-    saturation = (0.0, 1.0)  # black to white
+    # hue = (0.5, 0.5)  # blue only
+    # saturation = (0.0, 1.0)  # black to white
     lut_cmap = actor.colormap_lookup_table( scale_range = ( measure_min,
                                                                  measure_max ) )
 
@@ -271,7 +315,7 @@ def main() :
 
     scene.add(stream_actor2)
     scene.add(bar)
-    window.show(scene, size=(600, 600), reset_camera=False)
+    window.show(scene, title = window_title, size=(600, 600), reset_camera=False)
 
 if __name__ == "__main__" :
     main()

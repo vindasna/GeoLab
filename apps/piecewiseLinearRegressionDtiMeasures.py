@@ -13,8 +13,11 @@ from sklearn import metrics
 from sklearn.linear_model import LinearRegression, Ridge
 from sklearn.preprocessing import PolynomialFeatures
 from sklearn.metrics import mean_squared_error, r2_score
+
 import statsmodels.api as sm
 import statsmodels.formula.api as smf
+from statsmodels.tools.sm_exceptions import ConvergenceWarning
+
 
 
 from sklearn.pipeline import make_pipeline
@@ -205,12 +208,16 @@ def readFileWithMeansMeasure( path ) :
                 if line != "" and line != "\n\n" and line != "\n" :
                     infoSubject = line.split( "\t" )
                     try :
+                        # Age
                         data_dict[ bundleName ][ 0 ].append( int(
                                                             infoSubject[ 0 ] ) )
+                        # Measure value
                         data_dict[ bundleName ][ 1 ].append( float(
                                                             infoSubject[ 1 ] ) )
+                        # Subject
                         data_dict[ bundleName ][ 2 ].append(
                                           infoSubject[ 2 ].replace( "\n", "" ) )
+                        # Increment number of  measures/subjects for this bundle
                         data_dict[ bundleName ][ 3 ] += 1
                     except :
                         print( f"|{line}|" )
@@ -218,6 +225,9 @@ def readFileWithMeansMeasure( path ) :
             i += 1
 
     return( data_dict )
+
+
+def
 
 def readBaselineCharacteristics( path, verbose ) :
     data_dict = {}
@@ -543,12 +553,23 @@ def computeLinearRegresionWithWeights( X, Y, weights ) :
     regr.fit( X.reshape(-1, 1), Y, weights )
     return( regr )
 
+def saveSlopes( slope_dict, outpath ) :
+    tmpSlopes_dict = dict( slope_dict )
+    pickle.dump( tmpSlopes_dict, open( outpath, 'wb' ) )
+
+
+def mixedLiearModel( ) :
+    pass
 
 def piecewiseRegressionPerBundle( data_dict, bundle, output_dir, measure,
                                                            logFilePath, lock ) :
     global verbose, processCounter, seed, slope_dict_piecewise, \
                           slope_dict_linear, measures_options, standartOut, \
                                           standartErr, onlyLinear, onlyPiecewise
+    output_slopes_linear = os.path.join( output_dir, f"slopesLinear.pickle" )
+    output_slopes_piecewise = os.path.join( output_dir,
+                                                     f"slopesPiecewise.pickle" )
+
     if not onlyLinear :
         piecewiseDir = os.path.join( output_dir, "PieceWise" )
         if not os.path.isdir( piecewiseDir ) :
@@ -565,8 +586,6 @@ def piecewiseRegressionPerBundle( data_dict, bundle, output_dir, measure,
         if os.path.isfile( outLinearPath ) and onlyLinear :
             return
 
-
-
     if ( verbose < 2 ) :
         logFile = open( logFilePath, 'a' )
         sys.stderr = logFile
@@ -579,6 +598,14 @@ def piecewiseRegressionPerBundle( data_dict, bundle, output_dir, measure,
     x = np.array( age_data )
     y = np.array( measure_data )
     if ( x.shape[ 0 ] != y.shape[ 0 ] ) :
+        if not onlyPiecewise :
+            with lock :
+                slope_dict_linear[ bundle ] = -1
+                saveSlopes( slope_dict_linear, output_slopes_linear )
+        if not onlyLinear :
+            with lock :
+                slope_dict_piecewise[ bundle ] = -1
+                saveSlopes( slope_dict_piecewise, output_slopes_piecewise )
         if ( verbose < 2 ) :
             sys.stderr = standartErr
             sys.stdout = standartOut
@@ -586,6 +613,14 @@ def piecewiseRegressionPerBundle( data_dict, bundle, output_dir, measure,
         return
     else :
         if ( x.shape[ 0 ] < 3 ) :
+            if not onlyPiecewise :
+                with lock :
+                    slope_dict_linear[ bundle ] = -1
+                    saveSlopes( slope_dict_linear, output_slopes_linear )
+            if not onlyLinear :
+                with lock :
+                    slope_dict_piecewise[ bundle ] = -1
+                    saveSlopes( slope_dict_piecewise, output_slopes_piecewise )
             if ( verbose < 2 ) :
                 sys.stderr = standartErr
                 sys.stdout = standartOut
@@ -597,12 +632,12 @@ def piecewiseRegressionPerBundle( data_dict, bundle, output_dir, measure,
     quartiles_y = np.quantile( y, [ 0.0, 0.25, 0.5, 0.75, 1 ] )
     quartiles_x = np.quantile( x, [ 0.0, 0.25, 0.5, 0.75, 1 ] )
     # q25 = quartiles_x[ 1 ]
-    q25 = quartiles_y[ 1 ]
-    # q25 = quartiles_y[ 0 ]
+    # q25 = quartiles_y[ 1 ]
+    q25 = quartiles_y[ 0 ]
 
     # q75 = quartiles_x[ 3 ]
-    q75 = quartiles_y[ 3 ]
-    # q75 = quartiles_y[ 4 ]
+    # q75 = quartiles_y[ 3 ]
+    q75 = quartiles_y[ 4 ]
 
     X = []
     Y = []
@@ -617,6 +652,14 @@ def piecewiseRegressionPerBundle( data_dict, bundle, output_dir, measure,
     Y = np.array( Y )
 
     if ( X.shape[ 0 ] != Y.shape[ 0 ] ) :
+        if not onlyPiecewise :
+            with lock :
+                slope_dict_linear[ bundle ] = -1
+                saveSlopes( slope_dict_linear, output_slopes_linear )
+        if not onlyLinear :
+            with lock :
+                slope_dict_piecewise[ bundle ] = -1
+                saveSlopes( slope_dict_piecewise, output_slopes_piecewise )
         if ( verbose < 2 ) :
             sys.stderr = standartErr
             sys.stdout = standartOut
@@ -624,6 +667,14 @@ def piecewiseRegressionPerBundle( data_dict, bundle, output_dir, measure,
         return
     else :
         if ( X.shape[ 0 ] < 3 ) :
+            if not onlyPiecewise :
+                with lock :
+                    slope_dict_linear[ bundle ] = -1
+                    saveSlopes( slope_dict_linear, output_slopes_linear )
+            if not onlyLinear :
+                with lock :
+                    slope_dict_piecewise[ bundle ] = -1
+                    saveSlopes( slope_dict_piecewise, output_slopes_piecewise )
             if ( verbose < 2 ) :
                 sys.stderr = standartErr
                 sys.stdout = standartOut
@@ -639,12 +690,37 @@ def piecewiseRegressionPerBundle( data_dict, bundle, output_dir, measure,
 
     weights = []
     for tmpAge in X :
-        weights.append( nbSubjectsByAge_dict[ tmpAge ] )
+        # weights.append( nbSubjectsByAge_dict[ tmpAge ] )
+        weights.append( 1 )
     weights = np.array( weights )
     # weights = 1 / ( weights / weights.max() )
-    weights = ( weights / weights.max() )
+    # weights = ( weights / weights.max() )
+    weights = ( weights / np.sum( weights ) )
 
     if ( X.shape[ 0 ] != weights.shape[ 0 ] ) :
+        if not onlyPiecewise :
+            with lock :
+                slope_dict_linear[ bundle ] = -1
+                saveSlopes( slope_dict_linear, output_slopes_linear )
+        if not onlyLinear :
+            with lock :
+                slope_dict_piecewise[ bundle ] = -1
+                saveSlopes( slope_dict_piecewise, output_slopes_piecewise )
+        if ( verbose < 2 ) :
+            sys.stderr = standartErr
+            sys.stdout = standartOut
+            logFile.close()
+        return
+
+    if X.shape[ 0 ] < 500 :
+        if not onlyPiecewise :
+            with lock :
+                slope_dict_linear[ bundle ] = -1
+                saveSlopes( slope_dict_linear, output_slopes_linear )
+        if not onlyLinear :
+            with lock :
+                slope_dict_piecewise[ bundle ] = -1
+                saveSlopes( slope_dict_piecewise, output_slopes_piecewise )
         if ( verbose < 2 ) :
             sys.stderr = standartErr
             sys.stdout = standartOut
@@ -715,11 +791,7 @@ def piecewiseRegressionPerBundle( data_dict, bundle, output_dir, measure,
             with lock :
                 slope_dict_piecewise[ bundle ] = { "b1" : b1, "a1" : a1,
                                "b2" : b2, "a2" : a2, "breakpoint" : breakpoint }
-                output_slopes = os.path.join( output_dir,
-                                                     f"slopesPiecewise.pickle" )
-
-                tmpSlopes_dict = dict( slope_dict_piecewise )
-                pickle.dump( tmpSlopes_dict, open( output_slopes, 'wb' ) )
+                saveSlopes( slope_dict_piecewise, output_slopes_piecewise )
 
 
         if not onlyPiecewise :
@@ -744,12 +816,7 @@ def piecewiseRegressionPerBundle( data_dict, bundle, output_dir, measure,
                 with lock :
                     slope_dict_linear[ bundle ] = { "b1" : b1, "a1" : a1,
                                "b2" : b2, "a2" : a2, "breakpoint" : breakpoint }
-                    output_slopes = os.path.join( output_dir,
-                                                        f"slopesLinear.pickle" )
-
-                    tmpSlopes_dict = dict( slope_dict_linear )
-                    pickle.dump( tmpSlopes_dict, open( output_slopes, 'wb' ) )
-
+                    saveSlopes( slope_dict_linear, output_slopes_linear )
 
         if ( verbose < 2 ) :
             sys.stderr = standartErr
@@ -773,10 +840,9 @@ def piecewiseRegressionPerBundle( data_dict, bundle, output_dir, measure,
         _X = np.linspace( np.min( X ), np.max( X ), 500 )
         _y = linearFittedModel.predict( _X.reshape( -1, 1 ) )
 
-        b1 = b2 = linearFittedModel.coef_
-        a1 = a2 = linearFittedModel.intercept_
+        b1 = b2 = linearFittedModel.intercept_
+        a1 = a2 = linearFittedModel.coef_[ 0 ]
         breakpoint = np.min( X )
-
 
 
         plt.plot( x, y, "bo" )
@@ -790,11 +856,7 @@ def piecewiseRegressionPerBundle( data_dict, bundle, output_dir, measure,
         with lock :
             slope_dict_linear[ bundle ] = { "b1" : b1, "a1" : a1, "b2" : b2,
                                           "a2" : a2, "breakpoint" : breakpoint }
-            output_slopes = os.path.join( output_dir, f"slopesLinear.pickle" )
-
-            tmpSlopes_dict = dict( slope_dict_linear )
-            pickle.dump( tmpSlopes_dict, open( output_slopes, 'wb' ) )
-
+            saveSlopes( slope_dict_linear, output_slopes_linear )
 
         if ( verbose < 2 ) :
             sys.stderr = standartErr
@@ -879,7 +941,7 @@ def main() :
 
     out_data_dict_path = os.path.join( output_dir, f"{measure}AndAge.txt" )
     print( f"Fusing DTI mean of {measure} in {out_data_dict_path}" )
-    # getFileForPlotMiguelCommand = [ "/ccc/workflash/cont003/n4h00001/vindasna/pieceWiseRegressionScripts/getFileForPlotsRegression",
+
     getFileForPlotMiguelCommand = [ "getFileForPlotsRegression",
                                     "-ukb-dti", ukb_dti_dir,
                                     "-m", measure,
