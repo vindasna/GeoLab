@@ -26,6 +26,8 @@ import piecewise_regression
 
 import pwlf
 
+import pandas as pd
+
 from multiprocessing import Process, Lock, Manager, Value
 
 import argparse
@@ -45,6 +47,7 @@ class bcolors:
     UNDERLINE = '\033[4m'
 
 #------------------------------ Global variables ------------------------------#
+dictDataFrames = {}
 
 measures_options = [ "FA", "MD", "OD", "ICVF", "ISOVF" ]
 slope_dict_piecewise = {}
@@ -119,6 +122,11 @@ def get_cmd_line_args():
         type=is_file, required=True, metavar="<path>",
         help=( "Path to the .tsv file with information of the subjects in "
                                                                "ukb-dti-dir" ) )
+
+    required.add_argument(
+        "-bc", "--baseline-characteristics",
+        type=is_file, required=True, metavar="<path>",
+        help=( "Path to the baselineCharacterisics.tsv" ) )
 
     required.add_argument(
         "-o", "--out",
@@ -198,6 +206,7 @@ def run_sh_process( cmd, shell = False ) :
 def readFileWithMeansMeasure( path ) :
     data_dict = {}
     i = 0
+    print( f"Reading : {path}... ", end = "" )
     with open( path, "r" ) as f :
         for line in f :
             if line.endswith( ":\n" ) :
@@ -224,10 +233,10 @@ def readFileWithMeansMeasure( path ) :
                         sys.exit()
             i += 1
 
+    print( "Done" )
+
     return( data_dict )
 
-
-def
 
 def readBaselineCharacteristics( path, verbose ) :
     data_dict = {}
@@ -558,8 +567,11 @@ def saveSlopes( slope_dict, outpath ) :
     pickle.dump( tmpSlopes_dict, open( outpath, 'wb' ) )
 
 
-def mixedLiearModel( ) :
-    pass
+def mixedLiearModel( pandasDataFrame ) :
+    # md = smf.mixedlm("Weight ~ Time", data, groups=data["Pig"], re_formula="~Time")
+    model = smf.mixedlm( "measure ~ age + C(sex)", data = pandasDataFrame,
+                                         groups = pandasDataFrame[ "subject" ] )
+    return( model.fit( method=["lbfgs"] ) )
 
 def piecewiseRegressionPerBundle( data_dict, bundle, output_dir, measure,
                                                            logFilePath, lock ) :
@@ -591,9 +603,14 @@ def piecewiseRegressionPerBundle( data_dict, bundle, output_dir, measure,
         sys.stderr = logFile
         sys.stdout = logFile
 
-    age_data = data_dict[ bundle ][ 0 ]
-    measure_data = data_dict[ bundle ][ 1 ]
-    subject_id_data = data_dict[ bundle ][ 2 ]
+    # age_data = data_dict[ bundle ][ 0 ]
+    # measure_data = data_dict[ bundle ][ 1 ]
+    # subject_id_data = data_dict[ bundle ][ 2 ]
+
+    age_data = data_dict[ bundle ][ "age" ]
+    measure_data = data_dict[ bundle ][ "measure" ]
+    subject_id_data = data_dict[ bundle ][ "subject" ]
+    sex_data = data_dict[ bundle ][ "sex" ]
 
     x = np.array( age_data )
     y = np.array( measure_data )
@@ -641,15 +658,23 @@ def piecewiseRegressionPerBundle( data_dict, bundle, output_dir, measure,
 
     X = []
     Y = []
+    subjectsId = []
+    sex = []
     for i in range( y.shape[ 0 ] ) :
         tmpMeasure = y[ i ]
         tmpAge = x[ i ]
+        tmpSubjectID = subject_id_data[ i ]
+        tmpSex = sex_data[ i ]
         # if q25 <= tmpAge <= q75 :
         if q25 <= tmpMeasure <= q75 :
             Y.append( tmpMeasure )
             X.append( tmpAge )
+            subjectsId.append( tmpSubjectID )
+            sex.append( tmpSex )
     X = np.array( X )
     Y = np.array( Y )
+    subjectsId = np.array( subjectsId )
+    sex = np.array( sex )
 
     if ( X.shape[ 0 ] != Y.shape[ 0 ] ) :
         if not onlyPiecewise :
@@ -796,15 +821,28 @@ def piecewiseRegressionPerBundle( data_dict, bundle, output_dir, measure,
 
         if not onlyPiecewise :
             if not os.path.isfile( outLinearPath )  :
-                my_pwlf_continous = pwlf.PiecewiseLinFit(X, Y, seed = _seed )
-                res = my_pwlf_continous.fit(1)
-                b1 = b2 = my_pwlf_continous.intercepts[ 0 ]
-                a1 = a2 = my_pwlf_continous.slopes[ 0 ]
+                # my_pwlf_continous = pwlf.PiecewiseLinFit(X, Y, seed = _seed )
+                # res = my_pwlf_continous.fit(1)
+                # b1 = b2 = my_pwlf_continous.intercepts[ 0 ]
+                # a1 = a2 = my_pwlf_continous.slopes[ 0 ]
+                # breakpoint = np.min( X )
+
+                tmpDataFrame = pd.DataFrame()
+                tmpDataFrame[ "measure" ] = Y
+                tmpDataFrame[ "age" ] = X
+                tmpDataFrame[ "sex" ] = sex
+                tmpDataFrame[ "subject" ] = subjectsId
+                tmpModel = mixedLiearModel( tmpDataFrame )
+                b1 = b2 = tmpModel.params[ "Intercept" ]
+                a1 = a2 = tmpModel.params[ "age" ]
                 breakpoint = np.min( X )
 
                 _X = np.linspace( np.min( X ), np.max( X ), 500 )
-                _y = my_pwlf_continous.predict( _X )
-                printSummaryPwlf( my_pwlf_continous, X, Y )
+                # _y = my_pwlf_continous.predict( _X )
+                # printSummaryPwlf( my_pwlf_continous, X, Y )
+                # _y = tmpModel.predict( _X )
+                _y = b1 + _X * a1
+
                 plt.plot( x, y, "bo" )
                 plt.plot( _X, _y, "r-" )
                 plt.xlabel( "Age" )
@@ -836,13 +874,37 @@ def piecewiseRegressionPerBundle( data_dict, bundle, output_dir, measure,
         # _y = my_pwlf_continous.predict( _X )
         # printSummaryPwlf( my_pwlf_continous, X, Y )
 
-        linearFittedModel = computeLinearRegresionWithWeights( X, Y, weights )
-        _X = np.linspace( np.min( X ), np.max( X ), 500 )
-        _y = linearFittedModel.predict( _X.reshape( -1, 1 ) )
+        # linearFittedModel = computeLinearRegresionWithWeights( X, Y, weights )
+        # _X = np.linspace( np.min( X ), np.max( X ), 500 )
+        # _y = linearFittedModel.predict( _X.reshape( -1, 1 ) )
+        #
+        # b1 = b2 = linearFittedModel.intercept_
+        # a1 = a2 = linearFittedModel.coef_[ 0 ]
+        # breakpoint = np.min( X )
 
-        b1 = b2 = linearFittedModel.intercept_
-        a1 = a2 = linearFittedModel.coef_[ 0 ]
+
+        # print( "Computing LMM..." )
+        #
+        # print( Y.shape )
+        # print( X.shape )
+        # print( subjectsId.shape )
+        # print( sex.shape )
+
+        tmpDataFrame = pd.DataFrame()
+        tmpDataFrame[ "measure" ] = Y
+        tmpDataFrame[ "age" ] = X
+        tmpDataFrame[ "sex" ] = sex
+        tmpDataFrame[ "subject" ] = subjectsId
+        print( tmpDataFrame )
+        tmpModel = mixedLiearModel( tmpDataFrame )
+        b1 = b2 = tmpModel.params[ "Intercept" ]
+        a1 = a2 = tmpModel.params[ "age" ]
         breakpoint = np.min( X )
+
+        _X = np.linspace( np.min( X ), np.max( X ), 500 )
+        # _y = tmpModel.predict( _X )
+        _y = b1 + _X * a1
+
 
 
         plt.plot( x, y, "bo" )
@@ -872,10 +934,67 @@ def readSlopes( path ) :
     return( slope_dict )
 
 
+def data2DictOfDataFrames( dataDictMeasures, dataDictBaselineCharacteristics ) :
+    outDict = {}
+    for bundleName in dataDictMeasures.keys() :
+        # ages = dataDictMeasures[ bundleName ][ 0 ]
+        # measureValues = dataDictMeasures[ bundleName ][ 1 ]
+        # subjects_id = dataDictMeasures[ bundleName ][ 2 ]
+        ages = []
+        measureValues = []
+        subjects_id = []
+        subjectsSex = []
+        counter = 0
+
+        # for tmpSubjectId in subjects_id :
+        for tmpSubjectId in dataDictMeasures[ bundleName ][ 2 ] :
+            onlySubjectId = tmpSubjectId.replace( "sub-", "" )
+            if onlySubjectId in dataDictBaselineCharacteristics.keys() :
+                tmpSex = dataDictBaselineCharacteristics[ onlySubjectId ][
+                                                                     "sex" ]
+                tmpAge = dataDictMeasures[ bundleName ][ 0 ][ counter ]
+                tmpMeasureValue = dataDictMeasures[ bundleName ][ 1 ][
+                                                                   counter ]
+                ages.append( tmpAge )
+                measureValues.append( tmpMeasureValue )
+                subjects_id.append( tmpSubjectId )
+                subjectsSex.append( tmpSex )
+            counter += 1
+
+        tmpDataFrame = pd.DataFrame()
+        tmpDataFrame[ "age" ] = ages
+        tmpDataFrame[ "measure" ] = measureValues
+        tmpDataFrame[ "subject" ] = subjects_id
+        tmpDataFrame[ "sex" ] = subjectsSex
+
+        outDict[ bundleName ] = tmpDataFrame
+
+    return( outDict )
+
+
+def saveMixedLinearModelFigure( pandasDataFrame, model, outPath, measure ) :
+    b1 = b2 = model.params[ "Intercept" ]
+    a1 = a2 = model.params[ "age" ]
+    x = pandasDataFrame[ "age" ]
+    y = pandasDataFrame[ "measure" ]
+    breakpoint = np.min( x )
+
+    _X = np.linspace( np.min( x ), np.max( x ), 500 )
+    _y = b1 + _X * a1
+
+    plt.plot( x, y, "bo" )
+    plt.plot( _X, _y, "r-" )
+    plt.xlabel( "Age" )
+    plt.ylabel( measure )
+
+    plt.savefig( outPath, dpi = 300, bbox_inches = "tight" )
+    plt.clf()
+
 
 def main() :
     global verbose, processCounter, slope_dict_piecewise, slope_dict_linear, \
-           measures_options, standartOut, standartErr, onlyLinear, onlyPiecewise
+                     measures_options, standartOut, standartErr, onlyLinear, \
+                                                   onlyPiecewise, dictDataFrames
     """
     Parse the command line.
     """
@@ -887,6 +1006,8 @@ def main() :
 
     tsv_file = inputs[ "tsv" ]
 
+    baselineCharacteristicsPath = inputs[ "baseline_characteristics" ]
+
     output_dir = inputs[ "out" ]
     if not os.path.isdir( output_dir ) :
         os.mkdir( output_dir )
@@ -896,7 +1017,6 @@ def main() :
         print( "ERROR : the input of -m/--measure must be FA, MD, OD, ICVF or "
                                                                        "ISOVF" )
         sys.exit( 1 )
-
 
     format = inputs[ "format" ]
 
@@ -950,6 +1070,7 @@ def main() :
     if not os.path.isfile( out_data_dict_path ) :
         run_sh_process( getFileForPlotMiguelCommand, shell = True )
 
+
     data_dict = readFileWithMeansMeasure( out_data_dict_path )
     nbBundles = len( data_dict )
 
@@ -975,19 +1096,40 @@ def main() :
     else :
         slope_dict_linear = manager.dict()
 
+
+    dataDictBaselineCharacteristics = readBaselineCharacteristics(
+                                          baselineCharacteristicsPath, verbose )
+
+    dictDataFrames = data2DictOfDataFrames( data_dict,
+                                               dataDictBaselineCharacteristics )
+
     if ( bundleName ) :
         if ( not bundleName in data_dict.keys() ) :
             print( f"ERROR : argument of --bundle-name -> {bundleName} is not "
                    "in keys of data_dict" )
             exit( 1 )
-        piecewiseRegressionPerBundle( data_dict, bundleName, output_dir,
+        print( dictDataFrames[ bundleName ] )
+        print( "\nxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n" )
+        piecewiseRegressionPerBundle( dictDataFrames, bundleName, output_dir,
                                                     measure, logFilePath, lock )
         return
+
+
+    # if ( bundleName ) :
+    #     tmpModel = mixedLiearModel( dictDataFrames[ bundleName ] )
+    #     if not onlyPiecewise :
+    #         linearDir = os.path.join( output_dir, "Linear" )
+    #         if not os.path.isdir( linearDir ) :
+    #             os.mkdir( linearDir )
+    #         outLinearPath = os.path.join( linearDir, f"{bundleName}.png" )
+    #     saveMixedLinearModelFigure( dictDataFrames[ bundleName ], tmpModel, outLinearPath, measure )
+    # sys.exit( 1 )
 
     processList = []
     # for bundle in data_dict :
     for bundle in bundles_options :
-        p1 = Process( target = piecewiseRegressionPerBundle, args = [ data_dict,
+        # p1 = Process( target = piecewiseRegressionPerBundle, args = [ data_dict,
+        p1 = Process( target = piecewiseRegressionPerBundle, args = [ dictDataFrames,
                bundle, output_dir, measure, logFilePath, lock ], daemon = True )
         p1.start()
         processList.append( p1 )
