@@ -895,7 +895,6 @@ def piecewiseRegressionPerBundle( data_dict, bundle, output_dir, measure,
         tmpDataFrame[ "age" ] = X
         tmpDataFrame[ "sex" ] = sex
         tmpDataFrame[ "subject" ] = subjectsId
-        print( tmpDataFrame )
         tmpModel = mixedLiearModel( tmpDataFrame )
         b1 = b2 = tmpModel.params[ "Intercept" ]
         a1 = a2 = tmpModel.params[ "age" ]
@@ -1108,8 +1107,6 @@ def main() :
             print( f"ERROR : argument of --bundle-name -> {bundleName} is not "
                    "in keys of data_dict" )
             exit( 1 )
-        print( dictDataFrames[ bundleName ] )
-        print( "\nxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx\n" )
         piecewiseRegressionPerBundle( dictDataFrames, bundleName, output_dir,
                                                     measure, logFilePath, lock )
         return
