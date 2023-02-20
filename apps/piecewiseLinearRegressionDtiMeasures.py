@@ -17,6 +17,7 @@ from sklearn.metrics import mean_squared_error, r2_score
 import statsmodels.api as sm
 import statsmodels.formula.api as smf
 from statsmodels.tools.sm_exceptions import ConvergenceWarning
+import statsmodels.stats.multitest as multitest
 
 
 
@@ -52,6 +53,7 @@ dictDataFrames = {}
 measures_options = [ "FA", "MD", "OD", "ICVF", "ISOVF" ]
 slope_dict_piecewise = {}
 slope_dict_linear = {}
+mixedLinearModels = {}
 verbose = 0
 
 # To have reproductible results
@@ -576,11 +578,13 @@ def mixedLiearModel( pandasDataFrame ) :
 def piecewiseRegressionPerBundle( data_dict, bundle, output_dir, measure,
                                                            logFilePath, lock ) :
     global verbose, processCounter, seed, slope_dict_piecewise, \
-                          slope_dict_linear, measures_options, standartOut, \
-                                          standartErr, onlyLinear, onlyPiecewise
+                slope_dict_linear, measures_options, standartOut, standartErr, \
+                                    onlyLinear, onlyPiecewise, mixedLinearModels
     output_slopes_linear = os.path.join( output_dir, f"slopesLinear.pickle" )
     output_slopes_piecewise = os.path.join( output_dir,
                                                      f"slopesPiecewise.pickle" )
+    outPathMixedLinearModels = os.path.join( output_dir,
+                                                   f"mixedLinearModels.pickle" )
 
     if not onlyLinear :
         piecewiseDir = os.path.join( output_dir, "PieceWise" )
@@ -821,12 +825,6 @@ def piecewiseRegressionPerBundle( data_dict, bundle, output_dir, measure,
 
         if not onlyPiecewise :
             if not os.path.isfile( outLinearPath )  :
-                # my_pwlf_continous = pwlf.PiecewiseLinFit(X, Y, seed = _seed )
-                # res = my_pwlf_continous.fit(1)
-                # b1 = b2 = my_pwlf_continous.intercepts[ 0 ]
-                # a1 = a2 = my_pwlf_continous.slopes[ 0 ]
-                # breakpoint = np.min( X )
-
                 tmpDataFrame = pd.DataFrame()
                 tmpDataFrame[ "measure" ] = Y
                 tmpDataFrame[ "age" ] = X
@@ -838,9 +836,6 @@ def piecewiseRegressionPerBundle( data_dict, bundle, output_dir, measure,
                 breakpoint = np.min( X )
 
                 _X = np.linspace( np.min( X ), np.max( X ), 500 )
-                # _y = my_pwlf_continous.predict( _X )
-                # printSummaryPwlf( my_pwlf_continous, X, Y )
-                # _y = tmpModel.predict( _X )
                 _y = b1 + _X * a1
 
                 plt.plot( x, y, "bo" )
@@ -856,6 +851,11 @@ def piecewiseRegressionPerBundle( data_dict, bundle, output_dir, measure,
                                "b2" : b2, "a2" : a2, "breakpoint" : breakpoint }
                     saveSlopes( slope_dict_linear, output_slopes_linear )
 
+                    mixedLinearModels[ bundle ] = tmpModel
+                    saveLinearMixedModels( mixedLinearModels,
+                                                      outPathMixedLinearModels )
+
+
         if ( verbose < 2 ) :
             sys.stderr = standartErr
             sys.stdout = standartOut
@@ -864,32 +864,6 @@ def piecewiseRegressionPerBundle( data_dict, bundle, output_dir, measure,
         return
 
     else :
-        # my_pwlf_continous = pwlf.PiecewiseLinFit(X, Y, seed = _seed )
-        # res = my_pwlf_continous.fit(1)
-        # b1 = b2 = my_pwlf_continous.intercepts[ 0 ]
-        # a1 = a2 = my_pwlf_continous.slopes[ 0 ]
-        # breakpoint = np.min( X )
-        #
-        # _X = np.linspace( np.min( X ), np.max( X ), 500 )
-        # _y = my_pwlf_continous.predict( _X )
-        # printSummaryPwlf( my_pwlf_continous, X, Y )
-
-        # linearFittedModel = computeLinearRegresionWithWeights( X, Y, weights )
-        # _X = np.linspace( np.min( X ), np.max( X ), 500 )
-        # _y = linearFittedModel.predict( _X.reshape( -1, 1 ) )
-        #
-        # b1 = b2 = linearFittedModel.intercept_
-        # a1 = a2 = linearFittedModel.coef_[ 0 ]
-        # breakpoint = np.min( X )
-
-
-        # print( "Computing LMM..." )
-        #
-        # print( Y.shape )
-        # print( X.shape )
-        # print( subjectsId.shape )
-        # print( sex.shape )
-
         tmpDataFrame = pd.DataFrame()
         tmpDataFrame[ "measure" ] = Y
         tmpDataFrame[ "age" ] = X
@@ -918,6 +892,9 @@ def piecewiseRegressionPerBundle( data_dict, bundle, output_dir, measure,
             slope_dict_linear[ bundle ] = { "b1" : b1, "a1" : a1, "b2" : b2,
                                           "a2" : a2, "breakpoint" : breakpoint }
             saveSlopes( slope_dict_linear, output_slopes_linear )
+
+            mixedLinearModels[ bundle ] = tmpModel
+            saveLinearMixedModels( mixedLinearModels, outPathMixedLinearModels )
 
         if ( verbose < 2 ) :
             sys.stderr = standartErr
@@ -990,10 +967,16 @@ def saveMixedLinearModelFigure( pandasDataFrame, model, outPath, measure ) :
     plt.clf()
 
 
+def saveLinearMixedModels( mixedLinearModels, outPathMixedLinearModels ) :
+    tmpMixedLinearModels_dict = dict( mixedLinearModels )
+    pickle.dump( tmpMixedLinearModels_dict,
+                                        open( outPathMixedLinearModels, 'wb' ) )
+
+
 def main() :
     global verbose, processCounter, slope_dict_piecewise, slope_dict_linear, \
                      measures_options, standartOut, standartErr, onlyLinear, \
-                                                   onlyPiecewise, dictDataFrames
+                                onlyPiecewise, dictDataFrames, mixedLinearModels
     """
     Parse the command line.
     """
@@ -1096,6 +1079,15 @@ def main() :
         slope_dict_linear = manager.dict()
 
 
+    outPathMixedLinearModels = os.path.join( output_dir,
+                                                   f"mixedLinearModels.pickle" )
+    if os.path.isfile( outPathMixedLinearModels ) :
+        mixedLinearModels = manager.dict( readSlopes(
+                                                    outPathMixedLinearModels ) )
+    else :
+        mixedLinearModels = manager.dict()
+
+
     dataDictBaselineCharacteristics = readBaselineCharacteristics(
                                           baselineCharacteristicsPath, verbose )
 
@@ -1167,9 +1159,23 @@ def main() :
         pickle.dump( tmpSlopes_dict_piecewise, open( output_slopes_piecewise,
                                                                         'wb' ) )
 
+
     if not onlyPiecewise :
         tmpSlopes_dict_linear = dict( slope_dict_linear )
         pickle.dump( tmpSlopes_dict_linear, open( output_slopes_linear, 'wb' ) )
+
+        saveLinearMixedModels( mixedLinearModels, outPathMixedLinearModels )
+
+        pvaluesIndividualTests = []
+        for tmpBundleName in mixedLinearModels.keys() :
+            tmp = mixedLinearModels[ tmpBundleName ].pvalues[ "age" ]
+            pvaluesIndividualTests.append( tmp )
+
+        rejectedTests, corrected_pvals = multitest.fdrcorrection(
+                                   pvals = pvaluesIndividualTests, alpha = 0.05,
+                                       method = 'indep', is_sorted = False )
+        for i in range( len( mixedLinearModels.keys() ) ) :
+            print( f"{mixedLinearModels.keys()[ i ]} : {rejectedTests[ i ]} ---> {corrected_pvals[ i ]}" )
 
 
     print( "\nDone" )
