@@ -54,6 +54,7 @@ measures_options = [ "FA", "MD", "OD", "ICVF", "ISOVF" ]
 slope_dict_piecewise = {}
 slope_dict_linear = {}
 mixedLinearModels = {}
+pvaluesIndividualTests = []
 verbose = 0
 
 # To have reproductible results
@@ -579,7 +580,8 @@ def piecewiseRegressionPerBundle( data_dict, bundle, output_dir, measure,
                                                            logFilePath, lock ) :
     global verbose, processCounter, seed, slope_dict_piecewise, \
                 slope_dict_linear, measures_options, standartOut, standartErr, \
-                                    onlyLinear, onlyPiecewise, mixedLinearModels
+                                 onlyLinear, onlyPiecewise, mixedLinearModels, \
+                                    pvaluesIndividualTests, bundlesNamesComputed
     output_slopes_linear = os.path.join( output_dir, f"slopesLinear.pickle" )
     output_slopes_piecewise = os.path.join( output_dir,
                                                      f"slopesPiecewise.pickle" )
@@ -851,9 +853,11 @@ def piecewiseRegressionPerBundle( data_dict, bundle, output_dir, measure,
                                "b2" : b2, "a2" : a2, "breakpoint" : breakpoint }
                     saveSlopes( slope_dict_linear, output_slopes_linear )
 
-                    mixedLinearModels[ bundle ] = tmpModel
-                    saveLinearMixedModels( mixedLinearModels,
-                                                      outPathMixedLinearModels )
+                    # mixedLinearModels[ bundle ] = tmpModel
+                    # saveLinearMixedModels( mixedLinearModels,
+                    #                                   outPathMixedLinearModels )
+                    pvaluesIndividualTests.append( tmpModel.pvalues[ "age" ] )
+                    bundlesNamesComputed.append( bundle )
 
 
         if ( verbose < 2 ) :
@@ -893,8 +897,10 @@ def piecewiseRegressionPerBundle( data_dict, bundle, output_dir, measure,
                                           "a2" : a2, "breakpoint" : breakpoint }
             saveSlopes( slope_dict_linear, output_slopes_linear )
 
-            mixedLinearModels[ bundle ] = tmpModel
-            saveLinearMixedModels( mixedLinearModels, outPathMixedLinearModels )
+            # mixedLinearModels[ bundle ] = tmpModel
+            # saveLinearMixedModels( mixedLinearModels, outPathMixedLinearModels )
+            pvaluesIndividualTests.append( tmpModel.pvalues[ "age" ] )
+            bundlesNamesComputed.append( bundle )
 
         if ( verbose < 2 ) :
             sys.stderr = standartErr
@@ -973,10 +979,23 @@ def saveLinearMixedModels( mixedLinearModels, outPathMixedLinearModels ) :
                                         open( outPathMixedLinearModels, 'wb' ) )
 
 
+def saveFDRcorrection( rejectedTests, bundlesNamesComputed,
+                                                         outPathTestRejected ) :
+    if len( rejectedTests ) != len( bundlesNamesComputed ) :
+        print( "ERROR : in saveFDRcorrection, rejectedTests and "
+                              "bundlesNamesComputed must have the same length" )
+        sys.exit( 1 )
+    with open( outPathTestRejected, "w" ) as f :
+        for i in range( len( rejectedTests ) ) :
+            bundleName = bundlesNamesComputed[ i ]
+            isTestRejected = rejectedTests[ i ]
+            f.write( f"{isTestRejected} : {bundleName}\n" )
+
 def main() :
     global verbose, processCounter, slope_dict_piecewise, slope_dict_linear, \
                      measures_options, standartOut, standartErr, onlyLinear, \
-                                onlyPiecewise, dictDataFrames, mixedLinearModels
+                           onlyPiecewise, dictDataFrames, mixedLinearModels, \
+                                    pvaluesIndividualTests, bundlesNamesComputed
     """
     Parse the command line.
     """
@@ -1079,6 +1098,10 @@ def main() :
         slope_dict_linear = manager.dict()
 
 
+    pvaluesIndividualTests = manager.list()
+    bundlesNamesComputed = manager.list()
+
+
     outPathMixedLinearModels = os.path.join( output_dir,
                                                    f"mixedLinearModels.pickle" )
     if os.path.isfile( outPathMixedLinearModels ) :
@@ -1164,18 +1187,27 @@ def main() :
         tmpSlopes_dict_linear = dict( slope_dict_linear )
         pickle.dump( tmpSlopes_dict_linear, open( output_slopes_linear, 'wb' ) )
 
-        saveLinearMixedModels( mixedLinearModels, outPathMixedLinearModels )
+        # saveLinearMixedModels( mixedLinearModels, outPathMixedLinearModels )
 
-        pvaluesIndividualTests = []
-        for tmpBundleName in mixedLinearModels.keys() :
-            tmp = mixedLinearModels[ tmpBundleName ].pvalues[ "age" ]
-            pvaluesIndividualTests.append( tmp )
+        # pvaluesIndividualTests = []
+        # for tmpBundleName in mixedLinearModels.keys() :
+        #     tmp = mixedLinearModels[ tmpBundleName ].pvalues[ "age" ]
+        #     pvaluesIndividualTests.append( tmp )
+
+        pvaluesIndividualTests = list( pvaluesIndividualTests )
+        bundlesNamesComputed = list( bundlesNamesComputed )
 
         rejectedTests, corrected_pvals = multitest.fdrcorrection(
                                    pvals = pvaluesIndividualTests, alpha = 0.05,
                                        method = 'indep', is_sorted = False )
-        for i in range( len( mixedLinearModels.keys() ) ) :
-            print( f"{mixedLinearModels.keys()[ i ]} : {rejectedTests[ i ]} ---> {corrected_pvals[ i ]}" )
+
+        for i in range( len( rejectedTests ) ) :
+            print( f"{bundlesNamesComputed[ i ]} : {rejectedTests[ i ]} ---> "
+                                                     f"{corrected_pvals[ i ]}" )
+
+        outPathTestRejected = os.path.join( output_dir, "fdrcorrection.txt" )
+        saveFDRcorrection( rejectedTests, bundlesNamesComputed,
+                                                           outPathTestRejected )
 
 
     print( "\nDone" )

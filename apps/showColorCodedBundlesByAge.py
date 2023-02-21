@@ -9,6 +9,8 @@ from dipy.io.streamline import load_tractogram, save_tractogram
 
 import pickle
 
+import matplotlib.pyplot as plt
+
 
 import argparse
 import textwrap
@@ -80,11 +82,17 @@ def get_cmd_line_args():
         help=( "Path to the .pickle file containing the dictionary with "
                "the values of the measure slopes per bundle " ) )
 
-    # required.add_argument(
-    #     "-ma", "--measure-age",
-    #     type=is_file, required=True, metavar="<path>",
-    #     help=( "Path to the .txt containing the measure with age "
-    #                                 "(usually called ${Measure}AndAge.txt) " ) )
+    required.add_argument(
+        "-ma", "--measure-age",
+        type=is_file, required=True, metavar="<path>",
+        choices=["FA", "MD", "OD", "ISOVF", "ICVF" ],
+        help=( "Path to the .txt containing the measure with age "
+                                    "(usually called ${Measure}AndAge.txt) " ) )
+
+    required.add_argument(
+        "-mn", "--measure-name",
+        type=str, required=True, metavar="<path>",
+        help=( "Measure name (FA, MD, OD, ISOVF, ICVF)" ) )
 
     required.add_argument(
         "-age", "--age",
@@ -169,7 +177,9 @@ def main() :
 
     dict_values_path = inputs[ "measure_dict" ]
 
-    # measure_with_age_path = inputs[ "measure_age" ]
+    measure_with_age_path = inputs[ "measure_age" ]
+
+    measure_name = inputs[ "measure_name" ]
 
     age = inputs[ "age" ]
 
@@ -177,12 +187,12 @@ def main() :
 
 
     ############################################################################
-    # measure_with_age_dict = readFileWithMeansMeasure( measure_with_age_path )
+    measure_with_age_dict = readFileWithMeansMeasure( measure_with_age_path )
 
-    # measure_population_mean_per_bundle = {}
-    # for bundleName in measure_with_age_dict.keys() :
-    #     measure_population_mean_per_bundle[ bundleName ] = np.mean(
-    #                                   measure_with_age_dict[ bundleName ][ 1 ] )
+    measure_population_mean_per_bundle = {}
+    for bundleName in measure_with_age_dict.keys() :
+        measure_population_mean_per_bundle[ bundleName ] = np.mean(
+                                      measure_with_age_dict[ bundleName ][ 1 ] )
 
     bundles_names = os.listdir( bundles_dir )
     with open(dict_values_path, 'rb') as handle:
@@ -224,6 +234,7 @@ def main() :
 
     _streamlines = []
     _measure_values = []
+
     for _bundle in bundles_names :
         bundle_path = os.path.join( bundles_dir, _bundle )
         _bundle_name = _bundle.replace( ".trk", "" )
@@ -234,52 +245,57 @@ def main() :
                 if dict_values[ _bundle_name ] == -1 :
                     continue
                 else :
-                    for fiber in bundle_data.streamlines :
-                        _streamlines.append( fiber )
                     if dict_values[ _bundle_name ][ "breakpoint" ] < age :
-                        tmpMeasureValue = dict_values[ _bundle_name ][ "a2" ]
-                        # tmpMeasureValue = ( 100 *
-                        #             ( dict_values[ _bundle_name ][ "a2" ] /
-                        #             measure_population_mean_per_bundle[ bundleName ] ) )
-
+                        # tmpMeasureValue = dict_values[ _bundle_name ][ "a2" ]
+                        tmpMeasureValue = ( 100 *
+                                    ( dict_values[ _bundle_name ][ "a2" ] /
+                                    measure_population_mean_per_bundle[ bundleName ] ) )
                     else :
-                        tmpMeasureValue = dict_values[ _bundle_name ][ "a1" ]
-                        # tmpMeasureValue = ( 100 *
-                        #             ( dict_values[ _bundle_name ][ "a1" ] /
-                        #             measure_population_mean_per_bundle[ bundleName ] ) )
-
-                    _measure_values += nbStreamlines * [ tmpMeasureValue ]
+                        # tmpMeasureValue = dict_values[ _bundle_name ][ "a1" ]
+                        tmpMeasureValue = ( 100 *
+                                    ( dict_values[ _bundle_name ][ "a1" ] /
+                                    measure_population_mean_per_bundle[ bundleName ] ) )
             except :
-                for fiber in bundle_data.streamlines :
-                    _streamlines.append( fiber )
                 if dict_values[ _bundle_name ][ "breakpoint" ] < age :
-                    tmpMeasureValue = dict_values[ _bundle_name ][ "a2" ]
-                    # tmpMeasureValue = ( 100 *
-                    #             ( dict_values[ _bundle_name ][ "a2" ] /
-                    #             measure_population_mean_per_bundle[ bundleName ] ) )
-
+                    # tmpMeasureValue = dict_values[ _bundle_name ][ "a2" ]
+                    tmpMeasureValue = ( 100 *
+                                ( dict_values[ _bundle_name ][ "a2" ] /
+                                measure_population_mean_per_bundle[ bundleName ] ) )
                 else :
-                    tmpMeasureValue = dict_values[ _bundle_name ][ "a1" ]
-                    # tmpMeasureValue = ( 100 *
-                    #             ( dict_values[ _bundle_name ][ "a1" ] /
-                    #             measure_population_mean_per_bundle[ bundleName ] ) )
+                    # tmpMeasureValue = dict_values[ _bundle_name ][ "a1" ]
+                    tmpMeasureValue = ( 100 *
+                                ( dict_values[ _bundle_name ][ "a1" ] /
+                                measure_population_mean_per_bundle[ bundleName ] ) )
 
-                _measure_values += nbStreamlines * [ tmpMeasureValue ]
 
-    for _bundle_name in dict_values :
-        try :
-            if dict_values[ _bundle_name ] == -1 :
-                continue
-            else :
-                _a1 = dict_values[ _bundle_name ][ "a1" ]
-                _a2 = dict_values[ _bundle_name ][ "a2" ]
-                print( f"{_bundle_name} : {_a1}\t|\t{_a2}" )
-        except :
-            _a1 = dict_values[ _bundle_name ][ "a1" ]
-            _a2 = dict_values[ _bundle_name ][ "a2" ]
-            print( f"{_bundle_name} : {_a1}\t|\t{_a2}" )
-            # tmpMeasure = measure_population_mean_per_bundle[ _bundle_name ]
-            # print( f"{_bundle_name} : {tmpMeasure}" )
+            # if tmpMeasureValue > 0.0 :
+            #     continue
+
+            print( f"{_bundle_name} : {tmpMeasureValue}" )
+
+            for fiber in bundle_data.streamlines :
+                _streamlines.append( fiber )
+            _measure_values += nbStreamlines * [ tmpMeasureValue ]
+
+    # for _bundle_name in dict_values :
+    #     try :
+    #         if dict_values[ _bundle_name ] == -1 :
+    #             continue
+    #         else :
+    #             _a1 = dict_values[ _bundle_name ][ "a1" ]
+    #             _a2 = dict_values[ _bundle_name ][ "a2" ]
+    #             print( f"{_bundle_name} : {_a1}\t|\t{_a2}" )
+    #     except :
+    #         _a1 = dict_values[ _bundle_name ][ "a1" ]
+    #         _a2 = dict_values[ _bundle_name ][ "a2" ]
+    #         print( f"{_bundle_name} : {_a1}\t|\t{_a2}" )
+    #         # tmpMeasure = measure_population_mean_per_bundle[ _bundle_name ]
+    #         # print( f"{_bundle_name} : {tmpMeasure}" )
+
+
+    nbBins =  round( len( list( np.unique( _measure_values ) ) ) / 4 )
+    n, bins, patches = plt.hist( np.unique( _measure_values ), bins = nbBins )
+    plt.show()
 
     measure_min = min( _measure_values )
     measure_max = max( _measure_values )
@@ -291,11 +307,6 @@ def main() :
     _measure_values = np.array( _measure_values )
     zeroInNormalizedSlope = ( - measure_min ) / ( measure_max - measure_min )
 
-    # tmpCounter = 0
-    # for tmpValue in np.unique( _measure_values ) :
-    #     print( f"{tmpCounter} : {tmpValue}" )
-    #     tmpCounter += 1
-
 
     print( "\nValue in colormap\tTrue slope value" )
     print( f"0                \t{measure_min}" )
@@ -303,11 +314,13 @@ def main() :
     print( f"{zeroInNormalizedSlope}                \t0" )
 
     # hue = (0.5, 0.5)  # blue only
-    # saturation = (0.0, 1.0)  # black to white
+    # hue = (0.5, 0.6)  # blue only
+    hue = (0.7, 0.6)  # blue only
+    saturation = (0.9, 0.0)  # black to white
+    # saturation = (1.0, 0.5)  # black to white
     lut_cmap = actor.colormap_lookup_table( scale_range = ( measure_min,
-                                                                 measure_max ) )
-
-    stream_actor2 = actor.line( _streamlines, _measure_values, linewidth=0.5,
+                                            measure_max ), hue_range = hue, saturation_range = saturation )
+    stream_actor2 = actor.line( _streamlines, _measure_values, linewidth=0.1,
                                                       lookup_colormap=lut_cmap )
     # stream_actor2 = actor.line(bundle.streamlines, fa, linewidth=0.1)
 
