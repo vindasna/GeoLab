@@ -253,9 +253,61 @@ def main() :
     # measure_min = min( [ min( measure_values_1 ), min( measure_values_2 ) ] )
     # measure_max = max( [ max( measure_values_1 ), max( measure_values_2 ) ] )
 
+
+    measure_values_dict = {}
+    for _bundle in bundles_names :
+        bundle_path = os.path.join( bundles_dir, _bundle )
+        _bundle_name = _bundle.replace( ".trk", "" )
+        if ( _bundle_name in dict_values.keys() and
+                           _bundle_name in resultsFdrCorrection.keys() and
+                                        resultsFdrCorrection[ _bundle_name ] ) :
+            try :
+                if dict_values[ _bundle_name ] == -1 :
+                    continue
+                else :
+                    if dict_values[ _bundle_name ][ "breakpoint" ] < age :
+                        # tmpMeasureValue = dict_values[ _bundle_name ][ "a2" ]
+                        tmpMeasureValue = ( 100 *
+                                    ( dict_values[ _bundle_name ][ "a2" ] /
+                                    measure_population_mean_per_bundle[ bundleName ] ) )
+                    else :
+                        # tmpMeasureValue = dict_values[ _bundle_name ][ "a1" ]
+                        tmpMeasureValue = ( 100 *
+                                    ( dict_values[ _bundle_name ][ "a1" ] /
+                                    measure_population_mean_per_bundle[ bundleName ] ) )
+            except :
+                if dict_values[ _bundle_name ][ "breakpoint" ] < age :
+                    # tmpMeasureValue = dict_values[ _bundle_name ][ "a2" ]
+                    tmpMeasureValue = ( 100 *
+                                ( dict_values[ _bundle_name ][ "a2" ] /
+                                measure_population_mean_per_bundle[ bundleName ] ) )
+                else :
+                    # tmpMeasureValue = dict_values[ _bundle_name ][ "a1" ]
+                    tmpMeasureValue = ( 100 *
+                                ( dict_values[ _bundle_name ][ "a1" ] /
+                                measure_population_mean_per_bundle[ bundleName ] ) )
+
+            measure_values_dict[ _bundle_name ] = tmpMeasureValue
+
+    nbMeasures = len( measure_values_dict.keys() )
+    mean_slopes = np.mean( list( measure_values_dict.values() ) )
+    std_slopes = np.std( list( measure_values_dict.values() ) )
+    print( f"Mean slopes {measure_name} : {mean_slopes} +- {std_slopes}" )
+    plt.plot( range( nbMeasures ), measure_values_dict.values(), "bo" )
+    plt.plot( range( nbMeasures ), [ mean_slopes ] * nbMeasures, "k-" )
+    plt.plot( range( nbMeasures ),
+                               [ mean_slopes - std_slopes ] * nbMeasures, "r-" )
+    plt.plot( range( nbMeasures ),
+                               [ mean_slopes + std_slopes ] * nbMeasures, "r-" )
+    plt.xlabel( "Bundle number" )
+    plt.ylabel( f"Slopes {measure_name}" )
+    plt.show()
+    plt.clf()
+
+
     _streamlines = []
     _measure_values = []
-
+    measure_values_dict = {}
     for _bundle in bundles_names :
         bundle_path = os.path.join( bundles_dir, _bundle )
         _bundle_name = _bundle.replace( ".trk", "" )
@@ -296,11 +348,19 @@ def main() :
             # if measure_name == "ICVF" and tmpMeasureValue < 0.0 :
             #     continue
 
+            # if measure_name == "MD" and tmpMeasureValue > 1.0 :
+            #     continue
+
+            # if ( mean_slopes - 2 * std_slopes > tmpMeasureValue or
+            #                   mean_slopes + 2 * std_slopes < tmpMeasureValue ) :
+            #     continue
+
             print( f"{_bundle_name} : {tmpMeasureValue}" )
 
             for fiber in bundle_data.streamlines :
                 _streamlines.append( fiber )
             _measure_values += nbStreamlines * [ tmpMeasureValue ]
+            measure_values_dict[ _bundle_name ] = tmpMeasureValue
 
     # for _bundle_name in dict_values :
     #     try :
@@ -318,12 +378,12 @@ def main() :
     #         # print( f"{_bundle_name} : {tmpMeasure}" )
 
 
-    measure_values_unique = np.unique( _measure_values )
-    nbBins =  round( len( list( measure_values_unique ) ) / 4 )
-    n, bins, patches = plt.hist( measure_values_unique, bins = nbBins )
+    nbBins =  round( nbMeasures / 4 )
+    n, bins, patches = plt.hist( measure_values_dict.values(), bins = nbBins )
     plt.xlabel( f"Slopes {measure_name}" )
     plt.ylabel( "Number of slopes" )
     plt.show()
+    plt.clf()
 
     measure_min = min( _measure_values )
     measure_max = max( _measure_values )
