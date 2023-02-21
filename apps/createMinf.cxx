@@ -230,6 +230,7 @@ int main( int argc, char* argv[] )
 
     inputBundleInfo.fillDefaultTrk() ;
     inputBundleInfo.isTrk = true ;
+    inputBundleInfo.haveMinf = true ;
 
   }
   else // Already checked that the only formats possible are .trk and .tck
@@ -237,6 +238,7 @@ int main( int argc, char* argv[] )
 
     inputBundleInfo.fillDefaultTck() ;
     inputBundleInfo.isTck = true ;
+    inputBundleInfo.haveMinf = true ;
 
   }
 
@@ -245,7 +247,9 @@ int main( int argc, char* argv[] )
 
 
   ///////////////////////// Saving corrected tractogram ////////////////////////
+  std::cout << "Saving in : " << outputFilename << std::endl ;
   inputBundleInfo.write( outputFilename.c_str() ) ;
+  std::cout << "Done" << std::endl ;
 
 
   return 0 ;
