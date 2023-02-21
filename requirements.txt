@@ -21,7 +21,7 @@ cycler==0.10.0
 Cython==0.29.24
 decorator==4.4.2
 dicom==0.9.9.post1
-dipy==1.5.0
+dipy==1.4.0
 docker==2.5.1
 docker-pycreds==0.2.1
 docutils==0.14
@@ -55,7 +55,7 @@ matplotlib==3.3.4
 multi-key-dict==2.0.3
 netifaces==0.10.4
 networkx==2.5.1
-nibabel==3.2.1
+nibabel==3.2.2
 nitime==0.9
 numpy==1.19.5
 olefile==0.45.1
@@ -143,6 +143,7 @@ typing-extensions==3.7.4.3
 u-msgpack-python==2.1
 urllib3==1.26.6
 virtualenv==15.1.0
+vtk==9.1.0
 wcwidth==0.1.7
 webcolors==1.11.1
 webencodings==0.5
