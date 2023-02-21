@@ -1,6 +1,6 @@
-*.trk filter=lfs diff=lfs merge=lfs -text
-*.tck filter=lfs diff=lfs merge=lfs -text
-*.bundles filter=lfs diff=lfs merge=lfs -text
-*.bundlesdata filter=lfs diff=lfs merge=lfs -text
-*.h5 filter=lfs diff=lfs merge=lfs -text
-*.zip filter=lfs diff=lfs merge=lfs -text
+SGT/*.trk filter=lfs diff=lfs merge=lfs -text
+SGT/*.tck filter=lfs diff=lfs merge=lfs -text
+SGT/*.bundles filter=lfs diff=lfs merge=lfs -text
+SGT/*.bundlesdata filter=lfs diff=lfs merge=lfs -text
+SGT/*.h5 filter=lfs diff=lfs merge=lfs -text
+SGT/*.zip filter=lfs diff=lfs merge=lfs -text
