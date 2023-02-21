@@ -989,7 +989,7 @@ def saveFDRcorrection( rejectedTests, bundlesNamesComputed,
         for i in range( len( rejectedTests ) ) :
             bundleName = bundlesNamesComputed[ i ]
             isTestRejected = rejectedTests[ i ]
-            f.write( f"{isTestRejected} : {bundleName}\n" )
+            f.write( f"{bundleName} : {isTestRejected}\n" )
 
 def main() :
     global verbose, processCounter, slope_dict_piecewise, slope_dict_linear, \

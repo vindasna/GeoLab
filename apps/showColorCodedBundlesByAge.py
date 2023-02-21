@@ -85,13 +85,18 @@ def get_cmd_line_args():
     required.add_argument(
         "-ma", "--measure-age",
         type=is_file, required=True, metavar="<path>",
-        choices=["FA", "MD", "OD", "ISOVF", "ICVF" ],
         help=( "Path to the .txt containing the measure with age "
                                     "(usually called ${Measure}AndAge.txt) " ) )
 
     required.add_argument(
+        "-fdr", "--fdr-correction",
+        type=is_file, required=True, metavar="<path>",
+        help=( "Path to the fdrcorrection.txt" ) )
+
+    required.add_argument(
         "-mn", "--measure-name",
         type=str, required=True, metavar="<path>",
+        choices=["FA", "MD", "OD", "ISOVF", "ICVF" ],
         help=( "Measure name (FA, MD, OD, ISOVF, ICVF)" ) )
 
     required.add_argument(
@@ -166,6 +171,18 @@ def readFileWithMeansMeasure( path ) :
     return( data_dict )
 
 
+def readFdrCorrection( path ) :
+    outDict = {}
+    with open( path, "r" ) as f :
+        for line in f :
+            words = line.split( " : " )
+            bundleName = words[ 0 ]
+            isTestRejected = ( True if words[ 1 ].replace( "\n", "" ) == "True"
+                                                                    else False )
+            outDict[ bundleName ] = isTestRejected
+    return( outDict )
+
+
 
 def main() :
     """
@@ -178,6 +195,8 @@ def main() :
     dict_values_path = inputs[ "measure_dict" ]
 
     measure_with_age_path = inputs[ "measure_age" ]
+
+    fdr_correction_path = inputs[ "fdr_correction" ]
 
     measure_name = inputs[ "measure_name" ]
 
@@ -193,6 +212,8 @@ def main() :
     for bundleName in measure_with_age_dict.keys() :
         measure_population_mean_per_bundle[ bundleName ] = np.mean(
                                       measure_with_age_dict[ bundleName ][ 1 ] )
+
+    resultsFdrCorrection = readFdrCorrection( fdr_correction_path )
 
     bundles_names = os.listdir( bundles_dir )
     with open(dict_values_path, 'rb') as handle:
@@ -238,7 +259,9 @@ def main() :
     for _bundle in bundles_names :
         bundle_path = os.path.join( bundles_dir, _bundle )
         _bundle_name = _bundle.replace( ".trk", "" )
-        if _bundle_name in dict_values.keys() :
+        if ( _bundle_name in dict_values.keys() and
+                           _bundle_name in resultsFdrCorrection.keys() and
+                                        resultsFdrCorrection[ _bundle_name ] ) :
             bundle_data = load_tractogram( bundle_path , "same" )
             nbStreamlines = len( bundle_data )
             try :
@@ -267,8 +290,10 @@ def main() :
                                 ( dict_values[ _bundle_name ][ "a1" ] /
                                 measure_population_mean_per_bundle[ bundleName ] ) )
 
+            # if measure_name == "FA" and tmpMeasureValue < 0.0 :
+            #     continue
 
-            # if tmpMeasureValue > 0.0 :
+            # if measure_name == "ICVF" and tmpMeasureValue < 0.0 :
             #     continue
 
             print( f"{_bundle_name} : {tmpMeasureValue}" )
@@ -293,8 +318,11 @@ def main() :
     #         # print( f"{_bundle_name} : {tmpMeasure}" )
 
 
-    nbBins =  round( len( list( np.unique( _measure_values ) ) ) / 4 )
-    n, bins, patches = plt.hist( np.unique( _measure_values ), bins = nbBins )
+    measure_values_unique = np.unique( _measure_values )
+    nbBins =  round( len( list( measure_values_unique ) ) / 4 )
+    n, bins, patches = plt.hist( measure_values_unique, bins = nbBins )
+    plt.xlabel( f"Slopes {measure_name}" )
+    plt.ylabel( "Number of slopes" )
     plt.show()
 
     measure_min = min( _measure_values )
