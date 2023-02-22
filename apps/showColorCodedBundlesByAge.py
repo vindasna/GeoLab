@@ -122,13 +122,13 @@ def get_cmd_line_args():
 
     parser.add_argument(
         "-thrMin", "--threshold-min",
-        type=float, default=None,
+        type=float, default=float( "-inf" ),
         help=("Minimum value for measure (only shows bundles with measure > "
                                                                   "threshold)"))
 
     parser.add_argument(
         "-thrMax", "--threshold-max",
-        type=float, default=None,
+        type=float, default=float( "inf" ),
         help=("Maximum value for measure (only shows bundles with measure < "
                                                                   "threshold)"))
 
@@ -440,11 +440,13 @@ def main() :
             #                   mean_slopes + 2 * std_slopes < tmpMeasureValue ) :
             #     continue
 
-            if thr_min_measure and tmpMeasureValue < thr_min_measure :
+            if ( thr_min_measure > float( "-inf" ) and
+                                           tmpMeasureValue < thr_min_measure ) :
                 countSkippedBundles += 1
                 continue
 
-            if thr_max_measure and tmpMeasureValue > thr_max_measure :
+            if ( thr_max_measure < float( "inf" ) and
+                                           tmpMeasureValue > thr_max_measure ) :
                 countSkippedBundles += 1
                 continue
 
