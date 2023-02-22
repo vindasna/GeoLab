@@ -64,6 +64,7 @@ int nbThreadsUsed ;
 int minimumNumberFibers = 1 ;
 float thrPercentageSimilarity = 0.00001 ;
 
+bool isEsbaAtlas = false ;
 bool isFullAtlas = false ;
 bool isAtlasNeighborhoodCentroids = false ;
 bool isAtlasNeighborhood = false ;

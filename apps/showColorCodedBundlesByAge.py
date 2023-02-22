@@ -1,11 +1,9 @@
 #!/usr/bin/python3
 import os, sys, shutil
 import numpy as np
-from dipy.viz import window, actor
-from dipy.data import fetch_bundles_2_subjects, read_bundles_2_subjects
-from dipy.tracking.streamline import transform_streamlines
-from dipy.io.stateful_tractogram import Space, StatefulTractogram
-from dipy.io.streamline import load_tractogram, save_tractogram
+from dipy.viz import window, actor, ui
+from dipy.io.streamline import load_tractogram
+from dipy.io.image import load_nifti
 
 import pickle
 
@@ -28,6 +26,13 @@ class bcolors:
     BOLD = '\033[1m'
     UNDERLINE = '\033[4m'
 
+#-----------------------------------------#
+panel = None
+size = None
+data = None
+image_actor_x = None
+image_actor_y = None
+image_actor_z = None
 #-----------------------------------------#
 
 
@@ -105,6 +110,11 @@ def get_cmd_line_args():
         help=( "Age to show color coded" ) )
 
     # Optional arguments
+    parser.add_argument(
+        "-r", "--reference",
+        type=str, default="",
+        help="Path to the .nii reference image for the bundles" )
+
     parser.add_argument(
         "-wn", "--window-title",
         type=str, default="showColorCodedBundlesByAge",
@@ -184,7 +194,59 @@ def readFdrCorrection( path ) :
 
 
 
+def change_slice_x( slider ) :
+    global data, image_actor_x
+    x = int( np.round( slider.value ) )
+    image_actor_x.display_extent( x, x, 0, data.shape[ 1 ] - 1, 0,
+                                                           data.shape[ 2 ] - 1 )
+
+def change_slice_y( slider ) :
+    global data, image_actor_y
+    y = int( np.round( slider.value ) )
+    image_actor_y.display_extent( 0, data.shape[ 0 ] - 1, y, y, 0,
+                                                           data.shape[ 2 ] - 1 )
+
+def change_slice_z( slider ) :
+    global data, image_actor_z
+    z = int( np.round( slider.value ) )
+    image_actor_z.display_extent( 0, data.shape[ 0 ] - 1, 0,
+                                                     data.shape[ 1 ] - 1, z, z )
+
+
+def change_opacity( slider ) :
+    global image_actor_x, image_actor_y, image_actor_z
+    slicer_opacity = slider.value
+    image_actor_z.opacity( slicer_opacity )
+    image_actor_x.opacity( slicer_opacity )
+    image_actor_y.opacity( slicer_opacity )
+
+def build_label( text ):
+    label = ui.TextBlock2D()
+    label.message = text
+    label.font_size = 18
+    label.font_family = 'Arial'
+    label.justification = 'left'
+    label.bold = False
+    label.italic = False
+    label.shadow = False
+    label.background_color = ( 0, 0, 0 )
+    label.color = ( 1, 1, 1 )
+
+    return label
+
+
+
+# def win_callback( obj, event ) :
+#     global size, panel
+#     if size != obj.GetSize() :
+#         size_old = size
+#         size = obj.GetSize()
+#         size_change = [ size[ 0 ] - size_old[ 0 ], 0 ]
+#         panel.re_align( size_change )
+
+
 def main() :
+    global panel, size, data, image_actor_x, image_actor_y, image_actor_z
     """
     Parse the command line.
     """
@@ -201,6 +263,12 @@ def main() :
     measure_name = inputs[ "measure_name" ]
 
     age = inputs[ "age" ]
+
+    # Because reference_path is optional, we cannot use is_file in
+    # get_cmd_line_args
+    reference_path = inputs[ "reference" ]
+    if reference_path and not os.path.isfile( reference_path ) :
+        print( f"ERROR : reference image {reference_path} does not exists" )
 
     window_title = inputs[ "window_title" ]
 
@@ -355,7 +423,8 @@ def main() :
             #                   mean_slopes + 2 * std_slopes < tmpMeasureValue ) :
             #     continue
 
-            print( f"{_bundle_name} : {tmpMeasureValue}" )
+            if verbose > 1 :
+                print( f"{_bundle_name} : {tmpMeasureValue}" )
 
             for fiber in bundle_data.streamlines :
                 _streamlines.append( fiber )
@@ -401,22 +470,142 @@ def main() :
     print( f"1                \t{measure_max}" )
     print( f"{zeroInNormalizedSlope}                \t0" )
 
-    # hue = (0.5, 0.5)  # blue only
-    # hue = (0.5, 0.6)  # blue only
-    hue = (0.7, 0.6)  # blue only
-    saturation = (0.9, 0.0)  # black to white
-    # saturation = (1.0, 0.5)  # black to white
+    # hue = ( 0.5, 0.5 )  # blue only
+    # hue = ( 0.5, 0.6 )  # blue only
+    hue = ( 0.7, 0.6 )  # blue only
+    saturation = ( 0.9, 0.0 )  # black to white
+    # saturation = ( 1.0, 0.5 )  # black to white
     lut_cmap = actor.colormap_lookup_table( scale_range = ( measure_min,
-                                            measure_max ), hue_range = hue, saturation_range = saturation )
-    stream_actor2 = actor.line( _streamlines, _measure_values, linewidth=0.1,
+                                            measure_max ),
+                                            hue_range = hue,
+                                            saturation_range = saturation )
+
+    # Add streamilines
+    stream_actor = actor.line( _streamlines, _measure_values, linewidth=0.1,
                                                       lookup_colormap=lut_cmap )
-    # stream_actor2 = actor.line(bundle.streamlines, fa, linewidth=0.1)
+    # stream_actor = actor.line(bundle.streamlines, fa, linewidth=0.1)
+
 
     bar = actor.scalar_bar( lut_cmap )
 
-    scene.add(stream_actor2)
-    scene.add(bar)
-    window.show(scene, title = window_title, size=(600, 600), reset_camera=False)
+    scene.add( stream_actor )
+    scene.add( bar )
+
+    if ( reference_path ) :
+        size = scene.GetSize()
+
+        data, affine = load_nifti( reference_path )
+        image_actor_z = actor.slicer( data, affine )
+        image_actor_x = image_actor_z.copy()
+        x_midpoint = int( np.round( data.shape[ 0 ] / 2 ) )
+        image_actor_x.display_extent( x_midpoint,
+                                      x_midpoint, 0,
+                                      data.shape[ 1 ] - 1,
+                                      0,
+                                      data.shape[ 2 ] - 1 )
+
+        image_actor_y = image_actor_z.copy()
+        y_midpoint = int( np.round( data.shape[ 1 ] / 2 ) )
+        image_actor_y.display_extent( 0,
+                                      data.shape[ 0 ] - 1,
+                                      y_midpoint,
+                                      y_midpoint,
+                                      0,
+                                      data.shape[ 2 ] - 1 )
+
+        scene.add( image_actor_x )
+        scene.add( image_actor_y )
+        scene.add( image_actor_z )
+
+        show_m = window.ShowManager(
+                                    scene, title = window_title,
+                                    size = ( 1200, 900 ), reset_camera = False )
+        show_m.initialize()
+
+        line_slider_x = ui.LineSlider2D( min_value = 0,
+                                         max_value = data.shape[ 0 ] - 1,
+                                         initial_value = data.shape[ 0 ] / 2,
+                                         text_template = "{value:.0f}",
+                                         length = 140 )
+
+        line_slider_y = ui.LineSlider2D( min_value = 0,
+                                         max_value = data.shape[ 1 ] - 1,
+                                         initial_value = data.shape[ 1 ] / 2,
+                                         text_template = "{value:.0f}",
+                                         length = 140 )
+
+        line_slider_z = ui.LineSlider2D( min_value = 0,
+                                         max_value = data.shape[ 2 ] - 1,
+                                         initial_value = data.shape[ 2 ] / 2,
+                                         text_template = "{value:.0f}",
+                                         length = 140 )
+
+        opacity_slider = ui.LineSlider2D( min_value = 0.0,
+                                          max_value = 1.0,
+                                          initial_value = 1.0,
+                                          length = 140 )
+
+        line_slider_z.on_change = change_slice_z
+        line_slider_x.on_change = change_slice_x
+        line_slider_y.on_change = change_slice_y
+        opacity_slider.on_change = change_opacity
+
+        line_slider_label_z = build_label( text = "Z Slice" )
+        line_slider_label_x = build_label( text = "X Slice" )
+        line_slider_label_y = build_label( text = "Y Slice" )
+        opacity_slider_label = build_label( text = "Opacity" )
+
+        panel = ui.Panel2D( size = ( 300, 200 ),
+                            color = ( 1, 1, 1 ),
+                            opacity = 0.1,
+                            align = "right" )
+        panel.center = ( 1030, 120 )
+
+        panel.add_element( line_slider_label_x, ( 0.1, 0.75 ) )
+        panel.add_element( line_slider_x, ( 0.38, 0.75 ) )
+        panel.add_element( line_slider_label_y, ( 0.1, 0.55 ) )
+        panel.add_element( line_slider_y, ( 0.38, 0.55 ) )
+        panel.add_element( line_slider_label_z, ( 0.1, 0.35 ) )
+        panel.add_element( line_slider_z, ( 0.38, 0.35 ) )
+        panel.add_element( opacity_slider_label, ( 0.1, 0.15 ) )
+        panel.add_element( opacity_slider, ( 0.38, 0.15 ) )
+
+        scene.add( panel )
+
+        def win_callback( obj, event ) :
+            global size
+            if size != obj.GetSize() :
+                size_old = size
+                size = obj.GetSize()
+                size_change = [ size[ 0 ] - size_old[ 0 ], 0 ]
+                panel.re_align( size_change )
+
+        show_m.initialize()
+
+        scene.zoom( 0.0 )
+        scene.reset_clipping_range()
+        show_m.add_window_callback( win_callback )
+        show_m.render()
+        show_m.start()
+
+        # interactive = True
+        #
+        # scene.zoom( 1.5 )
+        # scene.reset_clipping_range()
+        #
+        # if interactive :
+        #     show_m.add_window_callback( win_callback )
+        #     show_m.render()
+        #     show_m.start()
+        # else :
+        #     window.record( scene, out_path = outImagePath, size = ( 600, 600 ),
+        #                   reset_camera = False )
+
+        del show_m
+
+    else :
+        window.show( scene, title = window_title, size = ( 600, 600 ),
+                                                          reset_camera = False )
 
 if __name__ == "__main__" :
     main()

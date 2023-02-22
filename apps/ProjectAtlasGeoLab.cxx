@@ -1379,11 +1379,11 @@ int main( int argc, char* argv[] )
               << "[-ods] : Path to the dipyServer.py file \n"
               << "[-cds] : Path to the clientCloseServer.py file \n"
               << "[-fa] : Path to full atlas tractogram (mandatory for global "
-              << "SLR or if -anc is to given for other than ESBA atlas) \n"
+              << "SLR or if -anc is not given for other than ESBA atlas) \n"
               << "[-an] : Path to the atlas neighborhoods (must be given is -fa"
               << " is not given if other than ESBA atlas)\n"
               << "[-anc] : Path to the atlas neighborhoods centroids (must be "
-              << "given is -fa is not given if other than ESBA atlas)\n"
+              << "given is -fa is not given for other than ESBA atlas)\n"
               << "[-thrCov] : Threshold to keep bundles where coverage is "
               << "greater than thrCov (default : 0 -> keep all bundles ) \n"
               << "[-thrDBMP] : Threshold for maximum distance between medial "
@@ -1569,6 +1569,8 @@ int main( int argc, char* argv[] )
   if ( index_atlas )
   {
 
+    isEsbaAtlas = false ;
+
     atlasDirectory = argv[ index_atlas + 1 ] ;
     lastChar = atlasDirectory[ atlasDirectory.size() - 1 ] ;
     if ( lastChar != '/' )
@@ -1592,6 +1594,8 @@ int main( int argc, char* argv[] )
   }
   else
   {
+
+    isEsbaAtlas = true ;
 
     std::stringstream atlasDirectoryOss  ;
     atlasDirectoryOss << default_ESBA_DIR << "Esba" << formatUpper ;
@@ -1899,36 +1903,41 @@ int main( int argc, char* argv[] )
   else
   {
 
-    std::stringstream atlasNeighborhoodDirectoryOss ;
-    atlasNeighborhoodDirectoryOss << default_ESBA_DIR << "Neighborhood"
+    if ( isEsbaAtlas )
+    {
+
+      std::stringstream atlasNeighborhoodDirectoryOss ;
+      atlasNeighborhoodDirectoryOss << default_ESBA_DIR << "Neighborhood"
                                                                 << formatUpper ;
-    atlasNeighborhoodDirectory = atlasNeighborhoodDirectoryOss.str() ;
+      atlasNeighborhoodDirectory = atlasNeighborhoodDirectoryOss.str() ;
 
-    lastChar = atlasNeighborhoodDirectory[ atlasNeighborhoodDirectory.size()
+      lastChar = atlasNeighborhoodDirectory[ atlasNeighborhoodDirectory.size()
                                                                          - 1 ] ;
-    if ( lastChar != '/' )
-    {
+      if ( lastChar != '/' )
+      {
 
-      atlasNeighborhoodDirectory = atlasNeighborhoodDirectory + "/" ;
+        atlasNeighborhoodDirectory = atlasNeighborhoodDirectory + "/" ;
 
-    }
-    if ( !is_dir( atlasNeighborhoodDirectory ) )
-    {
+      }
+      if ( !is_dir( atlasNeighborhoodDirectory ) )
+      {
 
-      std::stringstream outMessageOss ;
-      outMessageOss << "WARNING : Default atlas neighborhood directory "
-                    << atlasNeighborhoodDirectory << " does not exists, you "
-                    << "might not have set the ESBA_DIR environment variable"
-                    << "correctly, the atlas neighborhood will be computed on "
-                    << "the fly" << std::endl ;
-      std::string outMessage = outMessageOss.str() ;
-      std::cout << outMessage ;
+        std::stringstream outMessageOss ;
+        outMessageOss << "WARNING : Default atlas neighborhood directory "
+                      << atlasNeighborhoodDirectory << " does not exists, you "
+                      << "might not have set the ESBA_DIR environment variable "
+                      << "correctly, the atlas neighborhood will be computed on"
+                      << " the fly" << std::endl ;
+        std::string outMessage = outMessageOss.str() ;
+        std::cout << outMessage ;
 
-    }
-    else
-    {
+      }
+      else
+      {
 
-      isAtlasNeighborhood = true ;
+        isAtlasNeighborhood = true ;
+
+      }
 
     }
 
@@ -1967,37 +1976,43 @@ int main( int argc, char* argv[] )
   else
   {
 
-    std::stringstream atlasNeighborhoodCentroidsDirectoryOss ;
-    atlasNeighborhoodCentroidsDirectoryOss << default_ESBA_DIR << "Centroids"
-                                                                << formatUpper ;
-    atlasNeighborhoodCentroidsDirectory =
-                                  atlasNeighborhoodCentroidsDirectoryOss.str() ;
-    lastChar = atlasNeighborhoodCentroidsDirectory[
-                              atlasNeighborhoodCentroidsDirectory.size() - 1 ] ;
-    if ( lastChar != '/' )
+    if ( isEsbaAtlas )
     {
 
-      atlasNeighborhoodCentroidsDirectory = atlasNeighborhoodCentroidsDirectory
+      std::stringstream atlasNeighborhoodCentroidsDirectoryOss ;
+      atlasNeighborhoodCentroidsDirectoryOss << default_ESBA_DIR << "Centroids"
+                                                                << formatUpper ;
+      atlasNeighborhoodCentroidsDirectory =
+                                  atlasNeighborhoodCentroidsDirectoryOss.str() ;
+      lastChar = atlasNeighborhoodCentroidsDirectory[
+                              atlasNeighborhoodCentroidsDirectory.size() - 1 ] ;
+      if ( lastChar != '/' )
+      {
+
+        atlasNeighborhoodCentroidsDirectory = atlasNeighborhoodCentroidsDirectory
                                                                          + "/" ;
 
-    }
-    if ( !is_dir( atlasNeighborhoodCentroidsDirectory ) )
-    {
+      }
+      if ( !is_dir( atlasNeighborhoodCentroidsDirectory ) )
+      {
 
-      std::stringstream outMessageOss ;
-      outMessageOss << "WARNING : Default atlas neighborhood centroids "
-                    << "directory "<< atlasNeighborhoodCentroidsDirectory
-                    << "does not exists, you might not have set the ESBA_DIR "
-                    << "environment variable correctly, the atlas neighborhood"
-                    << "centroids will be computed on the fly" << std::endl ;
-      std::string outMessage = outMessageOss.str() ;
-      std::cout << outMessage ;
+        std::stringstream outMessageOss ;
+        outMessageOss << "WARNING : Default atlas neighborhood centroids "
+                      << "directory "<< atlasNeighborhoodCentroidsDirectory
+                      << "does not exists, you might not have set the ESBA_DIR "
+                      << "environment variable correctly, the atlas "
+                      << "neighborhood centroids will be computed on the fly"
+                      << std::endl ;
+        std::string outMessage = outMessageOss.str() ;
+        std::cout << outMessage ;
 
-    }
-    else
-    {
+      }
+      else
+      {
 
-      isAtlasNeighborhoodCentroids = true ;
+        isAtlasNeighborhoodCentroids = true ;
+
+      }
 
     }
 
@@ -2018,7 +2033,7 @@ int main( int argc, char* argv[] )
          !endswith( tmpFullAtlasPath, ".tck" ) )
     {
 
-      std::string outMessage = "ConvertBundleFormat: Only supported formats " \
+      std::string outMessage = "ProjectAtlasGeoLab: Only supported formats " \
                                "for atlas are .bundles/.bundlesdata, .trk, " \
                                ".tck \n" ;
       throw( std::invalid_argument( outMessage ) ) ;
@@ -2033,6 +2048,8 @@ int main( int argc, char* argv[] )
                                                 tmpFullAtlasPath.size() - 1 ) ;
 
     }
+
+    fullAtlasFilename = tmpFullAtlasPath ;
 
 
     if ( !is_file( fullAtlasFilename ) )
@@ -2295,7 +2312,7 @@ int main( int argc, char* argv[] )
 
   }
 
-  /////////////////////////// Minimum number of fibers /////////////////////////
+  ///////////////////////////// Threshold similarity ///////////////////////////
   if ( index_thrSim )
   {
 
@@ -2319,7 +2336,7 @@ int main( int argc, char* argv[] )
 
   }
 
-  /////////////////////////// Minimum number of fibers /////////////////////////
+  ////////////////////// Adjacency threshold for comparison ////////////////////
   if ( index_adjCB )
   {
 
@@ -2431,7 +2448,7 @@ int main( int argc, char* argv[] )
 
   }
 
-  ////////////////////////// computeNeighborhood file //////////////////////////
+  //////////////////////////// registerBunldes file ////////////////////////////
   if ( index_rb )
   {
 
