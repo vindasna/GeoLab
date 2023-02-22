@@ -392,6 +392,7 @@ def main() :
     _streamlines = []
     _measure_values = []
     measure_values_dict = {}
+    countSkippedBundles = 0
     for _bundle in bundles_names :
         bundle_path = os.path.join( bundles_dir, _bundle )
         _bundle_name = _bundle.replace( ".trk", "" )
@@ -439,10 +440,12 @@ def main() :
             #                   mean_slopes + 2 * std_slopes < tmpMeasureValue ) :
             #     continue
 
-            if thr_min_measure and tmpMeasureValue > thr_min_measure :
+            if thr_min_measure and tmpMeasureValue < thr_min_measure :
+                countSkippedBundles += 1
                 continue
 
-            if thr_max_measure and tmpMeasureValue < thr_max_measure :
+            if thr_max_measure and tmpMeasureValue > thr_max_measure :
+                countSkippedBundles += 1
                 continue
 
             if verbose > 1 :
@@ -452,6 +455,8 @@ def main() :
                 _streamlines.append( fiber )
             _measure_values += nbStreamlines * [ tmpMeasureValue ]
             measure_values_dict[ _bundle_name ] = tmpMeasureValue
+
+    print( f"Discarded bundles because of thresholds : {countSkippedBundles}" )
 
     # for _bundle_name in dict_values :
     #     try :
