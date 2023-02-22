@@ -121,6 +121,18 @@ def get_cmd_line_args():
         help="Title for the window (default : showColorCodedBundlesByAge )")
 
     parser.add_argument(
+        "-thrMin", "--threshold-min",
+        type=float, default=None,
+        help=("Minimum value for measure (only shows bundles with measure > "
+                                                                  "threshold)"))
+
+    parser.add_argument(
+        "-thrMax", "--threshold-max",
+        type=float, default=None,
+        help=("Maximum value for measure (only shows bundles with measure < "
+                                                                  "threshold)"))
+
+    parser.add_argument(
         "-v", "--verbose",
         type=int, choices=[0, 1, 2], default=0,
         help="Increase the verbosity level: 0 silent, 1 verbose.")
@@ -234,18 +246,17 @@ def build_label( text ):
 
     return label
 
-
-
-# def win_callback( obj, event ) :
-#     global size, panel
-#     if size != obj.GetSize() :
-#         size_old = size
-#         size = obj.GetSize()
-#         size_change = [ size[ 0 ] - size_old[ 0 ], 0 ]
-#         panel.re_align( size_change )
+def win_callback( obj, event ) :
+    global size, panel
+    if size != obj.GetSize() :
+        size_old = size
+        size = obj.GetSize()
+        size_change = [ size[ 0 ] - size_old[ 0 ], 0 ]
+        panel.re_align( size_change )
 
 
 def main() :
+    # global size, data, image_actor_x, image_actor_y, image_actor_z
     global panel, size, data, image_actor_x, image_actor_y, image_actor_z
     """
     Parse the command line.
@@ -269,6 +280,11 @@ def main() :
     reference_path = inputs[ "reference" ]
     if reference_path and not os.path.isfile( reference_path ) :
         print( f"ERROR : reference image {reference_path} does not exists" )
+
+
+    thr_max_measure = inputs[ "threshold_max" ]
+
+    thr_min_measure = inputs[ "threshold_min" ]
 
     window_title = inputs[ "window_title" ]
 
@@ -423,6 +439,12 @@ def main() :
             #                   mean_slopes + 2 * std_slopes < tmpMeasureValue ) :
             #     continue
 
+            if thr_min_measure and tmpMeasureValue > thr_min_measure :
+                continue
+
+            if thr_max_measure and tmpMeasureValue < thr_max_measure :
+                continue
+
             if verbose > 1 :
                 print( f"{_bundle_name} : {tmpMeasureValue}" )
 
@@ -492,8 +514,6 @@ def main() :
     scene.add( bar )
 
     if ( reference_path ) :
-        size = scene.GetSize()
-
         data, affine = load_nifti( reference_path )
         image_actor_z = actor.slicer( data, affine )
         image_actor_x = image_actor_z.copy()
@@ -558,8 +578,8 @@ def main() :
         panel = ui.Panel2D( size = ( 300, 200 ),
                             color = ( 1, 1, 1 ),
                             opacity = 0.1,
-                            align = "right" )
-        panel.center = ( 1030, 120 )
+                            align = "left" )
+        panel.center = ( 170, 120 )
 
         panel.add_element( line_slider_label_x, ( 0.1, 0.75 ) )
         panel.add_element( line_slider_x, ( 0.38, 0.75 ) )
@@ -572,17 +592,8 @@ def main() :
 
         scene.add( panel )
 
-        def win_callback( obj, event ) :
-            global size
-            if size != obj.GetSize() :
-                size_old = size
-                size = obj.GetSize()
-                size_change = [ size[ 0 ] - size_old[ 0 ], 0 ]
-                panel.re_align( size_change )
-
+        size = scene.GetSize()
         show_m.initialize()
-
-        scene.zoom( 0.0 )
         scene.reset_clipping_range()
         show_m.add_window_callback( win_callback )
         show_m.render()
@@ -590,7 +601,7 @@ def main() :
 
         # interactive = True
         #
-        # scene.zoom( 1.5 )
+        # scene.zoom( 1.5 ) # It is better not to uncomment this line
         # scene.reset_clipping_range()
         #
         # if interactive :
