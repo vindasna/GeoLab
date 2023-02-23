@@ -31,7 +31,7 @@ The contents of this repository are released under Apache-2.0 license.
 ## Quick install
 
 1. Install dependencies.
-2. In ./GeoLab/CMakeLists.txt change in line 19 ("set(ENV{PYTHONPATH} "PATH_TO_YOUR_PYTHON_MODULES")") PATH_TO_YOUR_PYTHON_MODULES to the path with your python modules (for default python in ubuntu you can delete the line or change for : /home/nv264568/.local/lib/python3.6/site-packages)
+2. In ./GeoLab/CMakeLists.txt line 19 ("set(PYTHON_BINARY "/usr/bin/python3")") replace "/usr/bin/python3" by your python binary if you are using a virtual environment..
 3. Clone Git repository and compile:
 
     $ git clone https://github.com/vindasna/GeoLab
@@ -57,11 +57,6 @@ The contents of this repository are released under Apache-2.0 license.
 5. Check installation :
  
     $ ProjectAtlasGeoLab -h
-
-6. If you are using a virtual environment for python, change the first line in {GeoLab Path}/build/bin/*.py FILES :
-   
-    $ #!/usr/bin/python3 (original line)    --->    $ #!{your python binary} 
- 
 
 ## Usage example on ESBA atlas
 
