@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!${PYTHON_BINARY}
 
 import sys, os, subprocess, shutil
 

@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!${PYTHON_BINARY}
 import os, sys, shutil
 import numpy as np
 from dipy.viz import window, actor
