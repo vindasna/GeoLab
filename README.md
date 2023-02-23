@@ -31,7 +31,7 @@ The contents of this repository are released under Apache-2.0 license.
 ## Quick install
 
 1. Install dependencies.
-2. In ./GeoLab/CMakeLists.txt line 19 ("set(PYTHON_BINARY "/usr/bin/python3")") replace "/usr/bin/python3" by your python binary if you are using a virtual environment..
+2. In ./GeoLab/CMakeLists.txt line 19 ("set(PYTHON_BINARY "/usr/bin/python3")") replace "/usr/bin/python3" by your python binary if you are using a virtual environment or if your python binary is not in the default path.
 3. Clone Git repository and compile:
 
     $ git clone https://github.com/vindasna/GeoLab
