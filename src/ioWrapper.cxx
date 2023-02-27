@@ -464,7 +464,8 @@ std::vector<std::string> getFilesInDirectoryWithExtension(
                   << extension << std::endl ;
     std::string outMessage = outMessageOss.str() ;
 
-    throw( std::invalid_argument( outMessage ) ) ;
+    // throw( std::invalid_argument( outMessage ) ) ;
+    std::cout << "WARNING : " << outMessage ;
 
   }
 

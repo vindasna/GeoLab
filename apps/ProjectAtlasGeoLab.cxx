@@ -4170,10 +4170,15 @@ int main( int argc, char* argv[] )
 
     std::vector<std::string> tmpMinfFiles = getFilesInDirectoryWithExtension(
                                                     outputDirectory, ".minf" ) ;
-    for ( std::string minfFile : tmpMinfFiles )
+    if ( tmpMinfFiles.size() > 0 )
     {
 
-      rmfile( minfFile ) ;
+      for ( std::string minfFile : tmpMinfFiles )
+      {
+
+        rmfile( minfFile ) ;
+
+      }
 
     }
 
