@@ -2907,7 +2907,8 @@ int main( int argc, char* argv[] )
 				                        << "-maxLen " << 200 << " "
                                 << "-tolThr " << toleranceThrComputeNeighborhood
                                                                           << " "
-                                << "-nbThreads " << nbCores << " "
+                                // << "-nbThreads " << nbCores << " "
+                                << "-nbThreads " << nbThreads << " "
                                 << "-v " ;
   std::string computeNeighborhoodCommand = computeNeighborhoodCommandOss.str() ;
   int isNeighborhoodFail = 0 ;
@@ -2927,7 +2928,6 @@ int main( int argc, char* argv[] )
   }
   else
   {
-
 
     isNeighborhoodFail = run_sh_process( computeNeighborhoodCommand ) ;
 
@@ -3007,7 +3007,8 @@ int main( int argc, char* argv[] )
                         << "-a " << atlasDirectory << " "
                         << "-o " << tmpNeighborhoodAtlasDir << " "
                         << "-tolThr " << toleranceThrComputeNeighborhood << " "
-                        << "-nbThreads " << nbCores << " "
+                        // << "-nbThreads " << nbCores << " "
+                        << "-nbThreads " << nbThreads << " "
                         << "-v " ;
     std::string computeAtlasNeighborhoodCommand =
                                       computeAtlasNeighborhoodCommandOss.str() ;

@@ -152,3 +152,5 @@ float getAverageDistanceBetweenMedialPoints(
                                            const std::string& bundleFilename ) ;
 //
 int getNbFibers( const std::string& bundleFilename ) ;
+//
+void process_mem_usage(double& vm_usage, double& resident_set) ;

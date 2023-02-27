@@ -192,8 +192,8 @@ int main( int argc, char* argv[] )
   const auto start_time = std::chrono::system_clock::now() ;
 
   int index_input, index_atlas, index_output, index_thr, index_minLen,
-                                index_maxLen, index_tolThr, index_verbose,
-                                                   index_nbThreads, index_help ;
+                                    index_maxLen, index_tolThr, index_nbThreads,
+                                           index_lm, index_verbose, index_help ;
   index_input = getFlagPosition( argc, argv, "-i" ) ;
   index_atlas = getFlagPosition( argc, argv, "-a" ) ;
   index_output = getFlagPosition( argc, argv, "-o" ) ;
@@ -202,6 +202,7 @@ int main( int argc, char* argv[] )
   index_maxLen = getFlagPosition( argc, argv, "-maxLen" ) ;
   index_tolThr = getFlagPosition( argc, argv, "-tolThr" ) ;
   index_nbThreads = getFlagPosition( argc, argv, "-nbThreads" ) ;
+  index_lm = getFlagPosition( argc, argv, "-lm" ) ;
   index_verbose = getFlagPosition( argc, argv, "-v" ) ;
   index_help = getFlagPosition( argc, argv, "-h" ) ;
 
@@ -222,6 +223,8 @@ int main( int argc, char* argv[] )
               << "[-thr] : Threshold distance (Default = maxRadius) \n"
               << "[-nbThreads] : Sets the value of omp_set_num_threads "
               << "(default : number of cores ) \n"
+              << "[-lm] : Use a memory efficient approach for computing the "
+              << "neighborhood but it increases computation time"
               << "[-v] : Set verbosity level at 1 \n"
               << "[-h] : Show this message " << std::endl ;
     exit( 1 ) ;
@@ -354,6 +357,36 @@ int main( int argc, char* argv[] )
 
   }
   std::cout << "Number of threads : " << nbThreadsUsed << std::endl ;
+
+
+
+  if ( index_lm )
+  {
+
+    std::string _tmpIndexLm( argv[ index_lm + 1 ] ) ;
+    if ( _tmpIndexLm == "true" )
+    {
+
+      isLowMemory = true ;
+
+    }
+    else if ( _tmpIndexLm == "false" )
+    {
+
+      isLowMemory = false ;
+
+    }
+    else
+    {
+
+      std::cout << "Argument of -lm must be either \"true\" or \"false\" "
+                << std::endl ;
+      exit( 1 ) ;
+
+    }
+
+  }
+
 
 
   if ( index_verbose )
@@ -497,7 +530,7 @@ int main( int argc, char* argv[] )
 
   int nbBundlesAtlas = atlasBundles.bundlesMinf.size() ;
 
-  if ( verbose )
+  if ( !isLowMemory )
   {
 
     std::cout << "Processing bundles..." << std::endl ;
@@ -505,9 +538,18 @@ int main( int argc, char* argv[] )
   }
 
 
-  #pragma omp parallel for num_threads( nbThreadsUsed )
+  #pragma omp parallel for num_threads( nbThreadsUsed ) if(!isLowMemory)
   for ( int bundle = 0 ; bundle < nbBundlesAtlas ; bundle++ )
   {
+
+    if ( isLowMemory )
+    {
+
+      printf( "\rProcessing bundle : [ %d  /  %d ]",
+                                                  bundle + 1, nbBundlesAtlas ) ;
+      std::cout << "" << std::flush ;
+
+    }
 
     BundlesMinf& atlasBundleInfo = atlasBundles.bundlesMinf[ bundle ] ;
     BundlesData& atlasBundleData = atlasBundles.bundlesData[ bundle ] ;
@@ -564,23 +606,27 @@ int main( int argc, char* argv[] )
 
     int nbPoints = inputTractogram.pointsPerTrack[ 0 ] ;
 
-    std::vector<int> indexNeighborFibers( nbFibersTractogram, 0 ) ;
+    // std::vector<int> indexNeighborFibers( nbFibersTractogram, 0 ) ;
+    std::vector<int64_t> indexNeighborFibers ;
     int curveCountNeighborhood = 0 ;
     int64_t nbElementsExtractedNeighborhood = 0 ;
 
     bool isOK = false ;
 
+
     while ( !isOK )
     {
+
+      // Empty vector to avoid adding 2 times the same fiber
+      indexNeighborFibers = std::vector<int64_t>() ;
 
       curveCountNeighborhood = 0 ;
       nbElementsExtractedNeighborhood = 0 ;
 
-
+      // Parallel region here to avoid memory problems
+      #pragma omp parallel for num_threads( nbThreadsUsed ) if(isLowMemory)
       for ( int fiberIndex = 0 ; fiberIndex < nbFibersTractogram ; fiberIndex++ )
       {
-
-        indexNeighborFibers[ fiberIndex ] = 0 ;
 
         int nbPointsFiber = inputTractogram.pointsPerTrack[ fiberIndex ] ;
 
@@ -618,14 +664,33 @@ int main( int argc, char* argv[] )
 
         float lengthFiber = inputTractogram.computeLengthFiber( fiberIndex ) ;
 
-        if ( distance < thresholdDistanceBundle && lengthFiber > minLength &&
-                                                lengthFiber < maxLengthBundle  )
+        if ( distance < thresholdDistanceBundle &&
+                     lengthFiber > minLength && lengthFiber < maxLengthBundle )
         {
 
-          indexNeighborFibers[ fiberIndex ] = 1 ;
+          if(isLowMemory)
+          {
 
-          nbElementsExtractedNeighborhood += 3 * nbPointsFiber ;
-          curveCountNeighborhood += 1 ;
+            #pragma omp critical
+            {
+
+              indexNeighborFibers.push_back( fiberIndex ) ;
+
+              nbElementsExtractedNeighborhood += 3 * nbPointsFiber ;
+              curveCountNeighborhood += 1 ;
+
+            }
+
+          }
+          else
+          {
+
+            indexNeighborFibers.push_back( fiberIndex ) ;
+
+            nbElementsExtractedNeighborhood += 3 * nbPointsFiber ;
+            curveCountNeighborhood += 1 ;
+
+          }
 
         }
 
@@ -662,37 +727,34 @@ int main( int argc, char* argv[] )
 
     }
 
-
-    std::vector<std::vector<float>> extractedNeighborhood ;
+    std::vector<std::vector<float>> extranbFibersTractogramctedNeighborhood ;
     std::vector<float> extractedNeighborhoodTotal(
                                           nbElementsExtractedNeighborhood, 0 ) ;
     std::vector<int32_t> pointsPerTrackNeighborhood ;
     int32_t fiberIndexNeighborhood = 0 ;
 
-    std::vector<int64_t> indexInTractogramOfNeighbors ;
 
-    for ( int fiberIndex = 0 ; fiberIndex < nbFibersTractogram ; fiberIndex++ )
+
+    for ( int selectedFiberIndex = 0 ;
+                               selectedFiberIndex < indexNeighborFibers.size() ;
+                                                          selectedFiberIndex++ )
     {
 
-      if ( indexNeighborFibers[ fiberIndex ] == 1 )
-      {
+      int fiberIndex = indexNeighborFibers[ selectedFiberIndex ] ;
 
-        int64_t offsetTractogram = 3 * nbPoints * fiberIndex ;
-        int offsetExtractedNeighborhood = 3 * nbPoints * fiberIndexNeighborhood ;
+      int64_t offsetTractogram = 3 * nbPoints * fiberIndex ;
+      int offsetExtractedNeighborhood = 3 * nbPoints * fiberIndexNeighborhood ;
 
-        pointsPerTrackNeighborhood.push_back( inputTractogram.pointsPerTrack[
-                                                                fiberIndex ] ) ;
+      pointsPerTrackNeighborhood.push_back( inputTractogram.pointsPerTrack[
+                                                              fiberIndex ] ) ;
 
-        std::copy( inputTractogram.matrixTracks.begin() + offsetTractogram,
-                   inputTractogram.matrixTracks.begin() + offsetTractogram +
-                   3 * nbPoints, extractedNeighborhoodTotal.begin() +
+      std::copy( inputTractogram.matrixTracks.begin() + offsetTractogram,
+                 inputTractogram.matrixTracks.begin() + offsetTractogram +
+                 3 * nbPoints, extractedNeighborhoodTotal.begin() +
                                                  offsetExtractedNeighborhood ) ;
 
-        indexInTractogramOfNeighbors.push_back( ( int64_t )fiberIndex ) ;
 
-        fiberIndexNeighborhood += 1 ;
-
-      }
+      fiberIndexNeighborhood += 1 ;
 
     }
 
@@ -723,6 +785,7 @@ int main( int argc, char* argv[] )
 
     }
 
+
     BundlesData extractedNeighborhoodData( inputTractogramPath.c_str() ) ;
     extractedNeighborhoodData.matrixTracks = extractedNeighborhoodTotal ;
     extractedNeighborhoodData.pointsPerTrack = pointsPerTrackNeighborhood ;
@@ -741,8 +804,7 @@ int main( int argc, char* argv[] )
                                         "Index.bin" ;
 
     saveIndexInTractogram( indexInTractogramOfNeighborsFilename.c_str(),
-                                                indexInTractogramOfNeighbors ) ;
-
+                                                         indexNeighborFibers ) ;
 
   }
 

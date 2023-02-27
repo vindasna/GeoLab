@@ -204,7 +204,8 @@ int main( int argc, char* argv[] )
               << "-l : Name to give to the labels files ( name.txt and"
               << "name.dict) \n"
               << "[-a] : Directory with the atlas (one file per bundle), must "
-              << "be given if other than ESBA atlas \n"
+              << "be given if other than ESBA atlas. You can also give a .tck "
+              << "file of the atlas bundle (just one) you want to extract. \n"
               << "[-p] : Threshold for the distance between the centers of the "
               << "track in the atlas and the track in the tractogram. It "
               << "impacts if the MMEA distance is computed for a fiber which "
@@ -939,12 +940,47 @@ int main( int argc, char* argv[] )
     if ( !is_dir( atlasDirectory ) )
     {
 
-      std::stringstream outMessageOss ;
+      std::cout << "Input atlas is a file" << std::endl ;
 
-      outMessageOss << "ERROR : Atlas directory " << atlasDirectory << " does not"
-                                                      << " exists " << std::endl ;
-      std::string outMessage = outMessageOss.str() ;
-      throw( std::invalid_argument( outMessage ) ) ;
+      lastChar = atlasDirectory[ atlasDirectory.size() - 1 ] ;
+      if ( lastChar == '/' )
+      {
+
+        atlasDirectory = atlasDirectory.substr( 0,
+                                                 atlasDirectory.size() - 1 ) ;
+
+      }
+
+      if ( !is_file( atlasDirectory ) )
+      {
+
+        std::stringstream outMessageOss ;
+
+        outMessageOss << "ERROR : Atlas directory/file " << atlasDirectory
+                                           << " does not exists " << std::endl ;
+        std::string outMessage = outMessageOss.str() ;
+        throw( std::invalid_argument( outMessage ) ) ;
+
+      }
+      else
+      {
+
+        if ( !endswith( atlasDirectory, format ) )
+        {
+
+          std::cout << "ERROR : atlas bundle file must be in " << format
+                    << " format" << std::endl ;
+          exit( 1 ) ;
+
+        }
+
+      }
+
+    }
+    else
+    {
+
+      std::cout << "Input atlas is a directory" << std::endl ;
 
     }
 
@@ -1021,11 +1057,35 @@ int main( int argc, char* argv[] )
 
   //   xxxxxxxxxxxxxxxxxxxxxxxxxx Reading Atlas xxxxxxxxxxxxxxxxxxxxxxxxxx   //
 
-  AtlasBundles atlasData( atlasDirectory.c_str(),
-                          inputTractogramInfo.isBundles,
-                          inputTractogramInfo.isTrk,
-                          inputTractogramInfo.isTck,
-                          verbose ) ;
+  AtlasBundles atlasData ;
+  if ( is_dir( atlasDirectory ) )
+  {
+
+    atlasData.read( atlasDirectory.c_str(),
+                    inputTractogramInfo.isBundles,
+                    inputTractogramInfo.isTrk,
+                    inputTractogramInfo.isTck,
+                    verbose ) ;
+
+  }
+  else if ( is_file( atlasDirectory ) )
+  {
+
+    BundlesData tmpBundlesData( atlasDirectory.c_str() ) ;
+    BundlesMinf tmpBundlesMinf( atlasDirectory.c_str() ) ;
+
+    std::string tmpBundleName = basenameNoExtension( atlasDirectory ) ;
+
+    atlasData.bundlesMinf.push_back( tmpBundlesMinf ) ;
+    atlasData.bundlesData.push_back( tmpBundlesData ) ;
+    atlasData.bundlesNames.push_back( tmpBundleName ) ;
+    atlasData.isBundles = tmpBundlesData.isBundles ;
+    atlasData.isTrk = tmpBundlesData.isTrk ;
+    atlasData.isTck = tmpBundlesData.isTck ;
+
+  }
+
+
 
   //////////////////////////////// Sanity cheks ////////////////////////////////
   int nbFibersTractogram = inputTractogram.curves_count ;

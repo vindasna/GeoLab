@@ -44,6 +44,8 @@ int nbCores = 0 ;
 int nbThreads = 0 ;
 int nbThreadsUsed ;
 
+bool isLowMemory = false ;
+
 ////////////////////////////////////////////////////////////////////////////////
 int getFlagPosition( int argc, char* argv[], const std::string& flag ) ;
 
