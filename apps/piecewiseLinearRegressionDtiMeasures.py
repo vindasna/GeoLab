@@ -19,7 +19,12 @@ import statsmodels.formula.api as smf
 from statsmodels.tools.sm_exceptions import ConvergenceWarning
 import statsmodels.stats.multitest as multitest
 
+import patsy
 
+
+from scipy.interpolate import CubicSpline
+
+import collections
 
 from sklearn.pipeline import make_pipeline
 
@@ -328,67 +333,66 @@ def polynomialRegression( data_dict, bundle, output_dir, measure, logFilePath,
         sys.stdout = logFile
 
 
-    age_data = data_dict[ bundle ][ 0 ]
-    measure_data = data_dict[ bundle ][ 1 ]
-    subject_id_data = data_dict[ bundle ][ 2 ]
+    age_data = data_dict[ bundle ][ "age" ]
+    measure_data = data_dict[ bundle ][ "measure" ]
+    subject_id_data = data_dict[ bundle ][ "subject" ]
+    sex_data = data_dict[ bundle ][ "sex" ]
 
     x = np.array( age_data )
     y = np.array( measure_data )
     if ( x.shape[ 0 ] != y.shape[ 0 ] ) :
-        if ( verbose < 2 ) :
-            sys.stderr = standartErr
-            sys.stdout = standartOut
-            logFile.close()
-        return
+        if not onlyPiecewise :
+            return
     else :
         if ( x.shape[ 0 ] < 3 ) :
-            if ( verbose < 2 ) :
-                sys.stderr = standartErr
-                sys.stdout = standartOut
-                logFile.close()
             return
-
 
     quartiles_y = np.quantile( y, [ 0.0, 0.25, 0.5, 0.75, 1 ] )
     quartiles_x = np.quantile( x, [ 0.0, 0.25, 0.5, 0.75, 1 ] )
-    # q25 = quartiles_x[ 1 ]
-    # q25 = quartiles_y[ 1 ]
-    q25 = quartiles_y[ 0 ]
 
-    # q75 = quartiles_x[ 3 ]
-    # q75 = quartiles_y[ 3 ]
+    q25 = quartiles_y[ 0 ]
     q75 = quartiles_y[ 4 ]
 
     X = []
     Y = []
+    subjectsId = []
+    sex = []
     for i in range( y.shape[ 0 ] ) :
         tmpMeasure = y[ i ]
         tmpAge = x[ i ]
+        tmpSubjectID = subject_id_data[ i ]
+        tmpSex = sex_data[ i ]
         if q25 <= tmpMeasure <= q75 :
-        # if q25 <= tmpAge <= q75 :
             Y.append( tmpMeasure )
             X.append( tmpAge )
+            subjectsId.append( tmpSubjectID )
+            sex.append( tmpSex )
     X = np.array( X )
     Y = np.array( Y )
+    subjectsId = np.array( subjectsId )
+    sex = np.array( sex )
 
     if ( X.shape[ 0 ] != Y.shape[ 0 ] ) :
-        if ( verbose < 2 ) :
-            sys.stderr = standartErr
-            sys.stdout = standartOut
-            logFile.close()
         return
     else :
         if ( X.shape[ 0 ] < 3 ) :
-            if ( verbose < 2 ) :
-                sys.stderr = standartErr
-                sys.stdout = standartOut
-                logFile.close()
             return
+
+    nbSubjectsByAge_dict = {}
+    for tmpAge in X :
+        if tmpAge in nbSubjectsByAge_dict.keys() :
+            nbSubjectsByAge_dict[ tmpAge ] += 1
+        else :
+            nbSubjectsByAge_dict[ tmpAge ] = 1
+
+
+    if X.shape[ 0 ] < 500 :
+        return
 
     # include_bias = 0 -> "intercept" = 0 but here we use LinearRegression to
     # take care of this
     # poly = PolynomialFeatures( degree = 2, include_bias = False )
-    poly = PolynomialFeatures( degree = 1, include_bias = False )
+    poly = PolynomialFeatures( degree = 3, include_bias = False )
     poly_features = poly.fit_transform( X.reshape( -1, 1 ) )
     poly_reg_model = LinearRegression()
     poly_reg_model.fit( poly_features, Y )
@@ -397,10 +401,15 @@ def polynomialRegression( data_dict, bundle, output_dir, measure, logFilePath,
     _poly_features = poly.fit_transform( _X.reshape( -1, 1 ) )
     _y = poly_reg_model.predict( _poly_features )
 
+    print( "Plot results" )
     plt.plot( X, Y, "bo" )
     plt.plot( _X, _y, "r-" )
     plt.xlabel( "Age" )
     plt.ylabel( measure )
+    plt.show()
+    plt.clf()
+    return
+    #####
     plt.savefig( outPath, dpi = 300, bbox_inches = "tight" )
     plt.clf()
 
@@ -575,6 +584,201 @@ def mixedLiearModel( pandasDataFrame ) :
     model = smf.mixedlm( "measure ~ age + C(sex)", data = pandasDataFrame,
                                          groups = pandasDataFrame[ "subject" ] )
     return( model.fit( method=["lbfgs"] ) )
+
+
+
+# def cubicSplineFit( data_dict, bundle, output_dir, measure, logFilePath,
+#                                                                         lock ) :
+#     global verbose, processCounter, seed, slope_dict_piecewise, \
+#                 slope_dict_linear, measures_options, standartOut, standartErr, \
+#                                  onlyLinear, onlyPiecewise, mixedLinearModels, \
+#                                     pvaluesIndividualTests, bundlesNamesComputed
+#
+#     age_data = data_dict[ bundle ][ "age" ]
+#     measure_data = data_dict[ bundle ][ "measure" ]
+#     subject_id_data = data_dict[ bundle ][ "subject" ]
+#     sex_data = data_dict[ bundle ][ "sex" ]
+#
+#     x = np.array( age_data )
+#     y = np.array( measure_data )
+#     if ( x.shape[ 0 ] != y.shape[ 0 ] ) :
+#         if not onlyPiecewise :
+#             return
+#     else :
+#         if ( x.shape[ 0 ] < 3 ) :
+#             return
+#
+#     quartiles_y = np.quantile( y, [ 0.0, 0.25, 0.5, 0.75, 1 ] )
+#     quartiles_x = np.quantile( x, [ 0.0, 0.25, 0.5, 0.75, 1 ] )
+#
+#     q25 = quartiles_y[ 0 ]
+#     q75 = quartiles_y[ 4 ]
+#
+#     X = []
+#     Y = []
+#     subjectsId = []
+#     sex = []
+#     for i in range( y.shape[ 0 ] ) :
+#         tmpMeasure = y[ i ]
+#         tmpAge = x[ i ]
+#         tmpSubjectID = subject_id_data[ i ]
+#         tmpSex = sex_data[ i ]
+#         if q25 <= tmpMeasure <= q75 :
+#             Y.append( tmpMeasure )
+#             X.append( tmpAge )
+#             subjectsId.append( tmpSubjectID )
+#             sex.append( tmpSex )
+#     X = np.array( X )
+#     Y = np.array( Y )
+#     subjectsId = np.array( subjectsId )
+#     sex = np.array( sex )
+#
+#     if ( X.shape[ 0 ] != Y.shape[ 0 ] ) :
+#         return
+#     else :
+#         if ( X.shape[ 0 ] < 3 ) :
+#             return
+#
+#     nbSubjectsByAge_dict = {}
+#     for tmpAge in X :
+#         if tmpAge in nbSubjectsByAge_dict.keys() :
+#             nbSubjectsByAge_dict[ tmpAge ] += 1
+#         else :
+#             nbSubjectsByAge_dict[ tmpAge ] = 1
+#
+#
+#     if X.shape[ 0 ] < 500 :
+#         return
+#
+#
+#     data_dict = {}
+#     for i in range( X.shape[ 0 ] ) :
+#         data_dict [ X[ i ] ] = Y[ i ]
+#
+#     ordered_dict = collections.OrderedDict( sorted( data_dict.items() ) )
+#
+#     X_sorted = []
+#     Y_sorted = []
+#
+#     for tmpKey in ordered_dict.keys() :
+#         X_sorted.append( tmpKey )
+#         Y_sorted.append( ordered_dict[ tmpKey ] )
+#
+#
+#     cs = CubicSpline( X, Y )
+#
+#     _X = np.linspace( np.min( X ), np.max( X ), 500 )
+#     _Y = cs( _X )
+#
+#     plt.plot( X, Y, "bo" )
+#     plt.plot( _X, _Y, "r-" )
+#     plt.xlabel( "Age" )
+#     plt.ylabel( measure )
+#     plt.show()
+#     plt.clf()
+def cubicSplineFit( data_dict, bundle, output_dir, measure, logFilePath,
+                                                                        lock ) :
+    global verbose, processCounter, seed, slope_dict_piecewise, \
+                slope_dict_linear, measures_options, standartOut, standartErr, \
+                                 onlyLinear, onlyPiecewise, mixedLinearModels, \
+                                    pvaluesIndividualTests, bundlesNamesComputed
+
+    age_data = data_dict[ bundle ][ "age" ]
+    measure_data = data_dict[ bundle ][ "measure" ]
+    subject_id_data = data_dict[ bundle ][ "subject" ]
+    sex_data = data_dict[ bundle ][ "sex" ]
+
+    x = np.array( age_data )
+    y = np.array( measure_data )
+    if ( x.shape[ 0 ] != y.shape[ 0 ] ) :
+        if not onlyPiecewise :
+            return
+    else :
+        if ( x.shape[ 0 ] < 3 ) :
+            return
+
+    quartiles_y = np.quantile( y, [ 0.0, 0.25, 0.5, 0.75, 1 ] )
+    quartiles_x = np.quantile( x, [ 0.0, 0.25, 0.5, 0.75, 1 ] )
+
+    q25 = quartiles_y[ 0 ]
+    q75 = quartiles_y[ 4 ]
+
+    X = []
+    Y = []
+    subjectsId = []
+    sex = []
+    for i in range( y.shape[ 0 ] ) :
+        tmpMeasure = y[ i ]
+        tmpAge = x[ i ]
+        tmpSubjectID = subject_id_data[ i ]
+        tmpSex = sex_data[ i ]
+        if q25 <= tmpMeasure <= q75 :
+            Y.append( tmpMeasure )
+            X.append( tmpAge )
+            subjectsId.append( tmpSubjectID )
+            sex.append( tmpSex )
+    X = np.array( X )
+    Y = np.array( Y )
+    subjectsId = np.array( subjectsId )
+    sex = np.array( sex )
+
+    if ( X.shape[ 0 ] != Y.shape[ 0 ] ) :
+        return
+    else :
+        if ( X.shape[ 0 ] < 3 ) :
+            return
+
+    nbSubjectsByAge_dict = {}
+    for tmpAge in X :
+        if tmpAge in nbSubjectsByAge_dict.keys() :
+            nbSubjectsByAge_dict[ tmpAge ] += 1
+        else :
+            nbSubjectsByAge_dict[ tmpAge ] = 1
+
+
+    if X.shape[ 0 ] < 500 :
+        return
+
+    # knots = tuple( np.linspace( np.min( X ), np.max( X ), 7 )[ 1:-1 ] )
+    knots = tuple( np.linspace( np.min( X ), np.max( X ), 5 )[ 1:-1 ] )
+
+    transformed_x3 = patsy.dmatrix( f"bs(X, knots={knots}, degree=3, "
+                                                     "include_intercept=False)",
+                                         { "X": X }, return_type = 'dataframe' )
+    # transformed_x3 = patsy.dmatrix( "cr(X,df = 3)", {"X": X},
+    #                                                  return_type = 'dataframe' )
+    modelCubicSplines = sm.GLM( Y, transformed_x3).fit()
+
+    # b1 = b2 = tmpModel.params[ "Intercept" ]
+    # a1 = a2 = tmpModel.params[ "age" ]
+    print( "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" )
+    print( modelCubicSplines.params )
+    print( "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" )
+    # tmpParams = modelCubicSplines.params
+    # a0 = tmpParams[ "Intercept" ]
+    # a1 = tmpParams[ "cr(X, df=3)[0]" ]
+    # a2 = tmpParams[ "cr(X, df=3)[1]" ]
+    # a3 = tmpParams[ "cr(X, df=3)[2]" ]
+    #
+    # print( f"a0 : {a0}" )
+    # print( f"a1 : {a1}" )
+    # print( f"a2 : {a2}" )
+    # print( f"a3 : {a3}" )
+
+    _X = np.linspace( np.min( X ), np.max( X ), 500 )
+    _Y = modelCubicSplines.predict( patsy.dmatrix( f"bs(_X, knots={knots}, "
+                                                     "include_intercept=False)",
+                                          {"_X": _X}, return_type='dataframe') )
+    # _Y = modelCubicSplines.predict( patsy.dmatrix("cr(_X, df=3)", {"_X": _X},
+    #                                                   return_type='dataframe') )
+    # _Y = a0 + a1 * _X + a2 * _X ** 2 + a3 * _X ** 3
+
+    plt.plot( X, Y, "bo" )
+    plt.plot( _X, _Y, "r-" )
+    plt.xlabel( "Age" )
+    plt.ylabel( measure )
+    plt.show()
+    plt.clf()
 
 def piecewiseRegressionPerBundle( data_dict, bundle, output_dir, measure,
                                                            logFilePath, lock ) :
@@ -1117,13 +1321,25 @@ def main() :
     dictDataFrames = data2DictOfDataFrames( data_dict,
                                                dataDictBaselineCharacteristics )
 
+    # if ( bundleName ) :
+    #     if ( not bundleName in data_dict.keys() ) :
+    #         print( f"ERROR : argument of --bundle-name -> {bundleName} is not "
+    #                "in keys of data_dict" )
+    #         exit( 1 )
+    #     piecewiseRegressionPerBundle( dictDataFrames, bundleName, output_dir,
+    #                                                 measure, logFilePath, lock )
+    #     return
+
+
     if ( bundleName ) :
         if ( not bundleName in data_dict.keys() ) :
             print( f"ERROR : argument of --bundle-name -> {bundleName} is not "
                    "in keys of data_dict" )
             exit( 1 )
-        piecewiseRegressionPerBundle( dictDataFrames, bundleName, output_dir,
-                                                    measure, logFilePath, lock )
+        # polynomialRegression( dictDataFrames, bundleName, output_dir, measure,
+        #                                                      logFilePath, lock )
+        cubicSplineFit( dictDataFrames, bundleName, output_dir, measure,
+                                                             logFilePath, lock )
         return
 
 
