@@ -919,7 +919,7 @@ int main( int argc, char* argv[] )
       }
 
       copy( atlasBundlesDataPaths[ i ], outputCentroidsPath ) ;
-      copy( atlasBundlesInfoPaths[ i ], outputCentroidsInfoPath ) ;
+      // copy( atlasBundlesInfoPaths[ i ], outputCentroidsInfoPath ) ;
       isFailCentroids = 0 ;
 
     }

@@ -782,6 +782,14 @@ int main( int argc, char* argv[] )
     {
 
       extractedNeighborhoodInfo.computeTckOffsetBinary() ;
+      extractedNeighborhoodInfo.haveMinf = false ;
+
+    }
+
+    if ( outFormat == ".trk" )
+    {
+
+      extractedNeighborhoodInfo.haveMinf = false ;
 
     }
 

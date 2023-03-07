@@ -295,7 +295,18 @@ void applyRecoBundles( const std::string& movedTractogramNeighborhood,
 
   // Computing centroids neighborhood atlas
   std::ostringstream atlasBundleFileOss ;
-  atlasBundleFileOss << atlasBundleDirectory << bundleName << format ;
+  if ( is_dir( atlasBundleDirectory ) )
+  {
+
+    atlasBundleFileOss << atlasBundleDirectory << bundleName << format ;
+
+  }
+  else
+  {
+
+      atlasBundleFileOss << atlasBundleDirectory ;
+
+  }
   std::string atlasBundleFile = atlasBundleFileOss.str() ;
   float averageRadius = getAverageRadiusAtlasBundle( atlasBundleFile ) ;
   std::string atlasNeighborhoodCentroids ;
@@ -439,19 +450,19 @@ void applyRecoBundles( const std::string& movedTractogramNeighborhood,
                                            movedTractogramNeighborhoodCentroids,
                                            format ) ;
 
-    if ( haveMinf )
-    {
-
-      std::string movedTractogramNeighborhoodCentroidsMinf = replaceExtension(
-                               movedTractogramNeighborhoodCentroids, ".minf" ) ;
-
-      std::string movedTractogramNeighborhoodMinf = replaceExtension(
-                                        movedTractogramNeighborhood, ".minf" ) ;
-
-      copy( movedTractogramNeighborhoodMinf,
-                                    movedTractogramNeighborhoodCentroidsMinf ) ;
-
-    }
+    // if ( haveMinf )
+    // {
+    //
+    //   std::string movedTractogramNeighborhoodCentroidsMinf = replaceExtension(
+    //                            movedTractogramNeighborhoodCentroids, ".minf" ) ;
+    //
+    //   std::string movedTractogramNeighborhoodMinf = replaceExtension(
+    //                                     movedTractogramNeighborhood, ".minf" ) ;
+    //
+    //   copy( movedTractogramNeighborhoodMinf,
+    //                                 movedTractogramNeighborhoodCentroidsMinf ) ;
+    //
+    // }
 
   }
 
@@ -573,7 +584,7 @@ void applyRecoBundles( const std::string& movedTractogramNeighborhood,
       std::string movedTractogramNeighborhoodMinf = replaceExtension(
                                         movedTractogramNeighborhood, ".minf" ) ;
 
-      copy( movedTractogramNeighborhoodMinf, neighborhoodRegisteredMinf ) ;
+      // copy( movedTractogramNeighborhoodMinf, neighborhoodRegisteredMinf ) ;
 
 
     }
@@ -732,17 +743,29 @@ void applyRecoBundles( const std::string& movedTractogramNeighborhood,
 
   // Projection
   std::ostringstream atlasInfoPathOss ;
-  atlasInfoPathOss << atlasBundleDirectory << bundleName ;
-  if ( format == ".bundles" || format == ".bundlesdata" )
+  if ( is_dir( atlasBundleDirectory ) )
   {
 
-    atlasInfoPathOss << ".bundles" ;
+    atlasInfoPathOss << atlasBundleDirectory << bundleName ;
+
+    if ( format == ".bundles" || format == ".bundlesdata" )
+    {
+
+      atlasInfoPathOss << ".bundles" ;
+
+    }
+    else if ( format == ".trk" || format == ".tck" )
+    {
+
+      atlasInfoPathOss << ".minf" ;
+
+    }
 
   }
-  else if ( format == ".trk" || format == ".tck" )
+  else
   {
 
-    atlasInfoPathOss << ".minf" ;
+    atlasInfoPathOss << atlasBundleDirectory ;
 
   }
   std::string atlasInfoPath = atlasInfoPathOss.str() ;
@@ -2717,11 +2740,13 @@ int main( int argc, char* argv[] )
   }
 
   checkAtlasDirectory( atlasDirectory, format ) ;
-  std::vector<std::string> atlasBundleDirectories ;
-  std::string tmpAtlasDir = getAtlasBunldesPaths( outputDirectory,
-                                                  atlasDirectory,
-                                                  format,
-                                                  atlasBundleDirectories ) ;
+  // std::vector<std::string> atlasBundleDirectories ;
+  // std::string tmpAtlasDir = getAtlasBunldesPaths( outputDirectory,
+  //                                                 atlasDirectory,
+  //                                                 format,
+  //                                                 atlasBundleDirectories ) ;
+  std::vector<std::string> atlasBundleDirectories =
+                    getFilesInDirectoryWithExtension( atlasDirectory, format ) ;
 
   if ( verbose )
   {
@@ -2742,6 +2767,14 @@ int main( int argc, char* argv[] )
                                    atlasNeighborhoodPaths ) ;
 
   }
+  else
+  {
+
+    std::cout << "ERROR : atlas neighborhood must be given using -an"
+                                                                  << std::endl ;
+    exit( 1 ) ;
+
+  }
 
   ///////////////// Getting atlas centroids if input is given //////////////////
   std::vector<std::string> atlasNeighborhoodCentroidsPaths ;
@@ -2752,6 +2785,14 @@ int main( int argc, char* argv[] )
                                    atlasBundleDirectories,
                                    format,
                                    atlasNeighborhoodCentroidsPaths ) ;
+
+  }
+  else
+  {
+
+    std::cout << "ERROR : atlas neighborhood centroids must be given using -anc"
+                                                                  << std::endl ;
+    exit( 1 ) ;
 
   }
 
@@ -3105,6 +3146,11 @@ int main( int argc, char* argv[] )
     exit( 1 ) ;
 
   }
+  else
+  {
+
+    std::cout << "Number of bundles in atlas : " << nbBundles << std::endl ;
+  }
 
   #pragma omp parallel for schedule(dynamic)
   for ( int i = 0 ; i < nbBundles ; i++ )
@@ -3129,17 +3175,29 @@ int main( int argc, char* argv[] )
 
 
     std::ostringstream atlasInfoPathOss ;
-    atlasInfoPathOss << atlasBundleDirectory << bundleName ;
-    if ( format == ".bundles" || format == ".bundlesdata" )
+    if ( is_dir( atlasBundleDirectory ) )
     {
 
-      atlasInfoPathOss << ".bundles" ;
+      atlasInfoPathOss << atlasBundleDirectory << bundleName ;
+
+      if ( format == ".bundles" || format == ".bundlesdata" )
+      {
+
+        atlasInfoPathOss << ".bundles" ;
+
+      }
+      else if ( format == ".trk" || format == ".tck" )
+      {
+
+        atlasInfoPathOss << ".minf" ;
+
+      }
 
     }
-    else if ( format == ".trk" || format == ".tck" )
+    else
     {
 
-      atlasInfoPathOss << ".minf" ;
+      atlasInfoPathOss << atlasBundleDirectory ;
 
     }
     std::string atlasInfoPath = atlasInfoPathOss.str() ;
@@ -3155,7 +3213,6 @@ int main( int argc, char* argv[] )
                                         toleranceDistanceBetweenMedialPoints ) ;
 
     }
-
 
     std::ostringstream projectCommandOss ;
     projectCommandOss << projectAtlasFile << " "
@@ -4215,12 +4272,12 @@ int main( int argc, char* argv[] )
 
   }
 
-  if ( is_dir( tmpAtlasDir ) )
-  {
-
-    rmdir( tmpAtlasDir ) ;
-
-  }
+  // if ( is_dir( tmpAtlasDir ) )
+  // {
+  //
+  //   rmdir( tmpAtlasDir ) ;
+  //
+  // }
 
   const std::chrono::duration< double > duration =
                               std::chrono::system_clock::now() - start_time ;

@@ -742,17 +742,26 @@ def cubicSplineFit( data_dict, bundle, output_dir, measure, logFilePath,
     # knots = tuple( np.linspace( np.min( X ), np.max( X ), 7 )[ 1:-1 ] )
     knots = tuple( np.linspace( np.min( X ), np.max( X ), 5 )[ 1:-1 ] )
 
-    transformed_x3 = patsy.dmatrix( f"bs(X, knots={knots}, degree=3, "
+    transformed_x = patsy.dmatrix( f"bs(X, knots={knots}, degree=3, "
                                                      "include_intercept=False)",
                                          { "X": X }, return_type = 'dataframe' )
-    # transformed_x3 = patsy.dmatrix( "cr(X,df = 3)", {"X": X},
-    #                                                  return_type = 'dataframe' )
-    modelCubicSplines = sm.GLM( Y, transformed_x3).fit()
+    transformed_x2 = patsy.dmatrix( "cr(X,df = 4)", {"X": X},
+                                                     return_type = 'dataframe' )
+    modelCubicSplines = sm.GLM( Y, transformed_x).fit()
+    modelCubicNaturalSplines = sm.GLM( Y, transformed_x2).fit()
 
     # b1 = b2 = tmpModel.params[ "Intercept" ]
     # a1 = a2 = tmpModel.params[ "age" ]
     print( "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" )
-    print( modelCubicSplines.params )
+    # print( transformed_x.design_info )
+    # print( "-----------------------------------------------------------------" )
+    # print( modelCubicSplines.params )
+    # print( "-----------------------------------------------------------------" )
+    print( modelCubicSplines.summary() )
+    # print( "-----------------------------------------------------------------" )
+    # print( modelCubicSplines.fittedvalues )
+    # print( "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" )
+
     print( "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" )
     # tmpParams = modelCubicSplines.params
     # a0 = tmpParams[ "Intercept" ]
@@ -764,17 +773,20 @@ def cubicSplineFit( data_dict, bundle, output_dir, measure, logFilePath,
     # print( f"a1 : {a1}" )
     # print( f"a2 : {a2}" )
     # print( f"a3 : {a3}" )
+    # print( "-----------------------------------------------------------------" )
+    print( modelCubicNaturalSplines.summary() )
+    print( "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" )
 
     _X = np.linspace( np.min( X ), np.max( X ), 500 )
     _Y = modelCubicSplines.predict( patsy.dmatrix( f"bs(_X, knots={knots}, "
                                                      "include_intercept=False)",
                                           {"_X": _X}, return_type='dataframe') )
-    # _Y = modelCubicSplines.predict( patsy.dmatrix("cr(_X, df=3)", {"_X": _X},
-    #                                                   return_type='dataframe') )
-    # _Y = a0 + a1 * _X + a2 * _X ** 2 + a3 * _X ** 3
+    _Y_natural = modelCubicNaturalSplines.predict( patsy.dmatrix("cr(_X, df=4)",
+                                          {"_X": _X}, return_type='dataframe') )
 
-    plt.plot( X, Y, "bo" )
-    plt.plot( _X, _Y, "r-" )
+    plt.plot( X, Y, "bo", alpha = 0.5 )
+    plt.plot( _X, _Y, "r-"  )
+    plt.plot( _X, _Y_natural, "g-" )
     plt.xlabel( "Age" )
     plt.ylabel( measure )
     plt.show()

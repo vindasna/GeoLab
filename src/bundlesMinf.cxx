@@ -782,7 +782,7 @@ void BundlesMinf::read( const char* bundlesFilename )
       std::ostringstream outMessageOss ;
       outMessageOss << "BundlesMinf::read : when input is .minf, the "
                     << "corresponding .trk or .tck file must be in the same "
-                    << "directory" << bundlesFilenameStr << std::endl ;
+                    << "directory " << bundlesFilenameStr << std::endl ;
 
       std::string outMessage = outMessageOss.str() ;
 
