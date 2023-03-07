@@ -103,6 +103,7 @@ void applyRecoBundles( const std::string& movedTractogramNeighborhood,
                        const std::string& format,
                        int nbPointsPerFiber,
                        int portDipyServer,
+                       bool saveBundlesSeparetly,
                        int verbose ) ;
 //
 int getPortNumberDipyService( std::string& logFilePath ) ;

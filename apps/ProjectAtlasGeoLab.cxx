@@ -65,6 +65,7 @@ void applyRecoBundles( const std::string& movedTractogramNeighborhood,
                        const std::string& format,
                        int nbPointsPerFiber,
                        int portDipyServer,
+                       bool saveBundlesSeparetly,
                        int verbose )
 {
 
@@ -801,6 +802,7 @@ void applyRecoBundles( const std::string& movedTractogramNeighborhood,
                          << "-thrAdj " << adjacencyForCompareBundles << " "
                          << "-cb "
                          << "-nbThreads " << nbThreads << " "
+                         << "-seb " << saveBundlesSeparetly << " "
                          << "-v 1" ;
 
   std::string projectAtlasCommand = projectAtlasCommandOss.str() ;
@@ -3235,6 +3237,7 @@ int main( int argc, char* argv[] )
                       << "-thrAdj " << adjacencyForCompareBundles << " "
                       << "-cb "
                       << "-nbThreads " << nbThreads << " "
+                      << "-seb " << saveBundlesSeparetly << " "
                       << "-v 1" ;
     std::string projectCommand = projectCommandOss.str() ;
 
@@ -3655,6 +3658,7 @@ int main( int argc, char* argv[] )
                         format,
                         nbPointsPerFiber,
                         portDipyServer,
+                        saveBundlesSeparetly,
                         verbose ) ;
 
       #pragma omp critical

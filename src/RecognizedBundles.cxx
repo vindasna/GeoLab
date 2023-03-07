@@ -331,7 +331,7 @@ void RecognizedBundles::MDADLabeling(
         }
 
 
-	
+
         float tmpDist1 = 0 ;
         float tmpDist2 = 0 ;
         for ( int i = 0 ; i < 3 ; i++ )
@@ -365,7 +365,7 @@ void RecognizedBundles::MDADLabeling(
 
         }
 
-	
+
 
 
         ////////////////////////////////////////////////////////////////////////
@@ -1381,7 +1381,8 @@ void RecognizedBundles::projectAtlas( AtlasBundles& atlasData,
                                       BundlesData& subjectBundlesData,
                                       float thresholdAdjacency,
                                       std::string outputDirectory,
-                                      std::string labelsName )
+                                      std::string labelsName,
+                                      bool saveBundlesSeparetly )
 {
 
   verbose = this->verbose ;

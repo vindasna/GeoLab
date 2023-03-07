@@ -178,7 +178,8 @@ class RecognizedBundles : public AtlasBundles
                      BundlesData& subjectBundlesData,
                      float thresholdAdjacency,
                      std::string outputDirectory,
-                     std::string labelsName ) ;
+                     std::string labelsName,
+                     bool saveBundlesSeparetly ) ;
 
 
 

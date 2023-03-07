@@ -1180,7 +1180,8 @@ int main( int argc, char* argv[] )
                              inputTractogram,
                              thresholdAdjacency,
                              outputDirectory,
-                             labelsName ) ;
+                             labelsName,
+                             saveExtractedBundles ) ;
 
 
   return 0 ;
