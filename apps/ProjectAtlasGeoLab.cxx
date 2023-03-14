@@ -578,7 +578,7 @@ void applyGeoLab( const std::string& movedTractogramNeighborhood,
                                 false, false, false, false, false, false, true,
                                 false, false, saveBundlesSeparetly, false,
 			                          false,
-                                24 ) ;
+                                nbThreads ) ;
 
   BundlesData atlasBundleData( atlasBundleDirectory.c_str() ) ;
   BundlesMinf atlasBundleInfo( atlasBundleDirectory.c_str() ) ;
