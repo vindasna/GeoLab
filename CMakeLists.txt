@@ -42,17 +42,16 @@ endif()
 
 
 #################################### Configure files ####################################
-# file(GLOB APPS_DIR apps/*)
-# foreach(f ${APPS_DIR})
-#     get_filename_component(sourceName ${f} NAME)
-#     configure_file(${CMAKE_CURRENT_SOURCE_DIR}/apps/${sourceName} ${CMAKE_CURRENT_SOURCE_DIR}/apps-config/${sourceName} FILE_PERMISSIONS OWNER_EXECUTE OWNER_WRITE OWNER_READ )
-# endforeach(f)
+file(GLOB APPS_DIR apps/*)
+foreach(f ${APPS_DIR})
+    get_filename_component(sourceName ${f} NAME)
+    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/apps/${sourceName} ${CMAKE_CURRENT_SOURCE_DIR}/apps-config/${sourceName} FILE_PERMISSIONS OWNER_EXECUTE OWNER_WRITE OWNER_READ )
+endforeach(f)
 
 ######################################## LBFGSpp ########################################
 add_subdirectory(LBFGSpp-master)
 
 ################################# Adding subdirectories #################################
 add_subdirectory(src)
-# add_subdirectory(apps-config)
 add_subdirectory(apps-config)
 add_subdirectory(doc)
