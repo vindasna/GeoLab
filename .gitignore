@@ -1,1 +1,5 @@
-
+# apps-config files #
+#####################
+apps-config/*.py
+apps-config/*.cxx
+apps-config/*.h
