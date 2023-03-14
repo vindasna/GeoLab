@@ -54,19 +54,27 @@ int getFlagPosition( int argc, char* argv[], const std::string& flag )
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-//////////////////////// Function to apply Recobundles /////////////////////////
+/////////////////////////// Function to apply GeoLab ///////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
-void applyRecoBundles( const std::string& movedTractogramNeighborhood,
-                       const std::string& atlasBundleDirectory,
-                       const std::string& atlasNeighborhoodFile,
-                       const std::string& atlasNeighborhoodCentroidsFile,
-                       const std::string& outputDirectory,
-                       const std::string& referenceImage,
-                       const std::string& format,
-                       int nbPointsPerFiber,
-                       int portDipyServer,
-                       bool saveBundlesSeparetly,
-                       int verbose )
+void applyGeoLab( const std::string& movedTractogramNeighborhood,
+                  const std::string& atlasBundleDirectory,
+                  const std::string& atlasNeighborhoodFile,
+                  const std::string& atlasNeighborhoodCentroidsFile,
+                  const std::string& outputDirectory,
+                  const std::string& referenceImage,
+                  const std::string& format,
+                  const int minimumNumberFibers,
+                  std::vector<int>& indexInNeighborhoodRecognized,
+                  float adjacency_classic,
+                  int nbFibersClassic,
+                  int nbPointsPerFiber,
+                  int portDipyServer,
+                  bool& keepClassic,
+                  float& coverageGeoLab,
+                  float& adjacencyGeoLab,
+                  float& overlapGeoLab,
+                  float& disimilarityGeoLab,
+                  int verbose )
 {
 
   std::string _tmpAtlasBundlePath = atlasNeighborhoodFile ;
@@ -84,161 +92,29 @@ void applyRecoBundles( const std::string& movedTractogramNeighborhood,
                                  replaceExtension( _tmpAtlasBundlePath, "" ) ) ;
   std::string bundleName = tmpPath.stem() ;
 
-
-  std::ostringstream recognizedBundleOss ;
-  recognizedBundleOss << outputDirectory << bundleName ;
-  if ( format == ".bundles" || format == ".bundlesdata" )
-  {
-
-    recognizedBundleOss << ".bundles" ;
-
-  }
-  else if ( format == ".tck" || format == ".trk" )
-  {
-
-    recognizedBundleOss << ".minf" ;
-
-  }
-  std::string recognizedBundle = recognizedBundleOss.str() ;
-
-  std::ostringstream recognizedBundledataOss ;
-  recognizedBundledataOss << outputDirectory << bundleName ;
-  if ( format == ".bundles" || format == ".bundlesdata" )
-  {
-
-    recognizedBundledataOss << ".bundlesdata" ;
-
-  }
-  else if ( format == ".tck" || format == ".trk" )
-  {
-
-    recognizedBundledataOss << format ;
-
-  }
-  std::string recognizedBundledata = recognizedBundledataOss.str() ;
-
-  std::ostringstream recognizedBundleClassicOss ;
-  recognizedBundleClassicOss << outputDirectory << bundleName << "_classic" ;
-  if ( format == ".bundles" || format == ".bundlesdata" )
-  {
-
-    recognizedBundleClassicOss << ".bundles" ;
-
-  }
-  else if ( format == ".tck" || format == ".trk" )
-  {
-
-    recognizedBundleClassicOss << ".minf" ;
-
-  }
-  std::string recognizedBundleClassic = recognizedBundleClassicOss.str() ;
-
-  std::ostringstream recognizedBundledataClassicOss ;
-  recognizedBundledataClassicOss << outputDirectory << bundleName
-                                                                 << "_classic" ;
-  if ( format == ".bundles" || format == ".bundlesdata" )
-  {
-
-    recognizedBundledataClassicOss << ".bundlesdata" ;
-
-  }
-  else if ( format == ".tck" || format == ".trk" )
-  {
-
-    recognizedBundledataClassicOss << format ;
-
-  }
-  std::string recognizedBundledataClassic =
-                                          recognizedBundledataClassicOss.str() ;
-
-  std::ostringstream labelsRecognizedSBRPathOss ;
-  labelsRecognizedSBRPathOss << outputDirectory << "labelsSBR_" << bundleName
-                                                                     << ".txt" ;
-  std::string labelsRecognizedSBRPath = labelsRecognizedSBRPathOss.str() ;
-
-  std::ostringstream labelsDictRecognizedSBRPathOss ;
-  labelsDictRecognizedSBRPathOss << outputDirectory << "labelsSBR_"
-                                                      << bundleName << ".dict" ;
-  std::string labelsDictRecognizedSBRPath =
-                                          labelsDictRecognizedSBRPathOss.str() ;
-
-
   std::ostringstream clientsLogFilePathOss ;
   clientsLogFilePathOss << outputDirectory << "clientsDipyLog.txt" ;
   std::string clientsLogFilePath = clientsLogFilePathOss.str() ;
 
-  float coverage_classic = -1 ;
-  float adjacency_classic = -1 ;
-  // if ( false )
-  if ( is_file( recognizedBundle ) )
+  coverageGeoLab = -1 ;
+  adjacencyGeoLab = -1 ;
+  overlapGeoLab = -1 ;
+  disimilarityGeoLab = -1 ;
+
+  if ( adjacency_classic >= 0.70 && nbFibersClassic >= minimumNumberFibers )
   {
 
-    coverage_classic = getCoverageWithAtlas( recognizedBundle ) ;
-    adjacency_classic = getAdjacencyWithAtlas( recognizedBundle ) ;
-    int nbFibersClassic = getNbFibers( recognizedBundle ) ;
-    // if ( coverage_classic > 0.80 && adjacency_classic > 0.80 )
-    if ( adjacency_classic > 0.70 && nbFibersClassic > 10 )
+    if ( verbose > 1 )
     {
 
-      if ( verbose > 1 )
-      {
-
-        std::cout << "Keeping classic projection for bundle " << bundleName
-                  << std::endl ;
-
-      }
-
-      return ;
+      std::cout << "Keeping classic projection for bundle " << bundleName
+                << std::endl ;
 
     }
-    else
-    {
 
-      if ( verbose > 1 )
-      {
+    keepClassic = true ;
 
-        std::cout << "Testing RecoBundles projection for bundle "
-                  << bundleName << std::endl ;
-
-      }
-
-      bool isRename = rename( recognizedBundle, recognizedBundleClassic ) ;
-      if ( !isRename )
-      {
-
-        std::cout << "ERROR : could not copy " << recognizedBundle << " to "
-                  << recognizedBundleClassic << std::endl ;
-
-        // if ( is_dir( outputDirectory ) )
-        // {
-        //
-        //   rmdir( outputDirectory ) ;
-        //
-        // }
-        closeDipyServer( portDipyServer ) ;
-        exit( 1 ) ;
-
-      }
-
-      isRename = rename( recognizedBundledata, recognizedBundledataClassic ) ;
-      if ( !isRename )
-      {
-
-        std::cout << "ERROR : could not copy " << recognizedBundledata << " to "
-                  << recognizedBundledataClassic << std::endl ;
-
-        // if ( is_dir( outputDirectory ) )
-        // {
-        //
-        //   rmdir( outputDirectory ) ;
-        //
-        // }
-        closeDipyServer( portDipyServer ) ;
-        exit( 1 ) ;
-
-      }
-
-    }
+    return ;
 
   }
   else
@@ -247,7 +123,7 @@ void applyRecoBundles( const std::string& movedTractogramNeighborhood,
     if ( verbose > 1 )
     {
 
-      std::cout << "Testing RecoBundles projection for bundle "
+      std::cout << "Testing GeoLab projection for bundle "
                 << bundleName << std::endl ;
 
     }
@@ -260,7 +136,7 @@ void applyRecoBundles( const std::string& movedTractogramNeighborhood,
   {
 
     std::stringstream outMessageOss ;
-    outMessageOss << "ERROR : in applyRecoBundles, atlasNeighborhoodFile must "
+    outMessageOss << "ERROR : in applyGeoLab, atlasNeighborhoodFile must "
                   << "be in .bundles/.trk/.tck format, got "
                   << atlasNeighborhoodFile << std::endl ;
     std::string outMessage = outMessageOss.str() ;
@@ -279,15 +155,9 @@ void applyRecoBundles( const std::string& movedTractogramNeighborhood,
   if ( !is_file( atlasNeighborhood ) )
   {
 
-    std::cout << "ERROR : in applyRecoBundles, atlas neighborhood file "
+    std::cout << "ERROR : in applyGeoLab, atlas neighborhood file "
               << atlasNeighborhood << " does not exists " << std::endl ;
 
-    // if ( is_dir( outputDirectory ) )
-    // {
-    //
-    //   rmdir( outputDirectory ) ;
-    //
-    // }
     closeDipyServer( portDipyServer ) ;
     exit( 1 ) ;
 
@@ -419,12 +289,7 @@ void applyRecoBundles( const std::string& movedTractogramNeighborhood,
       std::cout << "ERROR WITH COMMAND : \n " << computeCentroidsCommandClient
                                               << std::endl ;
 
-      // if ( is_dir( outputDirectory ) )
-      // {
-      //
-      //   rmdir( outputDirectory ) ;
-      //
-      // }
+
       closeDipyServer( portDipyServer ) ;
       exit( 1 ) ;
 
@@ -450,20 +315,6 @@ void applyRecoBundles( const std::string& movedTractogramNeighborhood,
     movedTractogramNeighborhoodCentroids = replaceExtension(
                                            movedTractogramNeighborhoodCentroids,
                                            format ) ;
-
-    // if ( haveMinf )
-    // {
-    //
-    //   std::string movedTractogramNeighborhoodCentroidsMinf = replaceExtension(
-    //                            movedTractogramNeighborhoodCentroids, ".minf" ) ;
-    //
-    //   std::string movedTractogramNeighborhoodMinf = replaceExtension(
-    //                                     movedTractogramNeighborhood, ".minf" ) ;
-    //
-    //   copy( movedTractogramNeighborhoodMinf,
-    //                                 movedTractogramNeighborhoodCentroidsMinf ) ;
-    //
-    // }
 
   }
 
@@ -515,7 +366,9 @@ void applyRecoBundles( const std::string& movedTractogramNeighborhood,
   {
 
     int _tmpNbFibers = getNbFibers( movedTractogramNeighborhood ) ;
-    if ( _tmpNbFibers > 500 )
+    if (
+      ( _tmpNbFibers > 500 && !is_file( movedTractogramNeighborhoodCentroids ) )
+                                            || ( _tmpNbFibers > 500 && force ) )
     {
 
       isFailCentroids = run_sh_process( computeCentroidsCommandClient2 ) ;
@@ -553,12 +406,6 @@ void applyRecoBundles( const std::string& movedTractogramNeighborhood,
     std::cout << "ERROR WITH COMMAND : \n " << computeCentroidsCommandClient2
                                             << std::endl ;
 
-    // if ( is_dir( outputDirectory ) )
-    // {
-    //
-    //   rmdir( outputDirectory ) ;
-    //
-    // }
     closeDipyServer( portDipyServer ) ;
     exit( 1 ) ;
 
@@ -575,20 +422,6 @@ void applyRecoBundles( const std::string& movedTractogramNeighborhood,
   {
 
     neighborhoodRegistered = replaceExtension( neighborhoodRegistered, format) ;
-
-    if ( haveMinf )
-    {
-
-      std::string neighborhoodRegisteredMinf = replaceExtension(
-                                             neighborhoodRegistered, ".minf" ) ;
-
-      std::string movedTractogramNeighborhoodMinf = replaceExtension(
-                                        movedTractogramNeighborhood, ".minf" ) ;
-
-      // copy( movedTractogramNeighborhoodMinf, neighborhoodRegisteredMinf ) ;
-
-
-    }
 
   }
 
@@ -682,60 +515,6 @@ void applyRecoBundles( const std::string& movedTractogramNeighborhood,
 
     }
 
-    if ( is_file( recognizedBundleClassic ) )
-    {
-
-      bool _tmpIsRename = rename( recognizedBundleClassic, recognizedBundle ) ;
-      if ( !_tmpIsRename )
-      {
-
-        std::cout << "ERROR : could not move file " << recognizedBundleClassic
-                  << " to " << recognizedBundle << std::endl ;
-        closeDipyServer( portDipyServer ) ;
-        exit( 1 ) ;
-
-      }
-
-    }
-
-    if ( is_file( recognizedBundledataClassic ) )
-    {
-
-      bool _tmpIsRename = rename( recognizedBundledataClassic,
-                                                      recognizedBundledata ) ;
-      if ( !_tmpIsRename )
-      {
-
-        std::cout << "ERROR : could not move file "
-                  << recognizedBundledataClassic << " to "
-                   << recognizedBundledata << std::endl ;
-        closeDipyServer( portDipyServer ) ;
-        exit( 1 ) ;
-
-      }
-
-    }
-
-    // if ( coverage_classic < coverageThreshold &&
-    //                                   adjacency_classic < adjacencyThreshold )
-    if ( adjacency_classic < adjacencyThreshold )
-    {
-
-      if ( is_file( recognizedBundle ) )
-      {
-
-        rmfile( recognizedBundle ) ;
-
-      }
-
-      if ( is_file( recognizedBundledata ) )
-      {
-
-        rmfile( recognizedBundledata ) ;
-
-      }
-
-    }
 
     return ;
 
@@ -777,452 +556,53 @@ void applyRecoBundles( const std::string& movedTractogramNeighborhood,
     thrDistanceBetweenMedialPointsBundle =
                   getAverageDistanceBetweenMedialPoints( atlasInfoPath ) ;
     thrDistanceBetweenMedialPointsBundle *= ( 1 +
-                                      toleranceDistanceBetweenMedialPoints ) ;
+                                        toleranceDistanceBetweenMedialPoints ) ;
 
   }
 
-  std::ostringstream projectAtlasCommandOss ;
-  projectAtlasCommandOss << projectAtlasFile << " "
-                         << "-i " << neighborhoodRegistered << " "
-                         << "-a " << atlasBundleDirectory << " "
-                         << "-o " << outputDirectory << " "
-                         << "-l " << "labelsSBR_" << bundleName << " "
-                         << "-minNbFibers " << minimumNumberFibers << " "
-                         << "-thrSim " << thrPercentageSimilarity << " "
-                         << "-thrDBMP " << thrDistanceBetweenMedialPointsBundle
-                                                                          << " "
-                         << "-tolP " << toleranceP << " "
-                         << "-tolThr " << toleranceThr << " "
-                         << "-tolMaxAng " << toleranceMaxAngle << " "
-                         << "-tolMaxDirAng " << toleranceMaxDirectionAngle
-			                                                 << " "
-                         << "-tolMinShapeAng " << toleranceMinShapeAngle << " "
-                         << "-tolMaxShapeAng " << toleranceMaxShapeAngle << " "
-                         << "-tolLenght " << toleranceLenght << " "
-                         << "-thrAdj " << adjacencyForCompareBundles << " "
-                         << "-cb "
-                         << "-nbThreads " << nbThreads << " "
-                         << "-seb " << saveBundlesSeparetly << " "
-                         << "-v 1" ;
 
-  std::string projectAtlasCommand = projectAtlasCommandOss.str() ;
-  // Here we do not use force because we want to always do the RecoBundles
-  // projection
+  RecognizedBundles recognized( 0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+                                true, false, true, false,
+                                toleranceP,
+                                toleranceThr,
+                                toleranceMaxAngle,
+                                toleranceMaxDirectionAngle,
+                                toleranceMinShapeAngle,
+                                toleranceMaxShapeAngle,
+                                toleranceLenght,
+                                0.0,
+                                thrPercentageSimilarity,
+                                thrDistanceBetweenMedialPointsBundle,
+                                minimumNumberFibers,
+                                adjacencyForCompareBundles,
+                                false, false, false, false, false, false, true,
+                                false, false, saveBundlesSeparetly, false,
+			                          false,
+                                24 ) ;
 
-  int isFailProjection = run_sh_process( projectAtlasCommand ) ;
+  BundlesData atlasBundleData( atlasBundleDirectory.c_str() ) ;
+  BundlesMinf atlasBundleInfo( atlasBundleDirectory.c_str() ) ;
+  BundlesData subjectBundlesData( neighborhoodRegistered.c_str() ) ;
+  recognized.projectBundle( atlasBundleData,
+                            atlasBundleInfo,
+                            subjectBundlesData,
+                            indexInNeighborhoodRecognized,
+                            coverageGeoLab,
+                            adjacencyGeoLab,
+                            overlapGeoLab,
+                            disimilarityGeoLab,
+                            true ) ;
 
-  if ( isFailProjection )
+  if ( adjacency_classic > adjacencyGeoLab )
   {
 
-    std::cout << "ERROR : could not project " << neighborhoodRegistered
-              << " to " << atlasBundleDirectory << ", got exit code "
-              << isFailProjection << " with command " << projectAtlasCommand
-                                                                  << std::endl ;
-
-    // if ( is_dir( outputDirectory ) )
-    // {
-    //
-    //   rmdir( outputDirectory ) ;
-    //
-    // }
-    closeDipyServer( portDipyServer ) ;
-    exit( 1 ) ;
-
-  }
-
-  // Getting labels
-  if ( is_file( recognizedBundleClassic ) &&
-                                        is_file( recognizedBundledataClassic ) )
-  {
-
-    if ( coverage_classic == -1 )
-    {
-
-      std::cout << "ERROR : invalid coverage_classic : -1 " << std::endl ;
-
-      // if ( is_dir( outputDirectory ) )
-      // {
-      //
-      //   rmdir( outputDirectory ) ;
-      //
-      // }
-      closeDipyServer( portDipyServer ) ;
-      exit( 1 ) ;
-
-    }
-
-    if ( !is_file( recognizedBundle ) )
-    {
-
-      if ( is_file( labelsRecognizedSBRPath ) )
-      {
-
-        rmfile( labelsRecognizedSBRPath ) ;
-
-      }
-
-      if ( is_file( labelsDictRecognizedSBRPath ) )
-      {
-
-        rmfile( labelsDictRecognizedSBRPath ) ;
-
-      }
-
-      bool _tmpIsRename1 = rename( recognizedBundleClassic, recognizedBundle ) ;
-      if ( !_tmpIsRename1 )
-      {
-
-        std::cout << "ERROR : could not move file " << recognizedBundleClassic
-                  << " to " << recognizedBundle << std::endl ;
-        closeDipyServer( portDipyServer ) ;
-        exit( 1 ) ;
-
-      }
-
-      bool _tmpIsRename2 = rename( recognizedBundledataClassic,
-                                                        recognizedBundledata ) ;
-      if ( !_tmpIsRename2 )
-      {
-
-        std::cout << "ERROR : could not move file "
-                  << recognizedBundledataClassic << " to "
-                  << recognizedBundledata << std::endl ;
-        closeDipyServer( portDipyServer ) ;
-        exit( 1 ) ;
-
-      }
-
-      // if ( coverage_classic < coverageThreshold &&
-      //                                   adjacency_classic < adjacencyThreshold )
-      if ( adjacency_classic < adjacencyThreshold )
-      {
-
-        if ( is_file( recognizedBundle ) )
-        {
-
-          rmfile( recognizedBundle ) ;
-
-        }
-
-        if ( is_file( recognizedBundledata ) )
-        {
-
-          rmfile( recognizedBundledata ) ;
-
-        }
-
-      }
-
-      return ;
-
-    }
-
-    float coverage_recobundles = getCoverageWithAtlas( recognizedBundle ) ;
-    float adjacency_recobundles = getAdjacencyWithAtlas( recognizedBundle ) ;
-    // if ( coverage_classic > coverage_recobundles )
-    if ( adjacency_classic > adjacency_recobundles )
-    {
-
-      if ( is_file( labelsRecognizedSBRPath ) )
-      {
-
-        rmfile( labelsRecognizedSBRPath ) ;
-
-      }
-
-      if ( is_file( labelsDictRecognizedSBRPath ) )
-      {
-
-        rmfile( labelsDictRecognizedSBRPath ) ;
-
-      }
-
-      if ( is_file( recognizedBundle ) )
-      {
-
-        rmfile( recognizedBundle ) ;
-
-      }
-
-      if ( is_file( recognizedBundledata ) )
-      {
-
-        rmfile( recognizedBundledata ) ;
-
-      }
-
-      if ( is_file( recognizedBundleClassic ) )
-      {
-
-
-        bool _tmpIsRename = rename( recognizedBundleClassic,
-                                                            recognizedBundle ) ;
-        if ( !_tmpIsRename )
-        {
-
-          std::cout << "ERROR : could not move file " << recognizedBundleClassic
-                    << " to " << recognizedBundle << std::endl ;
-          closeDipyServer( portDipyServer ) ;
-          exit( 1 ) ;
-
-        }
-
-      }
-
-      if ( is_file( recognizedBundledataClassic ) )
-      {
-
-        bool _tmpIsRename = rename( recognizedBundledataClassic,
-                                                        recognizedBundledata ) ;
-        if ( !_tmpIsRename )
-        {
-
-          std::cout << "ERROR : could not move file "
-                    << recognizedBundledataClassic << " to "
-                     << recognizedBundledata << std::endl ;
-          closeDipyServer( portDipyServer ) ;
-          exit( 1 ) ;
-
-        }
-
-      }
-
-      // if ( coverage_classic < coverageThreshold &&
-      //                                   adjacency_classic < adjacencyThreshold )
-      if ( adjacency_classic < adjacencyThreshold )
-      {
-
-        if ( is_file( recognizedBundle ) )
-        {
-
-          rmfile( recognizedBundle ) ;
-
-        }
-
-        if ( is_file( recognizedBundledata ) )
-        {
-
-          rmfile( recognizedBundledata ) ;
-
-        }
-
-      }
-
-
-    }
-    else
-    {
-
-      if ( !is_file( recognizedBundle ) )
-      {
-
-        if ( is_file( labelsRecognizedSBRPath ) )
-        {
-
-          rmfile( labelsRecognizedSBRPath ) ;
-
-        }
-
-        if ( is_file( labelsDictRecognizedSBRPath ) )
-        {
-
-          rmfile( labelsDictRecognizedSBRPath ) ;
-
-        }
-
-        if ( is_file( recognizedBundleClassic ) )
-        {
-
-
-          bool _tmpIsRename = rename( recognizedBundleClassic,
-                                                            recognizedBundle ) ;
-          if ( !_tmpIsRename )
-          {
-
-            std::cout << "ERROR : could not move " << recognizedBundleClassic
-                      << " to " << recognizedBundle << std::endl ;
-            closeDipyServer( portDipyServer ) ;
-            exit( 1 ) ;
-
-          }
-
-        }
-
-        if ( is_file( recognizedBundledataClassic ) )
-        {
-
-          if ( is_file( recognizedBundledata ) )
-          {
-
-            rmfile( recognizedBundledata ) ;
-
-          }
-
-          bool _tmpIsRename = rename( recognizedBundledataClassic,
-                                                        recognizedBundledata ) ;
-          if ( !_tmpIsRename )
-          {
-
-            std::cout << "ERROR : could not move file "
-                      << recognizedBundledataClassic << " to "
-                       << recognizedBundledata << std::endl ;
-            closeDipyServer( portDipyServer ) ;
-            exit( 1 ) ;
-
-          }
-
-        }
-
-        // if ( coverage_classic < coverageThreshold &&
-        //                                 adjacency_classic < adjacencyThreshold )
-        if ( adjacency_classic < adjacencyThreshold )
-        {
-
-          if ( is_file( recognizedBundle ) )
-          {
-
-            rmfile( recognizedBundle ) ;
-
-          }
-
-          if ( is_file( recognizedBundledata ) )
-          {
-
-            rmfile( recognizedBundledata ) ;
-
-          }
-
-        }
-
-        return ;
-
-      }
-
-      if ( is_file( recognizedBundleClassic ) )
-      {
-
-        rmfile( recognizedBundleClassic ) ;
-
-      }
-
-      if ( is_file( recognizedBundledataClassic ) )
-      {
-
-        rmfile( recognizedBundledataClassic ) ;
-
-      }
-
-
-      // if ( coverage_recobundles < coverageThreshold &&
-      //                               adjacency_recobundles < adjacencyThreshold )
-      if ( adjacency_recobundles < adjacencyThreshold )
-      {
-
-        if ( is_file( recognizedBundle ) )
-        {
-
-          rmfile( recognizedBundle ) ;
-
-        }
-
-        if ( is_file( recognizedBundledata ) )
-        {
-
-          rmfile( recognizedBundledata ) ;
-
-        }
-
-        if ( is_file( labelsRecognizedSBRPath ) )
-        {
-
-          rmfile( labelsRecognizedSBRPath ) ;
-
-        }
-
-        if ( is_file( labelsDictRecognizedSBRPath ) )
-        {
-
-          rmfile( labelsDictRecognizedSBRPath ) ;
-
-        }
-
-        return ;
-
-      }
-
-    }
+    keepClassic = true ;
 
   }
   else
   {
 
-    if ( !is_file( recognizedBundle ) )
-    {
-
-      if ( is_file( recognizedBundledata ) )
-      {
-
-        rmfile( recognizedBundledata ) ;
-
-      }
-
-      if ( is_file( labelsRecognizedSBRPath ) )
-      {
-
-        rmfile( labelsRecognizedSBRPath ) ;
-
-      }
-
-      if ( is_file( labelsDictRecognizedSBRPath ) )
-      {
-
-        rmfile( labelsDictRecognizedSBRPath ) ;
-
-      }
-
-      return ;
-
-    }
-
-
-    float coverage_recobundles = getCoverageWithAtlas( recognizedBundle ) ;
-    float adjacency_recobundles = getAdjacencyWithAtlas( recognizedBundle ) ;
-    // if ( coverage_recobundles < coverageThreshold &&
-    //                                 adjacency_recobundles < adjacencyThreshold )
-    if ( adjacency_recobundles < adjacencyThreshold )
-    {
-
-      if ( is_file( recognizedBundle ) )
-      {
-
-        rmfile( recognizedBundle ) ;
-
-      }
-
-      if ( is_file( recognizedBundledata ) )
-      {
-
-        rmfile( recognizedBundledata ) ;
-
-      }
-
-      if ( is_file( labelsRecognizedSBRPath ) )
-      {
-
-        rmfile( labelsRecognizedSBRPath ) ;
-
-      }
-
-      if ( is_file( labelsDictRecognizedSBRPath ) )
-      {
-
-        rmfile( labelsDictRecognizedSBRPath ) ;
-
-      }
-
-      return ;
-
-    }
+    keepClassic = false ;
 
   }
 
@@ -1390,7 +770,8 @@ int main( int argc, char* argv[] )
   if ( index_help > 0 )
   {
 
-    std::cout << "Function to register bundles using RecoBundles method : \n"
+    std::cout << "Function to register bundles using and SWM adapted version of"
+              << " RecoBundles method : \n"
               << "-i : Path to the input tractogram \n"
               << "-o : Path to the output directory \n"
               << "-nbPoints : Number of points per fiber (same number for all "
@@ -1431,8 +812,8 @@ int main( int argc, char* argv[] )
               << "(default = 2.0) \n"
               << "[-tolDBMP] : Tolerance for distance between medial points "
               << "(for advanced users, default = 1.0) \n"
-              << "[-thrAdj] : keep bundle with adjacency greater than given value"
-              << " (default : 0 -> keep all bundles ) \n"
+              << "[-thrAdj] : keep bundle with adjacency greater than given "
+              << " value (default : 0 -> keep all bundles ) \n"
               << "[-minNbFibers] : Minimum number of fiber to consider a bundle"
               << " recognized ( default : 20 )\n"
               << "[-thrSim] : Threshold for percentage of similarity in "
@@ -1515,7 +896,7 @@ int main( int argc, char* argv[] )
        !endswith( inputBundlesFilename, ".tck" ) )
   {
 
-    std::string outMessage = "ProjectAtlasRecoBundles : Only supported " \
+    std::string outMessage = "ProjectAtlasGeoLab : Only supported " \
                              "formats for input are .bundles/.bundlesdata, " \
                              ".trk, .tck \n" ;
     throw( std::invalid_argument( outMessage ) ) ;
@@ -1537,7 +918,7 @@ int main( int argc, char* argv[] )
   {
 
     std::stringstream outMessageOss ;
-    outMessageOss << "ProjectAtlasRecoBundles : input file "
+    outMessageOss << "ProjectAtlasGeoLab : input file "
                   << inputBundlesFilename << "does not exists" << std::endl ;
     std::string outMessage = outMessageOss.str() ;
     throw( std::invalid_argument( outMessage ) ) ;
@@ -2653,6 +2034,8 @@ int main( int argc, char* argv[] )
   }
   std::cout << "Number of threads : " << nbThreadsUsed << std::endl ;
 
+  omp_set_nested( 1 ) ;
+
 
 
   ////////////////////////////// Keep temp files ///////////////////////////////
@@ -2818,7 +2201,7 @@ int main( int argc, char* argv[] )
     {
 
       std::stringstream outMessageOss ;
-      outMessageOss << "ProjectAtlasRecoBundles : global SLR not compatible "
+      outMessageOss << "ProjectAtlasGeoLab : global SLR not compatible "
                     << "with .bundles/.bundlesdata format\n" ;
       std::string outMessage = outMessageOss.str() ;
       throw( std::invalid_argument( outMessage ) ) ;
@@ -3152,13 +2535,24 @@ int main( int argc, char* argv[] )
   {
 
     std::cout << "Number of bundles in atlas : " << nbBundles << std::endl ;
+
   }
+
+  std::vector<std::vector<int>> indecesInNeighborhoodsReconizedClassic(
+                                                                   nbBundles ) ;
+  std::vector<float> coveragesClassic( nbBundles, -1 ) ;
+  std::vector<float> adjacenciesClassic( nbBundles, -1 ) ;
+  std::vector<float> overlapsClassic( nbBundles, -1 ) ;
+  std::vector<float> disimilaritiesClassic( nbBundles, -1 ) ;
+  std::vector<std::string> bundlesNames( nbBundles ) ;
+
 
   #pragma omp parallel for schedule(dynamic)
   for ( int i = 0 ; i < nbBundles ; i++ )
   {
 
     std::string atlasBundleDirectory = atlasBundleDirectories[ i ] ;
+    bundlesNames[ i ] = basenameNoExtension( atlasBundleDirectory ) ;
     std::string movedTractogramNeighborhood = neighborhoodFilenames[ i ] ;
 
     std::string _tmpAtlasBundlePath = atlasBundleDirectory ;
@@ -3216,318 +2610,51 @@ int main( int argc, char* argv[] )
 
     }
 
-    std::ostringstream projectCommandOss ;
-    projectCommandOss << projectAtlasFile << " "
-                      << "-i " << movedTractogramNeighborhood << " "
-                      << "-a " << atlasBundleDirectory << " "
-                      << "-o " << outputDirectory << " "
-                      << "-l " << bundleName << "_labels" << " "
-                      << "-minNbFibers " << minimumNumberFibers << " "
-                      << "-thrSim " << thrPercentageSimilarity << " "
-                      << "-thrDBMP " << thrDistanceBetweenMedialPointsBundle
-                                                                          << " "
-		                  << "-tolP " << toleranceP << " "
-                      << "-tolThr " << toleranceThr << " "
-                      << "-tolMaxAng " << toleranceMaxAngle << " "
-                      << "-tolMaxDirAng " << toleranceMaxDirectionAngle
-                                                                      << " "
-                      << "-tolMinShapeAng " << toleranceMinShapeAngle << " "
-                      << "-tolMaxShapeAng " << toleranceMaxShapeAngle << " "
-                      << "-tolLenght " << toleranceLenght << " "
-                      << "-thrAdj " << adjacencyForCompareBundles << " "
-                      << "-cb "
-                      << "-nbThreads " << nbThreads << " "
-                      << "-seb " << saveBundlesSeparetly << " "
-                      << "-v 1" ;
-    std::string projectCommand = projectCommandOss.str() ;
+    RecognizedBundles recognized( 0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
+                                  true, false, true, false,
+                                  toleranceP,
+                                  toleranceThr,
+                                  toleranceMaxAngle,
+                                  toleranceMaxDirectionAngle,
+                                  toleranceMinShapeAngle,
+                                  toleranceMaxShapeAngle,
+                                  toleranceLenght,
+                                  0.0,
+                                  thrPercentageSimilarity,
+                                  thrDistanceBetweenMedialPointsBundle,
+                                  minimumNumberFibers,
+                                  adjacencyForCompareBundles,
+                                  false, false, false, false, false, false,
+                                  true, false, false, saveBundlesSeparetly,
+  			                          false, false,
+                                  nbThreads ) ;
 
-    std::ostringstream extractedBundlePathOss ;
-    extractedBundlePathOss << outputDirectory << bundleName ;
-    if ( format == ".bundles" || format == ".bundlesdata" )
+    BundlesData atlasBundleData( atlasBundleDirectory.c_str() ) ;
+    BundlesMinf atlasBundleInfo( atlasBundleDirectory.c_str() ) ;
+    BundlesData subjectBundlesData( movedTractogramNeighborhood.c_str() ) ;
+    float coverageClassic = -1 ;
+    float adjacencyClassic = -1 ;
+    float overlapClassic = -1 ;
+    float disimilarityClassic = -1 ;
+    std::vector<int> indexInNeighborhoodRecognized ;
+    recognized.projectBundle( atlasBundleData,
+                              atlasBundleInfo,
+                              subjectBundlesData,
+                              indexInNeighborhoodRecognized,
+                              coverageClassic,
+                              adjacencyClassic,
+                              overlapClassic,
+                              disimilarityClassic,
+                              true ) ;
+    #pragma omp critical
     {
 
-      extractedBundlePathOss << ".bundles" ;
-
-    }
-    else if ( format == ".trk" || format == ".tck" )
-    {
-
-      extractedBundlePathOss << ".minf" ;
-
-    }
-    std::string extractedBundlePath = extractedBundlePathOss.str() ;
-
-    std::ostringstream extractedBundleDataPathOss ;
-    extractedBundleDataPathOss << outputDirectory << bundleName ;
-    if ( format == ".bundles" || format == ".bundlesdata" )
-    {
-
-      extractedBundleDataPathOss << ".bundlesdata" ;
-
-    }
-    else if ( format == ".trk" || format == ".tck" )
-    {
-
-      extractedBundleDataPathOss << format ;
-
-    }
-    std::string extractedBundleDataPath = extractedBundleDataPathOss.str() ;
-
-    std::ostringstream extractedBundleLabelsPathOss ;
-    extractedBundleLabelsPathOss << outputDirectory << bundleName << "_labels"
-                                                                     << ".txt" ;
-    std::string extractedBundleLabelsPath = extractedBundleLabelsPathOss.str() ;
-
-    std::ostringstream extractedBundleLabelsDictPathOss ;
-    extractedBundleLabelsDictPathOss << outputDirectory << bundleName
-                                                        << "_labels" << ".txt" ;
-    std::string extractedBundleLabelsDictPath =
-                                        extractedBundleLabelsDictPathOss.str() ;
-
-    int isProjectAtlasFail = 0 ;
-    if ( is_file( extractedBundlePath ) && is_file( extractedBundleDataPath )
-                              && is_file( extractedBundleLabelsPath )
-                                   && is_file( extractedBundleLabelsDictPath ) )
-    {
-
-      if ( verbose > 1 )
-      {
-
-        std::cout << "WARNING : output files of extracted bundle " << bundleName
-                  << " seem to exist and -force flag was not used, trying "
-                  << "computations with existing files" << std::endl ;
-
-      }
-
-    }
-    else
-    {
-
-      if ( doClassical )
-      {
-
-        isProjectAtlasFail = run_sh_process( projectCommand ) ;
-
-      }
-      else
-      {
-
-        isProjectAtlasFail = 0 ;
-
-      }
-
-    }
-    if ( isProjectAtlasFail )
-    {
-
-      std::cout << "ERROR : could not project atlas without SBR, for bundle "
-                << bundleName << "got exit code " << isProjectAtlasFail
-                << " for command : \n" << projectCommand << std::endl ;
-
-      // if ( is_dir( outputDirectory ) )
-      // {
-      //
-      //   rmdir( outputDirectory ) ;
-      //
-      // }
-      exit( 1 ) ;
-
-    }
-
-
-  }
-
-  std::vector<std::string> labelsDictClassic ;
-  for ( int i = 0 ; i < nbBundles ; i++ )
-  {
-
-    std::string atlasBundleDirectory = atlasBundleDirectories[ i ] ;
-    std::string movedTractogramNeighborhood = neighborhoodFilenames[ i ] ;
-
-    std::string _tmpAtlasBundlePath = atlasBundleDirectory ;
-
-    char lastChar = _tmpAtlasBundlePath[ _tmpAtlasBundlePath.size() - 1 ] ;
-    if ( lastChar == '/' )
-    {
-
-      _tmpAtlasBundlePath = _tmpAtlasBundlePath.substr( 0,
-                                              _tmpAtlasBundlePath.size() - 1 ) ;
-
-    }
-
-    std::experimental::filesystem::path tmpPath( _tmpAtlasBundlePath ) ;
-    std::string bundleName = tmpPath.stem() ;
-
-    labelsDictClassic.push_back( bundleName ) ;
-
-  }
-
-  if ( labelsDictClassic.size() != nbBundles )
-  {
-
-    std::cout << "ERROR : the number of bundles in the atlas dir and the "
-              << "classic labels dict is not the same" << std::endl ;
-    exit( 1 ) ;
-
-  }
-
-  int nbFibersTractogram = getNbFibers( movedTractogram ) ;
-  std::vector<std::vector<int16_t>> labelsClassic ;
-  labelsClassic.resize( nbFibersTractogram ) ;
-  for ( int i = 0 ; i < nbBundles ; i++ )
-  {
-
-
-    std::string movedTractogramNeighborhood = neighborhoodFilenames[ i ] ;
-
-    std::string atlasNeighborhoodFile ;
-    if ( isAtlasNeighborhoodCentroids )
-    {
-
-      atlasNeighborhoodFile = atlasNeighborhoodCentroidsPaths[ i ] ;
-
-
-    }
-    else
-    {
-
-      atlasNeighborhoodFile = neighborhoodAtlasFilenames[ i ] ;
-
-    }
-
-    std::string _tmpAtlasBundlePath = atlasNeighborhoodFile ;
-
-    char lastChar = _tmpAtlasBundlePath[ _tmpAtlasBundlePath.size() - 1 ] ;
-    if ( lastChar == '/' )
-    {
-
-      _tmpAtlasBundlePath = _tmpAtlasBundlePath.substr( 0,
-                                              _tmpAtlasBundlePath.size() - 1 ) ;
-
-    }
-
-    std::experimental::filesystem::path tmpPath( _tmpAtlasBundlePath ) ;
-    std::string bundleName = tmpPath.stem() ;
-
-
-    std::ostringstream labelsRecognizedPathOss ;
-    labelsRecognizedPathOss << outputDirectory << bundleName << "_labels"
-                                                                     << ".txt" ;
-    std::string labelsRecognizedPath = labelsRecognizedPathOss.str() ;
-
-    std::ostringstream labelsDictRecognizedPathOss ;
-    labelsDictRecognizedPathOss << outputDirectory << bundleName << "_labels"
-                                                                    << ".dict" ;
-    std::string labelsDictRecognizedPath = labelsDictRecognizedPathOss.str() ;
-
-
-    if ( is_file( labelsRecognizedPath ) &&
-                                           is_file( labelsDictRecognizedPath ) )
-    {
-
-
-      std::string neighborhoodTractogramBinPath = replaceExtension(
-                                                    movedTractogramNeighborhood,
-                                                    "Index.bin" ) ;
-
-      int nbFibersMovedTracotgramNeighborhood = getNbFibers(
-                                                 movedTractogramNeighborhood ) ;
-
-      std::vector<std::vector<int16_t>> labelsRecognized ;
-      readingPredictedLabels( labelsRecognizedPath.c_str(),
-                              labelsRecognized,
-                              nbFibersMovedTracotgramNeighborhood ) ;
-
-      std::vector<int64_t> indexInTractogram ;
-      readIndexInTractogram( neighborhoodTractogramBinPath.c_str(),
-                             indexInTractogram,
-                             nbFibersMovedTracotgramNeighborhood ) ;
-
-      int _tmpCounter = 0 ;
-      for ( int _label = 0 ; _label < nbBundles ; _label++ )
-      {
-
-        if ( labelsDictClassic[ _label ] == bundleName )
-        {
-
-          for ( int _fiberIndex = 0 ;
-                            _fiberIndex < nbFibersMovedTracotgramNeighborhood ;
-                                                                 _fiberIndex++ )
-          {
-
-            int nbLabelsForFiberClassic =
-                                        labelsRecognized[ _fiberIndex ].size() ;
-            for ( int _labelIndex = 0 ; _labelIndex < nbLabelsForFiberClassic ;
-                                                                 _labelIndex++ )
-            {
-
-              int labelRecognizedClassicTmp =
-                                labelsRecognized[ _fiberIndex ][ _labelIndex ] ;
-
-              if ( labelRecognizedClassicTmp == 0 )
-              {
-
-                int64_t _indexInTractogram = indexInTractogram[ _fiberIndex ] ;
-
-                labelsClassic[ _indexInTractogram ].push_back( _label ) ;
-                _tmpCounter++ ;
-
-              }
-
-            }
-
-          }
-
-          break ;
-
-        }
-
-      }
-
-      if ( is_file( labelsRecognizedPath ) )
-      {
-
-        rmfile( labelsRecognizedPath ) ;
-
-      }
-
-      if ( is_file( labelsDictRecognizedPath ) )
-      {
-
-        rmfile( labelsDictRecognizedPath ) ;
-
-      }
-
-    }
-    else
-    {
-
-      if ( is_file( labelsRecognizedPath ) )
-      {
-
-        rmfile( labelsRecognizedPath ) ;
-
-      }
-
-      if ( is_file( labelsDictRecognizedPath ) )
-      {
-
-        rmfile( labelsDictRecognizedPath ) ;
-
-      }
-
-    }
-
-  }
-
-
-  for ( int _fiberIndex = 0 ; _fiberIndex < nbFibersTractogram ; _fiberIndex++ )
-  {
-
-    if ( labelsClassic[ _fiberIndex ].empty() )
-    {
-
-      labelsClassic[ _fiberIndex ].push_back( -1 ) ;
+      indecesInNeighborhoodsReconizedClassic[ i ] =
+                                                 indexInNeighborhoodRecognized ;
+      coveragesClassic[ i ] = coverageClassic ;
+      adjacenciesClassic[ i ] = adjacencyClassic ;
+      overlapsClassic[ i ] = overlapClassic ;
+      disimilaritiesClassic[ i ] = disimilarityClassic ;
 
     }
 
@@ -3598,8 +2725,15 @@ int main( int argc, char* argv[] )
   std::cout << "Using port " << portDipyServer << std::endl ;
   std::cout << "" << std::flush ;
 
-  std::vector<std::vector<int16_t>> labels ;
-  labels.resize( nbFibersTractogram ) ;
+
+  std::vector<std::vector<int>> indecesInNeighborhoodsReconized( nbBundles ) ;
+  std::vector<bool> keepClassicProjection( nbBundles ) ;
+  std::vector<float> coveragesGeoLab( nbBundles, -1 ) ;
+  std::vector<float> adjacenciesGeoLab( nbBundles, -1 )  ;
+  std::vector<float> overlapsGeoLab( nbBundles, -1 ) ;
+  std::vector<float> disimilaritiesGeoLab( nbBundles, -1 ) ;
+
+  int nbFibersTractogram = getNbFibers( movedTractogram ) ;
   int nbBundlesProcessed = 1 ;
   while ( c.running() )
   {
@@ -3649,17 +2783,35 @@ int main( int argc, char* argv[] )
 
       }
 
-      applyRecoBundles( movedTractogramNeighborhood,
-                        atlasBundleDirectory,
-                        atlasNeighborhoodFile,
-                        atlasNeighborhoodCentroidsFile,
-                        outputDirectory,
-                        referenceFilename,
-                        format,
-                        nbPointsPerFiber,
-                        portDipyServer,
-                        saveBundlesSeparetly,
-                        verbose ) ;
+      std::vector<int> indexInNeighborhoodRecognized ;
+
+      float adjacency_classic = adjacenciesClassic[ i ] ;
+      int nbFibersClassic = indecesInNeighborhoodsReconizedClassic[ i ].size() ;
+      bool keepClassic = true ;
+      float coverageGeoLab = -1 ;
+      float adjacencyGeoLab = -1 ;
+      float overlapGeoLab = -1 ;
+      float disimilarityGeoLab = -1 ;
+
+      applyGeoLab( movedTractogramNeighborhood,
+                   atlasBundleDirectory,
+                   atlasNeighborhoodFile,
+                   atlasNeighborhoodCentroidsFile,
+                   outputDirectory,
+                   referenceFilename,
+                   format,
+                   minimumNumberFibers,
+                   indexInNeighborhoodRecognized,
+                   adjacency_classic,
+                   nbFibersClassic,
+                   nbPointsPerFiber,
+                   portDipyServer,
+                   keepClassic,
+                   coverageGeoLab,
+                   adjacencyGeoLab,
+                   overlapGeoLab,
+                   disimilarityGeoLab,
+                   verbose ) ;
 
       #pragma omp critical
       {
@@ -3667,26 +2819,23 @@ int main( int argc, char* argv[] )
         printf( "\rNumber of bundles processed : [ %d  /  %d ]",
                                                nbBundlesProcessed, nbBundles ) ;
         std::cout << "" << std::flush ;
+
+        indecesInNeighborhoodsReconized[ i ] = indexInNeighborhoodRecognized ;
+        keepClassicProjection[ i ] = keepClassic ;
+        coveragesGeoLab[ i ] = coverageGeoLab ;
+        adjacenciesGeoLab[ i ] = adjacencyGeoLab ;
+        overlapsGeoLab[ i ] = overlapGeoLab ;
+        disimilaritiesGeoLab[ i ] = disimilarityGeoLab ;
+
         nbBundlesProcessed++ ;
 
       }
 
     }
 
-
-
     // Closing dipy service
     std::cout << "\n" ;
     closeDipyServer( portDipyServer ) ;
-    /*
-    try
-    {
-
-      c.terminate() ;
-
-    }
-    catch(...){}
-    */
     std::cout << "Done" << std::endl ;
 
     break ;
@@ -3708,212 +2857,150 @@ int main( int argc, char* argv[] )
 
   // Getting labels
   std::cout << "#########################################################\n" ;
-  std::cout << "############# Saving labels in subject space ############"
-                                                                  << std::endl ;
+  std::cout << "############# Saving labels in subject space ############\n"  ;
   std::cout << "#########################################################\n" ;
+  std::vector<std::vector<int16_t>> labelsSubjectSpace( nbFibersTractogram ) ;
+  std::vector<float> finalCoverages ;
+  std::vector<float> finalAdjacencies ;
+  std::vector<float> finalOverlaps ;
+  std::vector<float> finalDisimilarities ;
+  std::vector<int> finalNbFibersPerBundle ;
+  std::vector<std::string> finalBundlesNames ;
+  std::vector<std::string> finalBundlesNeigborhoods ;
+  std::vector<bool> finalIsClassic ;
+  std::vector<std::vector<int>> finalIndecesInNeighborhoodsReconized ;
+
+  // std::vector<float> tmpAdjacenciesClassic ;
+  // std::vector<float> tmpAdjacenciesGeoLab ;
+  int tmpCpunter = 0 ;
   for ( int i = 0 ; i < nbBundles ; i++ )
   {
+
+    float finaleCoverage = -1 ;
+    float finaleAdjacency = -1 ;
+    float finaleOverlap = -1 ;
+    float finaleDisimilarity = -1 ;
+    std::vector<int> finalIndexInNeighborhoodRecognized ;
+    bool finalKeepClassic = false ;
+
+    if ( keepClassicProjection[ i ] )
+    {
+
+      finaleCoverage = coveragesClassic[ i ] ;
+      finaleAdjacency = adjacenciesClassic[ i ] ;
+      finaleOverlap = overlapsClassic[ i ] ;
+      finaleDisimilarity = disimilaritiesClassic[ i ] ;
+      finalIndexInNeighborhoodRecognized =
+                                   indecesInNeighborhoodsReconizedClassic[ i ] ;
+      finalKeepClassic = true ;
+
+    }
+    else
+    {
+
+      finaleCoverage = coveragesGeoLab[ i ] ;
+      finaleAdjacency = adjacenciesGeoLab[ i ] ;
+      finaleOverlap = overlapsGeoLab[ i ] ;
+      finaleDisimilarity = disimilaritiesGeoLab[ i ] ;
+      finalIndexInNeighborhoodRecognized =
+                                          indecesInNeighborhoodsReconized[ i ] ;
+      finalKeepClassic = false ;
+
+    }
+
+    if ( finalIndexInNeighborhoodRecognized.size() < minimumNumberFibers ||
+                                          finaleAdjacency < adjacencyThreshold )
+    {
+
+      continue ;
+
+    }
+
+    // tmpAdjacenciesClassic.push_back( adjacenciesClassic[ i ] ) ;
+    // tmpAdjacenciesGeoLab.push_back( adjacenciesGeoLab[ i ] ) ;
+
+    finalCoverages.push_back( finaleCoverage ) ;
+    finalAdjacencies.push_back( finaleAdjacency ) ;
+    finalOverlaps.push_back( finaleOverlap ) ;
+    finalDisimilarities.push_back( finaleDisimilarity ) ;
+    finalBundlesNames.push_back( bundlesNames[ i ] ) ;
+    finalBundlesNeigborhoods.push_back( neighborhoodFilenames[ i ] ) ;
+    finalNbFibersPerBundle.push_back(
+                                   finalIndexInNeighborhoodRecognized.size() ) ;
+    finalIsClassic.push_back( finalKeepClassic ) ;
+    finalIndecesInNeighborhoodsReconized.push_back(
+                                          finalIndexInNeighborhoodRecognized ) ;
 
 
     std::string movedTractogramNeighborhood = neighborhoodFilenames[ i ] ;
 
-    std::string atlasNeighborhoodFile ;
-    if ( isAtlasNeighborhoodCentroids )
-    {
-
-      atlasNeighborhoodFile = atlasNeighborhoodCentroidsPaths[ i ] ;
-
-
-    }
-    else
-    {
-
-      atlasNeighborhoodFile = neighborhoodAtlasFilenames[ i ] ;
-
-    }
-
-    std::string _tmpAtlasBundlePath = atlasNeighborhoodFile ;
-
-    char lastChar = _tmpAtlasBundlePath[ _tmpAtlasBundlePath.size() - 1 ] ;
-    if ( lastChar == '/' )
-    {
-
-      _tmpAtlasBundlePath = _tmpAtlasBundlePath.substr( 0,
-                                              _tmpAtlasBundlePath.size() - 1 ) ;
-
-    }
-
-    std::experimental::filesystem::path tmpPath( _tmpAtlasBundlePath ) ;
-    std::string bundleName = tmpPath.stem() ;
-
-
-    std::ostringstream labelsRecognizedSBRPathOss ;
-    labelsRecognizedSBRPathOss << outputDirectory << "labelsSBR_" << bundleName
-                                                                     << ".txt" ;
-    std::string labelsRecognizedSBRPath = labelsRecognizedSBRPathOss.str() ;
-
-    std::ostringstream labelsDictRecognizedSBRPathOss ;
-    labelsDictRecognizedSBRPathOss << outputDirectory << "labelsSBR_"
-                                                      << bundleName << ".dict" ;
-    std::string labelsDictRecognizedSBRPath =
-                                          labelsDictRecognizedSBRPathOss.str() ;
-
-
-    if ( is_file( labelsRecognizedSBRPath ) &&
-                                        is_file( labelsDictRecognizedSBRPath ) )
-    {
-
-
-      std::string neighborhoodTractogramBinPath = replaceExtension(
+    std::string neighborhoodTractogramBinPath = replaceExtension(
                                                     movedTractogramNeighborhood,
                                                     "Index.bin" ) ;
 
-      int nbFibersMovedTracotgramNeighborhood = getNbFibers(
+    int nbFibersMovedTracotgramNeighborhood = getNbFibers(
                                                  movedTractogramNeighborhood ) ;
 
-      std::vector<std::vector<int16_t>> labelsRecognizedSBR ;
-      readingPredictedLabels( labelsRecognizedSBRPath.c_str(),
-                              labelsRecognizedSBR,
-                              nbFibersMovedTracotgramNeighborhood ) ;
+    std::vector<int64_t> indexInTractogram ;
+    readIndexInTractogram( neighborhoodTractogramBinPath.c_str(),
+                           indexInTractogram,
+                           nbFibersMovedTracotgramNeighborhood ) ;
 
-      std::vector<int64_t> indexInTractogram ;
-      readIndexInTractogram( neighborhoodTractogramBinPath.c_str(),
-                             indexInTractogram,
-                             nbFibersMovedTracotgramNeighborhood ) ;
 
-      int _tmpCounter = 0 ;
-      for ( int _label = 0 ; _label < nbBundles ; _label++ )
-      {
-
-        if ( labelsDictClassic[ _label ] == bundleName )
-        {
-
-          for ( int _fiberIndex = 0 ;
-                            _fiberIndex < nbFibersMovedTracotgramNeighborhood ;
-                                                                 _fiberIndex++ )
-          {
-
-            int nbLabelsForFiberSBR = labelsRecognizedSBR[ _fiberIndex ].size() ;
-            for ( int _labelIndex = 0 ; _labelIndex < nbLabelsForFiberSBR ;
-                                                                 _labelIndex++ )
-            {
-
-              int labelRecognizedSBRtmp =
-                             labelsRecognizedSBR[ _fiberIndex ][ _labelIndex ] ;
-
-              if ( labelRecognizedSBRtmp == 0 )
-              {
-
-                int64_t _indexInTractogram = indexInTractogram[ _fiberIndex ] ;
-
-                labels[ _indexInTractogram ].push_back( _label ) ;
-                _tmpCounter++ ;
-
-              }
-
-            }
-
-          }
-
-          break ;
-
-        }
-
-      }
-
-      if ( is_file( labelsRecognizedSBRPath ) )
-      {
-
-        rmfile( labelsRecognizedSBRPath ) ;
-
-      }
-
-      if ( is_file( labelsDictRecognizedSBRPath ) )
-      {
-
-        rmfile( labelsDictRecognizedSBRPath ) ;
-
-      }
-
-    }
-    else
+    for ( int fiberIndex : finalIndexInNeighborhoodRecognized )
     {
 
-      if ( is_file( labelsRecognizedSBRPath ) )
-      {
+      int64_t tmpIndexInTractogram = indexInTractogram[ fiberIndex ] ;
 
-        rmfile( labelsRecognizedSBRPath ) ;
-
-      }
-
-      if ( is_file( labelsDictRecognizedSBRPath ) )
-      {
-
-        rmfile( labelsDictRecognizedSBRPath ) ;
-
-      }
-
-      int _tmpCounter = 0 ;
-
-      for ( int _label = 0 ; _label < nbBundles ; _label++ )
-      {
-
-        if ( labelsDictClassic[ _label ] == bundleName )
-        {
-
-          int nbLabeledFibersClassic = labelsClassic.size() ;
-
-          for ( int _fiberIndex = 0; _fiberIndex < nbLabeledFibersClassic ;
-                                                                 _fiberIndex++ )
-          {
-
-            int nbLabelsForFiberClassic = labelsClassic[ _fiberIndex ].size() ;
-            for ( int _labelClassicIndex = 0 ;
-                  _labelClassicIndex < nbLabelsForFiberClassic ;
-                                                          _labelClassicIndex++ )
-            {
-
-              int _classicLabelTmp =
-                            labelsClassic[ _fiberIndex ][ _labelClassicIndex ] ;
-
-              if ( _classicLabelTmp == _label )
-              {
-
-                labels[ _fiberIndex ].push_back( _label ) ;
-                _tmpCounter++ ;
-
-              }
-
-            }
-
-          }
-
-          break ;
-
-        }
-
-      }
+      labelsSubjectSpace[ tmpIndexInTractogram ].push_back( tmpCpunter ) ;
 
     }
 
+    tmpCpunter++ ;
+
   }
+
+  std::cout << "Number of bundles recognized : " << finalIsClassic.size()
+                                                                  << std::endl ;
+
+  // for ( int i = 0 ; i < finalIsClassic.size() ; i++ )
+  // {
+  //
+  //   std::cout << finalBundlesNames[ i ] << " : " << finalIsClassic[ i ]
+  //             << " -> Classic : " << tmpAdjacenciesClassic[ i ]
+  //             << "\t|\tGeoLab : " << tmpAdjacenciesGeoLab[ i ] << std::endl ;
+  //
+  // }
+
+  // Free memory
+  coveragesGeoLab = std::vector<float>() ;
+  adjacenciesGeoLab = std::vector<float>() ;
+  overlapsGeoLab = std::vector<float>() ;
+  disimilaritiesGeoLab = std::vector<float>() ;
+  indecesInNeighborhoodsReconized = std::vector<std::vector<int>>() ;
+
+  coveragesClassic = std::vector<float>() ;
+  adjacenciesClassic = std::vector<float>() ;
+  overlapsClassic = std::vector<float>() ;
+  disimilaritiesClassic = std::vector<float>() ;
+  indecesInNeighborhoodsReconizedClassic = std::vector<std::vector<int>>() ;
 
   // Saving labels
   std::ostringstream labelsDictPathOss ;
   labelsDictPathOss << outputDirectory << "labels.dict" ;
   std::string labelsDictPath = labelsDictPathOss.str() ;
   saveLabelsDict( labelsDictPath.c_str(),
-                  labelsDictClassic ) ;
+                  finalBundlesNames ) ;
 
 
   for ( int i = 0 ; i < nbFibersTractogram ; i++ )
   {
 
-    if ( labels[ i ].empty() )
+    if ( labelsSubjectSpace[ i ].empty() )
     {
 
       std::vector<int16_t> _tmpVectorNoLabel = { -1 } ;
-      labels[ i ] = _tmpVectorNoLabel ;
+      labelsSubjectSpace[ i ] = _tmpVectorNoLabel ;
 
     }
 
@@ -3921,11 +3008,10 @@ int main( int argc, char* argv[] )
   std::ostringstream labelsTxtPathOss ;
   labelsTxtPathOss << outputDirectory << "labels.txt" ;
   std::string labelsTxtPath = labelsTxtPathOss.str() ;
-  saveLabels( labelsTxtPath.c_str(), labels ) ;
-
-
+  saveLabels( labelsTxtPath.c_str(), labelsSubjectSpace ) ;
 
   std::cout << "Done" << std::endl ;
+
 
   //////////////////////// Saving labels local SBR space ///////////////////////
   std::cout << "#########################################################\n" ;
@@ -3940,184 +3026,199 @@ int main( int argc, char* argv[] )
   labelsDictRecognizedSBRPathOss << outputDirectory << "labelsSBR.dict" ;
   std::string labelsDictRecognizedSBRPath =
                                           labelsDictRecognizedSBRPathOss.str() ;
-  std::ostringstream comparisonWithAtlasRecognizedSBRPathOss ;
-  comparisonWithAtlasRecognizedSBRPathOss << outputDirectory
-                                                  << "comparisonWithAtlas.tsv" ;
-  std::string comparisonWithAtlasRecognizedSBRPath =
-                                 comparisonWithAtlasRecognizedSBRPathOss.str() ;
 
+
+  //
+  int nbRecogniedBundles = finalBundlesNames.size() ;
   std::vector<std::vector<int16_t>> labelsSBR ;
-  std::vector<std::string> labelsDictSBR ;
-  std::vector<float> coveragesBundles ;
-  std::vector<float> adjacencyBundles ;
-  std::vector<float> overlapBundles ;
   std::vector<float> matrixTracksSBR ;
   std::vector<int32_t> pointsPerTrackSBR ;
+  std::vector<int> offsetFirsPointBundleSBR( nbRecogniedBundles ) ;
+  std::vector<int> offsetFirstFiberBundleSBR( nbRecogniedBundles ) ;
   int curves_countSBR = 0 ;
   int _bundleLabel = 0 ;
-  // #pragma omp parallel for
-  for ( int _bundleIndex = 0 ; _bundleIndex < nbBundles ; _bundleIndex++ )
+  const auto start_time_tmp = std::chrono::system_clock::now() ;
+  for ( int _bundleIndex = 0 ; _bundleIndex < nbRecogniedBundles ;
+                                                                _bundleIndex++ )
   {
 
-    std::string movedTractogramNeighborhood = neighborhoodFilenames[
-                                                                _bundleIndex ] ;
 
-    std::string atlasNeighborhoodFile ;
-    if ( isAtlasNeighborhoodCentroids )
+    std::vector<int> tmpIndexInNeighborhoodRecognized =
+                          finalIndecesInNeighborhoodsReconized[ _bundleIndex ] ;
+
+    offsetFirsPointBundleSBR[ _bundleIndex ] =
+                                        3 * curves_countSBR * nbPointsPerFiber ;
+
+    offsetFirstFiberBundleSBR[ _bundleIndex ] = curves_countSBR ;
+
+    curves_countSBR += tmpIndexInNeighborhoodRecognized.size() ;
+
+  }
+
+  matrixTracksSBR.resize( 3 * curves_countSBR * nbPointsPerFiber ) ;
+  pointsPerTrackSBR.resize( curves_countSBR, nbPointsPerFiber ) ;
+  labelsSBR.resize( curves_countSBR ) ;
+  #pragma omp parallel for schedule(dynamic)
+  for ( int _bundleIndex = 0 ; _bundleIndex < nbRecogniedBundles ;
+                                                                _bundleIndex++ )
+  {
+
+    std::string tmpBundleName = finalBundlesNames[ _bundleIndex ] ;
+
+    std::string movedTractogramNeighborhood =
+                                      finalBundlesNeigborhoods[ _bundleIndex ] ;
+
+    std::string tmpLocalNeighborhood ;
+    if ( finalIsClassic[ _bundleIndex ] )
     {
 
-      atlasNeighborhoodFile = atlasNeighborhoodCentroidsPaths[ _bundleIndex ] ;
-
+      tmpLocalNeighborhood = movedTractogramNeighborhood ;
 
     }
     else
     {
 
-      atlasNeighborhoodFile = neighborhoodAtlasFilenames[ _bundleIndex ] ;
+      tmpLocalNeighborhood = replaceExtension( movedTractogramNeighborhood,
+                                               "_moved.bundles" ) ;
+      tmpLocalNeighborhood = replaceExtension( tmpLocalNeighborhood, format ) ;
+
+      if ( !is_file( tmpLocalNeighborhood ) )
+      {
+
+        std::cout << "ERROR : finalIsClassic for bundle " << tmpBundleName
+                  << " is false but file SBR file " << tmpLocalNeighborhood
+                  << " does not exists" << std::endl ;
+      }
 
     }
 
-    std::string _tmpAtlasBundlePath = atlasNeighborhoodFile ;
+    BundlesData tmpLocalNeighborhoodBundlesData(
+                                                tmpLocalNeighborhood.c_str() ) ;
 
-    char lastChar = _tmpAtlasBundlePath[ _tmpAtlasBundlePath.size() - 1 ] ;
-    if ( lastChar == '/' )
+    std::vector<float>& tmpMatrixTracks =
+                                  tmpLocalNeighborhoodBundlesData.matrixTracks ;
+    std::vector<int> tmpIndexInNeighborhoodRecognized =
+                          finalIndecesInNeighborhoodsReconized[ _bundleIndex ] ;
+
+    for ( int i = 0 ; i < tmpIndexInNeighborhoodRecognized.size() ; i++ )
     {
 
-      _tmpAtlasBundlePath = _tmpAtlasBundlePath.substr( 0,
-                                              _tmpAtlasBundlePath.size() - 1 ) ;
+      int fiber = tmpIndexInNeighborhoodRecognized[ i ] ;
 
-    }
+      int64_t offset = 3 * fiber * nbPointsPerFiber ;
 
-    std::experimental::filesystem::path tmpPath( _tmpAtlasBundlePath ) ;
-    std::string bundleName = tmpPath.stem() ;
+      int64_t offset_sbr = offsetFirsPointBundleSBR[ _bundleIndex ] +
+                                                      3 * i * nbPointsPerFiber ;
 
-
-    std::ostringstream recognizedBundleOss ;
-    recognizedBundleOss << outputDirectory << bundleName ;
-    if ( format == ".bundles" || format == ".bundlesdata" )
-    {
-
-      recognizedBundleOss << ".bundles" ;
-
-    }
-    else if ( format == ".trk" || format == ".tck" )
-    {
-
-      recognizedBundleOss << ".minf" ;
-
-    }
-    std::string recognizedBundlePath = recognizedBundleOss.str() ;
-
-    std::ostringstream recognizedBundledataOss ;
-    recognizedBundledataOss << outputDirectory << bundleName ;
-    if ( format == ".bundles" || format == ".bundlesdata" )
-    {
-
-      recognizedBundledataOss << ".bundlesdata" ;
-
-    }
-    else if ( format == ".trk" || format == ".tck" )
-    {
-
-      recognizedBundledataOss << format ;
-
-    }
-    std::string recognizedBundledataPath = recognizedBundledataOss.str() ;
-
-    if ( !is_file( recognizedBundlePath )  ||
-                                          !is_file( recognizedBundledataPath ) )
-    {
-
-      continue ;
-
-    }
-
-    BundlesData recognizedBundlesData( recognizedBundledataPath.c_str() ) ;
-
-    std::vector<float>& recognizedMatrixTracks =
-                                            recognizedBundlesData.matrixTracks ;
-    std::vector<int32_t>& recognizedPointsPerTrack =
-                                          recognizedBundlesData.pointsPerTrack ;
-    int recognizedCurves_count = recognizedBundlesData.curves_count ;
-    curves_countSBR += recognizedCurves_count ;
-    int64_t offset = 0 ;
-    for ( int fiber = 0 ; fiber < recognizedCurves_count ; fiber++ )
-    {
-
-      int32_t nbPointsFiber = recognizedPointsPerTrack[ fiber ] ;
-      pointsPerTrackSBR.push_back( nbPointsFiber ) ;
-      for ( int point = 0 ; point < nbPointsFiber ; point++ )
+      for ( int point = 0 ; point < nbPointsPerFiber ; point++ )
       {
 
         for ( int coord = 0 ; coord < 3 ; coord++ )
         {
 
-          matrixTracksSBR.push_back( recognizedMatrixTracks[ 3 * point + coord +
-                                                                    offset ] ) ;
+          matrixTracksSBR[ offset_sbr + 3 * point + coord ] =
+                                 tmpMatrixTracks[ 3 * point + coord + offset ] ;
 
         }
 
       }
 
-      offset += 3 * nbPointsFiber ;
+      int64_t offsetLabelsSBR = offsetFirstFiberBundleSBR[ _bundleIndex ] ;
 
-      std::vector<int16_t> _tmpVectorLabel = { (int16_t)_bundleLabel } ;
-      labelsSBR.push_back( _tmpVectorLabel ) ;
-
-    }
-
-    labelsDictSBR.push_back( bundleName ) ;
-    _bundleLabel++ ;
-
-    float _tmpCoverage = getCoverageWithAtlas( recognizedBundlePath ) ;
-    coveragesBundles.push_back( _tmpCoverage ) ;
-    float _tmpAdjacency = getAdjacencyWithAtlas( recognizedBundlePath ) ;
-    adjacencyBundles.push_back( _tmpAdjacency ) ;
-    float _tmpOverlap = getOverlapWithAtlas( recognizedBundlePath ) ;
-    overlapBundles.push_back( _tmpOverlap ) ;
-
-    if ( !saveBundlesSeparetly )
-    {
-
-      if ( is_file( recognizedBundlePath ) )
-      {
-
-        rmfile( recognizedBundlePath ) ;
-
-      }
-
-      if ( is_file( recognizedBundledataPath ) )
-      {
-
-        rmfile( recognizedBundledataPath ) ;
-
-      }
+      std::vector<int16_t> _tmpVectorLabel = { (int16_t)_bundleIndex } ;
+      labelsSBR[ offsetLabelsSBR + i ] = _tmpVectorLabel ;
 
     }
 
   }
+  // for ( int _bundleIndex = 0 ; _bundleIndex < nbRecogniedBundles ;
+  //                                                               _bundleIndex++ )
+  // {
+  //
+  //   std::string tmpBundleName = finalBundlesNames[ _bundleIndex ] ;
+  //
+  //   std::string movedTractogramNeighborhood =
+  //                                     finalBundlesNeigborhoods[ _bundleIndex ] ;
+  //
+  //   std::string tmpLocalNeighborhood ;
+  //   if ( finalIsClassic[ _bundleIndex ] )
+  //   {
+  //
+  //     tmpLocalNeighborhood = movedTractogramNeighborhood ;
+  //
+  //   }
+  //   else
+  //   {
+  //
+  //     tmpLocalNeighborhood = replaceExtension( movedTractogramNeighborhood,
+  //                                              "_moved.bundles" ) ;
+  //     tmpLocalNeighborhood = replaceExtension( tmpLocalNeighborhood, format ) ;
+  //
+  //     if ( !is_file( tmpLocalNeighborhood ) )
+  //     {
+  //
+  //       std::cout << "ERROR : finalIsClassic for bundle " << tmpBundleName
+  //                 << " is false but file SBR file " << tmpLocalNeighborhood
+  //                 << " does not exists" << std::endl ;
+  //     }
+  //
+  //   }
+  //
+  //   BundlesData tmpLocalNeighborhoodBundlesData(
+  //                                               tmpLocalNeighborhood.c_str() ) ;
+  //
+  //   std::vector<float>& tmpMatrixTracks =
+  //                                 tmpLocalNeighborhoodBundlesData.matrixTracks ;
+  //   std::vector<int32_t>& tmpPointsPerTrack =
+  //                               tmpLocalNeighborhoodBundlesData.pointsPerTrack ;
+  //   int tmpCurves_count = tmpLocalNeighborhoodBundlesData.curves_count ;
+  //   std::vector<int> tmpIndexInNeighborhoodRecognized =
+  //                         finalIndecesInNeighborhoodsReconized[ _bundleIndex ] ;
+  //
+  //   for ( int fiber = 0 ; fiber < tmpCurves_count ; fiber++ )
+  //   {
+  //
+  //     int64_t offset = 3 * fiber * nbPointsPerFiber ;
+  //
+  //     if ( std::find( tmpIndexInNeighborhoodRecognized.begin(),
+  //                     tmpIndexInNeighborhoodRecognized.end(), fiber ) ==
+  //                                       tmpIndexInNeighborhoodRecognized.end() )
+  //     {
+  //
+  //       continue ;
+  //
+  //     }
+  //
+  //     pointsPerTrackSBR.push_back( nbPointsPerFiber ) ;
+  //     for ( int point = 0 ; point < nbPointsPerFiber ; point++ )
+  //     {
+  //
+  //       for ( int coord = 0 ; coord < 3 ; coord++ )
+  //       {
+  //
+  //         matrixTracksSBR.push_back( tmpMatrixTracks[ 3 * point + coord +
+  //                                                                   offset ] ) ;
+  //
+  //       }
+  //
+  //     }
+  //
+  //     std::vector<int16_t> _tmpVectorLabel = { (int16_t)_bundleIndex } ;
+  //     labelsSBR.push_back( _tmpVectorLabel ) ;
+  //
+  //     curves_countSBR++ ;
+  //
+  //   }
+  //
+  // }
 
-  //#########################################################################//
-  //#########################################################################//
-  //#########################################################################//
-  // Do here selection of one label per fiber
-  //#########################################################################//
-  //#########################################################################//
-  //#########################################################################//
-  saveComparisonMeasuresWithAtlas(
-                                coveragesBundles,
-                                adjacencyBundles,
-                                overlapBundles,
-                                labelsDictSBR,
-                                comparisonWithAtlasRecognizedSBRPath.c_str() ) ;
+  const std::chrono::duration< double > duration_tmp =
+                             std::chrono::system_clock::now() - start_time_tmp ;
 
-  saveLabelsDict( labelsDictRecognizedSBRPath.c_str(),
-                  labelsDictSBR ) ;
-
-  saveLabels( labelsRecognizedSBRPath.c_str(),
-              labelsSBR ) ;
+  std::cout << "Duration : " << duration_tmp.count() << std::endl ;
 
 
+  //
   BundlesMinf regroupedRecognizedBundles( movedTractogram.c_str() ) ;
   std::ostringstream regroupedRecognizedBundleOss ;
   regroupedRecognizedBundleOss << outputDirectory << "regroupedRecognized" ;
@@ -4207,6 +3308,64 @@ int main( int argc, char* argv[] )
                                     regroupedRecognizedBundledataPath.c_str(),
                                     regroupedRecognizedBundles ) ;
 
+  saveLabelsDict( labelsDictRecognizedSBRPath.c_str(),
+                  finalBundlesNames ) ;
+
+  saveLabels( labelsRecognizedSBRPath.c_str(),
+              labelsSBR ) ;
+
+  std::cout << "Done" << std::endl ;
+
+  //////////////////////// Saving comparison with atlas ////////////////////////
+  std::cout << "#########################################################\n" ;
+  std::cout << "############# Saving comparison with atlas ##############"
+                                                                  << std::endl ;
+  std::cout << "#########################################################\n" ;
+  std::ostringstream comparisonWithAtlasRecognizedSBRPathOss ;
+  comparisonWithAtlasRecognizedSBRPathOss << outputDirectory
+                                                  << "comparisonWithAtlas.tsv" ;
+  std::string comparisonWithAtlasRecognizedSBRPath =
+                                 comparisonWithAtlasRecognizedSBRPathOss.str() ;
+  saveComparisonMeasuresWithAtlas(
+                                finalCoverages,
+                                finalAdjacencies,
+                                finalOverlaps,
+                                finalDisimilarities,
+                                finalNbFibersPerBundle,
+                                finalBundlesNames,
+                                comparisonWithAtlasRecognizedSBRPath.c_str() ) ;
+
+
+
+  if ( saveBundlesSeparetly )
+  {
+
+    std::ostringstream outputDirectoryBundlesOss ;
+    outputDirectoryBundlesOss << outputDirectory << "bundles" ;
+    std::string outputDirectoryBundles = outputDirectoryBundlesOss.str() ;
+
+    std::ostringstream applyPredictedLabelsCommandOss ;
+    applyPredictedLabelsCommandOss << "applyPredictedLabels "
+                           << "-i " << regroupedRecognizedBundledataPath << " "
+                           << "-l " << labelsRecognizedSBRPath << " "
+                           << "-d " << labelsDictRecognizedSBRPath << " "
+                           << "-o " << outputDirectoryBundles << " "
+                           << "-v 1 " ;
+    std::string applyPredictedLabelsCommand =
+                                          applyPredictedLabelsCommandOss.str() ;
+
+    int isFailApplyPredicted = run_sh_process( applyPredictedLabelsCommand ) ;
+
+    if ( isFailApplyPredicted )
+    {
+
+      std::cout << "ERROR : problem saving separate bundles files"
+                                                                  << std::endl ;
+      exit( 1 ) ;
+
+    }
+
+  }
 
   if ( keepTmpFiles )
   {
@@ -4221,40 +3380,16 @@ int main( int argc, char* argv[] )
 
     }
 
-  }
-  std::cout << "Done" << std::endl ;
-
-
-  ////////////////////////////////// Cleaning //////////////////////////////////
-  if ( !haveMinf )
-  {
-
-    std::vector<std::string> tmpMinfFiles = getFilesInDirectoryWithExtension(
-                                                    outputDirectory, ".minf" ) ;
-    if ( tmpMinfFiles.size() > 0 )
-    {
-
-      for ( std::string minfFile : tmpMinfFiles )
-      {
-
-        rmfile( minfFile ) ;
-
-      }
-
-    }
+    return( 0 ) ;
 
   }
 
-  if ( keepTmpFiles )
-  {
 
-    return 0 ;
-
-  }
   std::cout << "#########################################################\n" ;
   std::cout << "################## Cleaning temp files ##################"
                                                                   << std::endl ;
   std::cout << "#########################################################\n" ;
+
 
   if ( is_dir( tmpNeighborhoodDir) )
   {
@@ -4275,13 +3410,6 @@ int main( int argc, char* argv[] )
     }
 
   }
-
-  // if ( is_dir( tmpAtlasDir ) )
-  // {
-  //
-  //   rmdir( tmpAtlasDir ) ;
-  //
-  // }
 
   const std::chrono::duration< double > duration =
                               std::chrono::system_clock::now() - start_time ;

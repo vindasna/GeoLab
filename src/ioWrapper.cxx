@@ -648,7 +648,7 @@ void checkAtlasDirectory( const std::string& path, const std::string& format )
   {
 
     std::cout << "Atlas directory : " << path << std::endl
-              << "Number of bundles with " << format << "format : "
+              << "Number of bundles with " << format << " format : "
               << nbCorrectFiles << std::endl ;
 
   }
@@ -1559,11 +1559,13 @@ void convertBundlesFormat( const std::string& inputBundles,
 //////// Function to save adjacencies, coverages and overlaps in a .tsv ////////
 ////////////////////////////////////////////////////////////////////////////////
 void saveComparisonMeasuresWithAtlas(
-                                    const std::vector<float>& coveragesBundles,
-                                    const std::vector<float>& adjacencyBundles,
-                                    const std::vector<float>& overlapBundles,
-                                    const std::vector<std::string>& labelsDict,
-                                    const char* fileName )
+                                   const std::vector<float>& coveragesBundles,
+                                   const std::vector<float>& adjacencyBundles,
+                                   const std::vector<float>& overlapBundles,
+                                   const std::vector<float>& disimilarities,
+                                   const std::vector<int>& nbFibersBundles,
+                                   const std::vector<std::string>& bundlesNames,
+                                   const char* fileName )
 {
 
   std::ofstream file ;
@@ -1576,24 +1578,24 @@ void saveComparisonMeasuresWithAtlas(
 
   }
 
-  int labelsDictSize = labelsDict.size() ;
+  int bundlesNamesSize = bundlesNames.size() ;
   bool isUnlabeled = false ;
   bool isRegrouped = false ;
-  for ( int _bundle = 0 ; _bundle < labelsDict.size() ; _bundle++ )
+  for ( int _bundle = 0 ; _bundle < bundlesNames.size() ; _bundle++ )
   {
 
-    if ( labelsDict[ _bundle ] == "unlabeledFibers"  )
+    if ( bundlesNames[ _bundle ] == "unlabeledFibers"  )
     {
 
-      labelsDictSize -= 1 ;
+      bundlesNamesSize -= 1 ;
       isUnlabeled = true ;
 
     }
 
-    if ( labelsDict[ _bundle ]  == "regroupedRecognized" )
+    if ( bundlesNames[ _bundle ]  == "regroupedRecognized" )
     {
 
-       labelsDictSize -= 1 ;
+       bundlesNamesSize -= 1 ;
        isRegrouped = true ;
 
     }
@@ -1627,23 +1629,24 @@ void saveComparisonMeasuresWithAtlas(
     exit( 1 ) ;
 
   }
-  if ( labelsDictSize != nbBundles )
+  if ( bundlesNamesSize != nbBundles )
   {
 
     std::cout << "ERROR in saveComparisonMeasuresWithAtlas : the number of "
-              << "bundles in labelsDict is different than the number of bundles"
+              << "bundles in bundlesNames is different than the number of bundles"
               << " with coverage " << std::endl ;
     exit( 1 ) ;
 
   }
 
-  file << "Bundle_Name\tCoverage\tAdjacency\tOverlap" << std::endl ;
+  file << "Bundle_Name\tCoverage\tAdjacency\tOverlap\tDisimilarity\tNbFibers"
+                                                                  << std::endl ;
 
   int _bundle = 0 ;
-  for ( int i = 0 ; i < labelsDict.size() ; i++ )
+  for ( int i = 0 ; i < bundlesNames.size() ; i++ )
   {
 
-    std::string _bundleName = labelsDict[ i ] ;
+    std::string _bundleName = bundlesNames[ i ] ;
     if ( _bundleName != "unlabeledFibers" &&
 		                                     _bundleName != "regroupedRecognized"  )
     {
@@ -1651,9 +1654,12 @@ void saveComparisonMeasuresWithAtlas(
       float _coverage = coveragesBundles[ _bundle ] ;
       float _adjacency = adjacencyBundles[ _bundle ] ;
       float _overlap = overlapBundles[ _bundle ] ;
+      float _disimilarity = disimilarities[ _bundle ] ;
+      float _nbFibers = nbFibersBundles[ _bundle ] ;
 
       file << _bundleName << "\t" << _coverage << "\t" << _adjacency << "\t"
-                                                      << _overlap << std::endl ;
+           << _overlap << "\t" << _disimilarity << "\t" << _nbFibers
+                                                                  << std::endl ;
 
       _bundle += 1 ;
 
@@ -1666,6 +1672,77 @@ void saveComparisonMeasuresWithAtlas(
 
 }
 
+
+
+////////////////////////////////////////////////////////////////////////////////
+///////////////// Function to read comparison with atlas .tsv //////////////////
+////////////////////////////////////////////////////////////////////////////////
+void readComparisonMeasuresWithAtlas(
+                                       const char* fileName,
+                                        std::vector<float>& coveragesBundles,
+                                        std::vector<float>& adjacencyBundles,
+                                        std::vector<float>& overlapBundles,
+                                        std::vector<float>& disimilarities,
+                                        std::vector<int>& nbFibersBundles,
+                                        std::vector<std::string>& bundlesNames )
+{
+
+  std::string fileNameStr = fileName ;
+
+  if ( !( endswith( fileName, ".tsv" ) ) )
+  {
+
+    std::stringstream outMessageOss ;
+    outMessageOss << "ioWrapper->readComparisonMeasuresWithAtlas : fileName "
+                  << fileName << " is not .tsv" ;
+    std::string outMessage = outMessageOss.str() ;
+
+    throw( std::invalid_argument( outMessage ) ) ;
+
+  }
+
+  const char delim = '\t' ;
+  std::string line ;
+  std::ifstream tsvFile ;
+  tsvFile.open( fileName ) ;
+  if ( tsvFile.fail() )
+  {
+
+    std::cout << "Problem reading file : " << fileName
+                                           << std::endl ;
+
+    exit( 1 ) ;
+
+  }
+  while ( std::getline( tsvFile, line ) )
+  {
+
+    std::vector< std::string > out ;
+    std::stringstream ss( line ) ;
+    std::string s ;
+    while ( std::getline( ss, s, delim ) )
+    {
+
+      s.erase( std::remove( s.begin(), s.end(), ' ' ), s.end() ) ;
+      s.erase( std::remove( s.begin(), s.end(), '\n' ), s.end() ) ;
+      out.push_back( s ) ;
+
+    }
+
+    bundlesNames.push_back( out[ 0 ] ) ;
+    coveragesBundles.push_back( stof( out[ 1 ] ) ) ;
+    adjacencyBundles.push_back( stof( out[ 2 ] ) ) ;
+    overlapBundles.push_back( stof( out[ 3 ] ) ) ;
+    disimilarities.push_back( stof( out[ 4 ] ) ) ;
+    nbFibersBundles.push_back( stof( out[ 5 ] ) ) ;
+
+
+  }
+
+  tsvFile.close() ;
+
+
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 /////////// Function to get coverage with atlas of extracted bundle ////////////

@@ -80,6 +80,7 @@ class BundlesMinf
   float coverageWithAtlas = -1 ;
   float adjacencyWithAtlas = -1 ;
   float overlapWithAtlas = -1 ;
+  std::string bundleName ;
 
   //////////////////////////// For .bundles format /////////////////////////////
   int binary = 0 ;

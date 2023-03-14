@@ -81,6 +81,7 @@ BundlesMinf::BundlesMinf( const BundlesMinf& bundlesInfo )
   this->coverageWithAtlas = bundlesInfo.coverageWithAtlas ;
   this->adjacencyWithAtlas = bundlesInfo.adjacencyWithAtlas ;
   this->overlapWithAtlas = bundlesInfo.overlapWithAtlas ;
+  this->bundleName = bundlesInfo.bundleName ;
 
   for ( int i = 0 ; i < 3 ; i++ )
   {
@@ -667,6 +668,9 @@ void BundlesMinf::read( const char* bundlesFilename )
 {
 
   std::string bundlesFilenameStr = bundlesFilename ;
+
+  bundleName = basenameNoExtension( bundlesFilenameStr ) ;
+
   std::string bundlesDataFilenameStr = bundlesFilename ;
 
   if ( endswith( bundlesFilenameStr, ".bundles" ) )

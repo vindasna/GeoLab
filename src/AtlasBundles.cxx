@@ -774,8 +774,6 @@ double AtlasBundles::compareDisimilarityBundles( const BundlesData& bundle1,
 ////////////////////////////////////////////////////////////////////////////////
 double AtlasBundles::distanceBetweenBundles( const BundlesData& bundle1,
                                              const BundlesData& bundle2,
-                                             int nbFibersBundle1,
-                                             int nbFibersBundle2,
                                              int nbPoints ) const
 {
 
@@ -829,8 +827,6 @@ double AtlasBundles::distanceBetweenBundles( int bundleIndex,
 
   double disimilarity = distanceBetweenBundles( this->bundlesData[ bundleIndex ],
                                                 bundle,
-                                                nbFibersBundle1,
-                                                nbFibersBundle2,
                                                 nbPoints ) ;
 
   return disimilarity ;
@@ -1406,7 +1402,8 @@ float AtlasBundles::overlapRecognizedToAtlasBundles( const BundlesData& bundle,
 
 
 float AtlasBundles::overlapRecognizedToAtlasBundles(
-        const std::vector<int>& nbAdjacentFibersRecognizedToAtlasBundles ) const
+               const std::vector<int>& nbAdjacentFibersRecognizedToAtlasBundles,
+               int verbose ) const
 {
 
   int nbFibersBundle = nbAdjacentFibersRecognizedToAtlasBundles.size() ;
@@ -1430,10 +1427,13 @@ float AtlasBundles::overlapRecognizedToAtlasBundles(
   if ( nbAdjacentFibersAtlasBundle == 0 )
   {
 
+    if ( verbose )
+    {
 
-    std::cout << "Warning : there are not adjacent fibers of recognized to "
-              << "atlas, overlap is not defined \n" ;
+      std::cout << "Warning : there are not adjacent fibers of recognized to "
+                << "atlas, overlap is not defined \n" ;
 
+    }
 
     return 0 ;
 

@@ -57,35 +57,47 @@ int getFlagPosition( int argc, char* argv[], const std::string& flag )
 int main( int argc, char* argv[] )
 {
 
-  int index_input, index_atlas, index_output, index_labels, index_p, index_thr,
-    index_minLen, index_maxLen, index_maxAngle, index_maxDirectionAngle,
-    index_minShapeAngle, index_maxShapeAngle, index_thrDBMP, index_thrSim,
-    index_minNbFibers, index_thrAdj, index_tolP, index_tolThr,
-    index_tolMaxAngle, index_tolMaxDirectionAngle, index_tolMinShapeAngle,
-    index_tolMaxShapeAngle, index_tolLenght, index_tolDistBetMedPts,
-    index_useAvgThr, index_useMDF, index_useSimple, index_useMPAF,
-    index_compare, index_saveExtractedBundles, index_save_unlabeled,
-    index_nbThreads, index_verbose, index_help ;
+  int index_input, index_output, index_labels, index_atlas, index_oca, index_p,
+    index_thr, index_minLen, index_maxLen, index_maxAngle,
+    index_maxDirectionAngle, index_minShapeAngle, index_maxShapeAngle,
+    index_thrDBMP, index_thrSim, index_minNbFibers, index_thrAdj, index_tolP,
+    index_tolThr, index_tolMaxAngle, index_tolMaxDirectionAngle,
+    index_tolMinShapeAngle, index_tolMaxShapeAngle, index_tolLenght,
+    index_tolDistBetMedPts, index_useAvgThr, index_useMDF, index_useSimple,
+    index_useMPAF, index_compare, index_saveExtractedBundles,
+    index_save_unlabeled, index_nbThreads, index_oca_append, index_verbose,
+                                                                    index_help ;
 
-  std::vector<std::string> possibleFlags{ "-i", "-a", "-o", "-l", "-p", "-thr",
-                                          "-minLen", "-maxLen", "-maxAng",
-                                          "-maxAngDir", "-minAngShape",
-                                          "-maxAngShape", "-thrDBMP", "-thrSim",
-                                          "-minNbFibers", "-thrAdj", "-tolP",
-					                                "-tolThr", "-tolMaxAng",
-					                                "-tolMaxDirAng", "-tolMinShapeAng",
-					                                "-tolMaxShapeAng", "-tolLenght",
-                                          "-tolDBMP", "-useAvgThr", "-useMPAF",
-					                                "-useMDF", "-useSimple", "-cb",
-					                                "-seb", "-su", "-nbThreads", "-v",
-                                                                        "-h" } ;
+  std::vector<std::string> possibleFlags{
+            "-i", "-o", "-l", "-a",
+            "-oca", "-p", "-thr", "-minLen",
+            "-maxLen", "-maxAng", "-maxAngDir", "-minAngShape",
+            "-maxAngShape", "-thrDBMP", "-thrSim", "-minNbFibers",
+            "-thrAdj", "-tolP", "-tolThr", "-tolMaxAng",
+					  "-tolMaxDirAng", "-tolMinShapeAng", "-tolMaxShapeAng", "-tolLenght",
+            "-tolDBMP", "-useAvgThr", "-useMPAF", "-useMDF",
+            "-useSimple", "-cb", "-seb", "-su",
+            "-nbThreads", "-ocaApp", "-v", "-h" } ;
 
-  std::vector<bool> possibleFlagsNeedArgument{
-                              true, true, true, true, true, true, true, true,
-                              true, true, true, true, true, true, true, true,
-                              true, true, true, true, true, true, true, true,
-                              true, true, false, false, false, true,
-			                        false, true, true, false } ;
+  std::vector<bool> possibleFlagsNeedArgument{ true, true, true, true,
+                                               true, true, true, true,
+                                               true, true, true, true,
+                                               true, true, true, true,
+                                               true, true, true, true,
+                                               true, true, true, true,
+                                               true, true, true, false,
+                                               false, false, true, false,
+                                               true, true, true, false } ;
+
+  if ( possibleFlagsNeedArgument.size() != possibleFlags.size() )
+  {
+
+    std::cout << "ProjectAtlas CODING ERROR : possibleFlags and "
+              << "possibleFlagsNeedArgument must have the same size"
+              << std::endl ;
+    exit( 1 ) ;
+
+  }
 
 
 
@@ -161,9 +173,10 @@ int main( int argc, char* argv[] )
   }
 
   index_input = getFlagPosition( argc, argv, "-i" ) ;
-  index_atlas = getFlagPosition( argc, argv, "-a" ) ;
   index_output = getFlagPosition( argc, argv, "-o" ) ;
   index_labels = getFlagPosition( argc, argv, "-l" ) ;
+  index_atlas = getFlagPosition( argc, argv, "-a" ) ;
+  index_oca = getFlagPosition( argc, argv, "-oca" ) ;
   index_p = getFlagPosition( argc, argv, "-p" ) ;
   index_thr = getFlagPosition( argc, argv, "-thr" ) ;
   index_minLen = getFlagPosition( argc, argv, "-minLen" ) ;
@@ -192,6 +205,7 @@ int main( int argc, char* argv[] )
   index_saveExtractedBundles = getFlagPosition( argc, argv, "-seb" ) ;
   index_save_unlabeled = getFlagPosition( argc, argv, "-su" ) ;
   index_nbThreads = getFlagPosition( argc, argv, "-nbThreads" ) ;
+  index_oca_append = getFlagPosition( argc, argv, "-ocaApp" ) ;
   index_verbose = getFlagPosition( argc, argv, "-v" ) ;
   index_help = getFlagPosition( argc, argv, "-h" ) ;
 
@@ -206,6 +220,9 @@ int main( int argc, char* argv[] )
               << "[-a] : Directory with the atlas (one file per bundle), must "
               << "be given if other than ESBA atlas. You can also give a .tck "
               << "file of the atlas bundle (just one) you want to extract. \n"
+              << "[-oca] : Name (and NOT path) to give to the comparison with  "
+              << "atlas .tsv file in case the -cb flag is used (default : "
+              << "comparisonWithAtlas.tsv)\n"
               << "[-p] : Threshold for the distance between the centers of the "
               << "track in the atlas and the track in the tractogram. It "
               << "impacts if the MMEA distance is computed for a fiber which "
@@ -263,6 +280,8 @@ int main( int argc, char* argv[] )
               << "[-nbThreads] : Sets the value of omp_set_num_threads "
               << "(default : number of cores ) \n"
               << "[-su] : Save bundle containing unlabeled fibers \n"
+              << "[-ocaApp] : If true, appends values to comparison with atlas "
+              << ".tsv file (default : false)\n"
               << "[-v] : Set verbosity level at 1 \n"
               << "[-h] : Show this message " << std::endl ;
     exit( 1 ) ;
@@ -685,12 +704,6 @@ int main( int argc, char* argv[] )
 
 
   }
-  else
-  {
-
-    useMedialPointAverageFiber = true ;
-
-  }
 
   if ( index_useAvgThr )
   {
@@ -852,6 +865,44 @@ int main( int argc, char* argv[] )
   std::cout << "Number of threads : " << nbThreadsUsed << std::endl ;
 
 
+
+  if ( index_oca_append )
+  {
+
+    std::string tmpParsed( argv[ index_oca_append + 1 ] ) ;
+
+    if ( tmpParsed == "True" || tmpParsed == "TRUE" || tmpParsed == "true" )
+    {
+
+      comparisonWithAtlasAppend = true ;
+
+    }
+    else if ( tmpParsed == "False" || tmpParsed == "FALSE" ||
+                                                         tmpParsed == "false" )
+    {
+
+      comparisonWithAtlasAppend = false ;
+
+    }
+    else
+    {
+
+      std::cout << "ERROR : Invalid argument for '-ocaApp', only posible "
+                << "options are {TRUE, True, true, FALSE, False, false } \n" ;
+      exit( 1 ) ;
+
+    }
+
+
+  }
+  else
+  {
+
+    comparisonWithAtlasAppend = true ;
+
+  }
+
+
   if ( index_verbose )
   {
     if ( argv[ index_verbose + 1 ] )
@@ -922,6 +973,35 @@ int main( int argc, char* argv[] )
     haveMinf = true ;
 
   }
+
+
+  // Getting output directory
+
+  std::string outputDirectory( argv[ index_output + 1 ] ) ;
+  lastChar = outputDirectory[ outputDirectory.size() - 1 ] ;
+  if ( lastChar != '/' )
+  {
+
+    outputDirectory = outputDirectory + "/" ;
+
+  }
+
+  if ( !is_dir( outputDirectory ) )
+  {
+
+    mkdir( outputDirectory ) ;
+
+  }
+
+  std::string labelsName( argv[ index_labels + 1 ] ) ;
+  lastChar = labelsName[ labelsName.size() - 1 ] ;
+  if ( lastChar == '/' )
+  {
+
+    labelsName = labelsName.substr( 0, labelsName.size() - 1 ) ; ;
+
+  }
+
 
   // Atlas directory
 
@@ -1013,28 +1093,19 @@ int main( int argc, char* argv[] )
 
   }
 
-  std::string outputDirectory( argv[ index_output + 1 ] ) ;
-  lastChar = outputDirectory[ outputDirectory.size() - 1 ] ;
-  if ( lastChar != '/' )
+  // Getting comparison with atlas filename (it is not a path)
+  std::string comparisonWithAtlasFilename = "comparisonWithAtlas.tsv" ;
+  if ( index_oca )
   {
 
-    outputDirectory = outputDirectory + "/" ;
+    comparisonWithAtlasFilename = argv[ index_oca + 1 ] ;
+    if ( !endswith( comparisonWithAtlasFilename, ".tsv" ) )
+    {
 
-  }
+      std::cout << "ERROR : -oca argument must end in .tsv" << std::endl ;
+      exit( 1 ) ;
 
-  if ( !is_dir( outputDirectory ) )
-  {
-
-    mkdir( outputDirectory ) ;
-
-  }
-
-  std::string labelsName( argv[ index_labels + 1 ] ) ;
-  lastChar = labelsName[ labelsName.size() - 1 ] ;
-  if ( lastChar == '/' )
-  {
-
-    labelsName = labelsName.substr( 0, labelsName.size() - 1 ) ; ;
+    }
 
   }
 
@@ -1181,6 +1252,8 @@ int main( int argc, char* argv[] )
                              thresholdAdjacency,
                              outputDirectory,
                              labelsName,
+                             comparisonWithAtlasFilename,
+                             comparisonWithAtlasAppend,
                              saveExtractedBundles ) ;
 
 

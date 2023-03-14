@@ -54,11 +54,10 @@ class RecognizedBundles : public AtlasBundles
   float toleranceMaxShapeAngle = 0.0 ;
   float toleranceLenght = 0.3 ;
   float toleranceDistanceBetweenMedialPoints = 0.3 ;
-  // float thrPercentageSimilarity = 0.05 ;
   float thrPercentageSimilarity = 0.10 ;
   float thrDistanceBetweenMedialPoints = 5 ;
   float minimumNumberFibers = 20 ;
-  float thresholdAdjacency = 10 ; // In mm
+  float thresholdAdjacency = 5 ; // In mm
   bool useDefautlP = true ;
   bool useDefaultThr = true ;
   bool useDefaultMaxAngle = true ;
@@ -121,8 +120,8 @@ class RecognizedBundles : public AtlasBundles
 
 
   ////////////////////////////////// Mehtods ///////////////////////////////////
-  void MDADLabeling( BundlesData& atlasBundleData,
-                     BundlesData& subjectBundlesData,
+  void MDADLabeling( const BundlesData& atlasBundleData,
+                     const BundlesData& subjectBundlesData,
                      int atlasBundleIndex,
                      const std::vector<float>& medialPointAtlasBundle,
                      const std::vector<float>& medialPointAtlasBundleFibers,
@@ -131,21 +130,38 @@ class RecognizedBundles : public AtlasBundles
                      const std::vector<float>& lengthsAtlasBundleFibers,
                      int nbPoints,
                      std::vector<std::vector<int16_t>>& labels ) ;
+  void MDADLabeling( const BundlesData& atlasBundleData,
+                     const BundlesData& subjectBundlesData,
+                     const std::vector<float>& medialPointAtlasBundle,
+                     const std::vector<float>& medialPointAtlasBundleFibers,
+                     const std::vector<float>& normalVectorsAtlasBundle,
+                     const std::vector<float>& directionVectorsAtlasBundle,
+                     const std::vector<float>& lengthsAtlasBundleFibers,
+                     int nbPoints,
+                     std::vector<int>& indexInTractogramRecognized ) ;
 
 
   void MDADLabelingSimple(
-                         BundlesData& atlasBundleData,
-                         BundlesData& subjectBundlesData,
+                         const BundlesData& atlasBundleData,
+                         const BundlesData& subjectBundlesData,
                          int atlasBundleIndex,
                          const std::vector<float>& medialPointAtlasBundle,
                          const std::vector<float>& medialPointAtlasBundleFibers,
                          const std::vector<float>& lengthsAtlasBundleFibers,
                          int nbPoints,
                          std::vector<std::vector<int16_t>>& labels ) ;
+  void MDADLabelingSimple(
+                         const BundlesData& atlasBundleData,
+                         const BundlesData& subjectBundlesData,
+                         const std::vector<float>& medialPointAtlasBundle,
+                         const std::vector<float>& medialPointAtlasBundleFibers,
+                         const std::vector<float>& lengthsAtlasBundleFibers,
+                         int nbPoints,
+                         std::vector<int>& indexInTractogramRecognized ) ;
 
   //
-  void MDFLabeling( BundlesData& atlasBundleData,
-                    BundlesData& subjectBundlesData,
+  void MDFLabeling( const BundlesData& atlasBundleData,
+                    const BundlesData& subjectBundlesData,
                     int atlasBundleIndex,
                     const std::vector<float>& medialPointAtlasBundle,
                     const std::vector<float>& medialPointAtlasBundleFibers,
@@ -154,38 +170,63 @@ class RecognizedBundles : public AtlasBundles
                     const std::vector<float>& lengthsAtlasBundleFibers,
                     int nbPoints,
                     std::vector<std::vector<int16_t>>& labels ) ;
+  void MDFLabeling( const BundlesData& atlasBundleData,
+                    const BundlesData& subjectBundlesData,
+                    const std::vector<float>& medialPointAtlasBundle,
+                    const std::vector<float>& medialPointAtlasBundleFibers,
+                    const std::vector<float>& normalVectorsAtlasBundle,
+                    const std::vector<float>& directionVectorsAtlasBundle,
+                    const std::vector<float>& lengthsAtlasBundleFibers,
+                    int nbPoints,
+                    std::vector<int>& indexInTractogramRecognized ) ;
 
   void MDFLabelingSimple(
-                         BundlesData& atlasBundleData,
-                         BundlesData& subjectBundlesData,
+                         const BundlesData& atlasBundleData,
+                         const BundlesData& subjectBundlesData,
                          int atlasBundleIndex,
                          const std::vector<float>& medialPointAtlasBundle,
                          const std::vector<float>& medialPointAtlasBundleFibers,
                          const std::vector<float>& lengthsAtlasBundleFibers,
                          int nbPoints,
                          std::vector<std::vector<int16_t>>& labels ) ;
+  void MDFLabelingSimple(
+                         const BundlesData& atlasBundleData,
+                         const BundlesData& subjectBundlesData,
+                         const std::vector<float>& medialPointAtlasBundle,
+                         const std::vector<float>& medialPointAtlasBundleFibers,
+                         const std::vector<float>& lengthsAtlasBundleFibers,
+                         int nbPoints,
+                         std::vector<int>& indexInTractogramRecognized ) ;
 
   void saveLabels( const char* labelsBinaryFilename,
                    const std::vector<std::vector<int16_t>>& labels ) ;
-
-
 
   void saveLabelsDict( const char* labelsDictFilename,
                        const std::vector< std::string >& atlasData ) ;
 
 
-  void projectAtlas( AtlasBundles& atlasData,
-                     BundlesData& subjectBundlesData,
+  void projectAtlas( const AtlasBundles& atlasData,
+                     const BundlesData& subjectBundlesData,
                      float thresholdAdjacency,
                      std::string outputDirectory,
                      std::string labelsName,
+                     std::string comparisonWithAtlasFilename,
+                     bool comparisonWithAtlasAppend,
                      bool saveBundlesSeparetly ) ;
+
+  void projectBundle( const BundlesData& atlasBundleData,
+                      const BundlesMinf& atlasBundleInfo,
+                      const BundlesData& subjectBundlesData,
+                      std::vector<int>& indexInTractogramRecognized,
+                      float& coverage,
+                      float& adjacency,
+                      float& overlap,
+                      float& disimilarity,
+                      bool comparisonWithAtlas ) ;
+
+  void printParams() ;
+
 
 
 
 } ;
-
-template< typename T >
-void fillArrayPointer( T* array,
-                       int64_t nbElements,
-                       T x ) ;

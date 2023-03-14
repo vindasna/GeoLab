@@ -332,6 +332,8 @@ int main( int argc, char* argv[] )
   std::vector<float> coveragesBundles ;
   std::vector<float> adjacencyBundles ;
   std::vector<float> overlapBundles ;
+  std::vector<float> disimilarityBundles ;
+  std::vector<int> nbFibersBundles ;
   for ( int _bundle = 0 ; _bundle < nbBundlesInput ; _bundle++ )
   {
 
@@ -462,6 +464,12 @@ int main( int argc, char* argv[] )
       std::cout << "\tComputing metrics" << std::endl ;
 
     }
+    float _tmpDisimilarity =  inputData.distanceBetweenBundles(
+                                                         atlasBundle,
+                                                         inputBundle,
+                                                         nbPointsPerFiber ) ;
+    disimilarityBundles.push_back( _tmpDisimilarity ) ;
+
     std::vector<int> nbAdjacentFibersInputToAtlas( nbCurvesInputBundle, 0 ) ;
     inputData.computeNumberAdjacentFibersBundle1ToBundle2(
                                                 inputBundleTracks,
@@ -498,6 +506,9 @@ int main( int argc, char* argv[] )
     adjacencyBundles.push_back( _tmpAdjacency ) ;
 
 
+    nbFibersBundles.push_back( nbCurvesInputBundle ) ;
+
+
 
   }
 
@@ -505,6 +516,8 @@ int main( int argc, char* argv[] )
   saveComparisonMeasuresWithAtlas( coveragesBundles,
                                    adjacencyBundles,
                                    overlapBundles,
+                                   disimilarityBundles,
+                                   nbFibersBundles,
                                    bundlesNames,
                                    outputFilename.c_str() ) ;
 

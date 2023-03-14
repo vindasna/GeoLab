@@ -138,8 +138,6 @@ class AtlasBundles
 
   double distanceBetweenBundles( const BundlesData& bundle1,
                                  const BundlesData& bundle2,
-                                 int nbFibersBundle1,
-                                 int nbFibersBundle2,
                                  int nbPoints ) const ;
   double distanceBetweenBundles( int bundleIndex,
                                  const BundlesData& bundle,
@@ -205,9 +203,10 @@ class AtlasBundles
   float overlapRecognizedToAtlasBundles( const BundlesData& bundle,
                                          std::string bundleName,
                                          float threshold,
-                                         int verbose ) const ;
+                                         int verbose ) const ;      
   float overlapRecognizedToAtlasBundles(
-      const std::vector<int>& nbAdjacentFibersRecognizedToAtlasBundles ) const ;
+               const std::vector<int>& nbAdjacentFibersRecognizedToAtlasBundles,
+               int verbose = 0 ) const ;
 
   float overlapAtlasToRecognizedBundles( const BundlesData& bundle,
                                          std::string bundleName,

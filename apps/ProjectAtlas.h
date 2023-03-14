@@ -41,7 +41,7 @@ float maxShapeAngle = 180 ; // In degrees
 float thrDistanceBetweenMedialPoints = 5 ; // In mm
 bool compareRecognizedWithAtlas = false ;
 bool useMDFDistance = false ;
-bool useMedialPointAverageFiber = false ;
+bool useMedialPointAverageFiber = true ;
 bool useSimpleProjection = false ;
 bool useAvgThr = false ;
 
@@ -73,6 +73,8 @@ bool saveUnlabeled = false ;
 
 int nbThreads = 0 ;
 int nbThreadsUsed ;
+
+bool comparisonWithAtlasAppend = false ;
 
 bool haveMinf = false ;
 

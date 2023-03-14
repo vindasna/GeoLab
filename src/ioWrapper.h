@@ -134,11 +134,22 @@ void convertBundlesFormat( const std::string& inputBundles,
                            int verbose = 0 ) ;
 //
 void saveComparisonMeasuresWithAtlas(
-                                    const std::vector<float>& coveragesBundles,
-                                    const std::vector<float>& adjacencyBundles,
-                                    const std::vector<float>& overlapBundles,
-                                    const std::vector<std::string>& labelsDict,
-                                    const char* fileName ) ;
+                                   const std::vector<float>& coveragesBundles,
+                                   const std::vector<float>& adjacencyBundles,
+                                   const std::vector<float>& overlapBundles,
+                                   const std::vector<float>& disimilarities,
+                                   const std::vector<int>& nbFibersBundles,
+                                   const std::vector<std::string>& bundlesNames,
+                                   const char* fileName ) ;
+//
+void readComparisonMeasuresWithAtlas(
+                                      const char* fileName,
+                                      std::vector<float>& coveragesBundles,
+                                      std::vector<float>& adjacencyBundles,
+                                      std::vector<float>& overlapBundles,
+                                      std::vector<float>& disimilarities,
+                                      std::vector<int>& nbFibersBundles,
+                                      std::vector<std::string>& bundlesNames ) ;
 //
 float getCoverageWithAtlas( const std::string& bundleFilename ) ;
 //

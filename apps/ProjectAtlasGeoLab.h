@@ -25,7 +25,7 @@
 
 #include <boost/process.hpp>
 
-#include "AtlasBundles.h"
+#include "RecognizedBundles.h"
 
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
@@ -94,17 +94,25 @@ std::string default_ESBA_DIR ;
 ////////////////////////////////////////////////////////////////////////////////
 int getFlagPosition( int argc, char* argv[], const std::string& flag ) ;
 //
-void applyRecoBundles( const std::string& movedTractogramNeighborhood,
-                       const std::string& atlasBundleFile,
-                       const std::string& atlasNeighborhoodFile,
-                       const std::string& atlasNeighborhoodCentroidsFile,
-                       const std::string& outputDirectory,
-                       const std::string& referenceImage,
-                       const std::string& format,
-                       int nbPointsPerFiber,
-                       int portDipyServer,
-                       bool saveBundlesSeparetly,
-                       int verbose ) ;
+void applyGeoLab( const std::string& movedTractogramNeighborhood,
+                  const std::string& atlasBundleDirectory,
+                  const std::string& atlasNeighborhoodFile,
+                  const std::string& atlasNeighborhoodCentroidsFile,
+                  const std::string& outputDirectory,
+                  const std::string& referenceImage,
+                  const std::string& format,
+                  const int minimumNumberFibers,
+                  std::vector<int16_t>& indexInNeighborhoodRecognized,
+                  float adjacency_classic,
+                  int nbFibersClassic,
+                  int nbPointsPerFiber,
+                  int portDipyServer,
+                  bool& keepClassic,
+                  float& coverageGeoLab,
+                  float& adjacencyGeoLab,
+                  float& overlapGeoLab,
+                  float& disimilarityGeoLab,
+                  int verbose ) ;
 //
 int getPortNumberDipyService( std::string& logFilePath ) ;
 //
