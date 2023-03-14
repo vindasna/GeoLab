@@ -208,7 +208,7 @@ void applyGeoLab( const std::string& movedTractogramNeighborhood,
     if ( index_cc )
     {
 
-      computeCentroidsCommandClientOss << "python3 "
+      computeCentroidsCommandClientOss << "${PYTHON_BINARY} "
                                       << computeCentroidsClientFilename << " " ;
 
     }
@@ -322,7 +322,7 @@ void applyGeoLab( const std::string& movedTractogramNeighborhood,
   if ( index_cc )
   {
 
-    computeCentroidsCommandClient2Oss << "python3 "
+    computeCentroidsCommandClient2Oss << "${PYTHON_BINARY} "
                                       << computeCentroidsClientFilename << " " ;
 
   }
@@ -429,7 +429,7 @@ void applyGeoLab( const std::string& movedTractogramNeighborhood,
   if ( index_rb )
   {
 
-    registerBundlesClientCommadOss << "python3 "
+    registerBundlesClientCommadOss << "${PYTHON_BINARY} "
                                            << registerBundlesClientFile << " " ;
 
   }
@@ -620,7 +620,7 @@ void closeDipyServer( int portDipyServer )
   if ( index_cds )
   {
 
-    closeDipyServiceOss << "python3 " << closeDipyServerClientFile
+    closeDipyServiceOss << "${PYTHON_BINARY} " << closeDipyServerClientFile
                                                                       << " " ;
 
   }
@@ -2696,7 +2696,7 @@ int main( int argc, char* argv[] )
   if ( index_ods )
   {
 
-    launchDipyServiceOss << "python3 " << openDipyServerClientFile << " " ;
+    launchDipyServiceOss << "${PYTHON_BINARY} " << openDipyServerClientFile << " " ;
 
   }
   else
@@ -3383,6 +3383,8 @@ int main( int argc, char* argv[] )
     return( 0 ) ;
 
   }
+
+  std::cout << "Done" << std::endl ;
 
 
   std::cout << "#########################################################\n" ;

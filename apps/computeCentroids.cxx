@@ -64,7 +64,7 @@ void closeDipyServer( int portDipyServer )
   if ( index_cds )
   {
 
-    closeDipyServiceOss << "python3 " << closeDipyServerClientFile
+    closeDipyServiceOss << "${PYTHON_BINARY} " << closeDipyServerClientFile
                                                                       << " " ;
 
   }
@@ -655,7 +655,7 @@ int main( int argc, char* argv[] )
   if ( index_ods )
   {
 
-    launchDipyServiceOss << "python3 " << openDipyServerClientFile
+    launchDipyServiceOss << "${PYTHON_BINARY} " << openDipyServerClientFile
                                                                       << " " ;
 
   }
@@ -761,7 +761,7 @@ int main( int argc, char* argv[] )
     if ( index_cc )
     {
 
-      computeCentroidsCommandOss << "python3 " << computeCentroidsClientFilename
+      computeCentroidsCommandOss << "${PYTHON_BINARY} " << computeCentroidsClientFilename
                                                                         << " " ;
 
     }
@@ -848,7 +848,7 @@ int main( int argc, char* argv[] )
           if ( index_cc )
           {
 
-            tmpComputeCentroidsCommandOss << "python3 "
+            tmpComputeCentroidsCommandOss << "${PYTHON_BINARY} "
                                       << computeCentroidsClientFilename << " " ;
 
           }

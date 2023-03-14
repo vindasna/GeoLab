@@ -20,30 +20,39 @@ set(PYTHON_BINARY "/usr/bin/python3")
 
 
 
-######### Boost #########
+######################################## Boost #########################################
 find_package(Boost REQUIRED)
 if (Boost_FOUND)
     include_directories(${Boost_INCLUDE_DIR})
     add_definitions( "-DHAS_BOOST" )
 endif()
 find_package(Boost REQUIRED COMPONENTS system)
-##########################
 
-########## Eigen #########
+
+######################################### Eigen #########################################
 find_package (Eigen3 3.3 REQUIRED NO_MODULE)
 
-######### openMP #########
+######################################### openMP ########################################
 find_package(OpenMP)
 if (OPENMP_FOUND)
     set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
     set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
     set (CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
 endif()
-###########################
 
-######### LBFGSpp #########
+
+#################################### Configure files ####################################
+# file(GLOB APPS_DIR apps/*)
+# foreach(f ${APPS_DIR})
+#     get_filename_component(sourceName ${f} NAME)
+#     configure_file(${CMAKE_CURRENT_SOURCE_DIR}/apps/${sourceName} ${CMAKE_CURRENT_SOURCE_DIR}/apps-config/${sourceName} FILE_PERMISSIONS OWNER_EXECUTE OWNER_WRITE OWNER_READ )
+# endforeach(f)
+
+######################################## LBFGSpp ########################################
 add_subdirectory(LBFGSpp-master)
-###########################
+
+################################# Adding subdirectories #################################
 add_subdirectory(src)
-add_subdirectory(apps)
+# add_subdirectory(apps-config)
+add_subdirectory(apps-config)
 add_subdirectory(doc)
