@@ -583,6 +583,7 @@ void applyGeoLab( const std::string& movedTractogramNeighborhood,
   BundlesData atlasBundleData( atlasBundleDirectory.c_str() ) ;
   BundlesMinf atlasBundleInfo( atlasBundleDirectory.c_str() ) ;
   BundlesData subjectBundlesData( neighborhoodRegistered.c_str() ) ;
+
   recognized.projectBundle( atlasBundleData,
                             atlasBundleInfo,
                             subjectBundlesData,
@@ -593,7 +594,9 @@ void applyGeoLab( const std::string& movedTractogramNeighborhood,
                             disimilarityGeoLab,
                             true ) ;
 
-  if ( adjacency_classic > adjacencyGeoLab )
+
+  if ( adjacency_classic > adjacencyGeoLab &&
+                                         nbFibersClassic > minimumNumberFibers )
   {
 
     keepClassic = true ;
@@ -2907,6 +2910,7 @@ int main( int argc, char* argv[] )
       finalKeepClassic = false ;
 
     }
+
 
     if ( finalIndexInNeighborhoodRecognized.size() < minimumNumberFibers ||
                                           finaleAdjacency < adjacencyThreshold )
