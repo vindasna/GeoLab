@@ -38,8 +38,8 @@ int index_input, index_atlas, index_reference, index_output, index_fa, index_an,
        index_tolMaxShapeAngle, index_tolLenght, index_tolThrCN,
        index_tolDistBetMedPts, index_pa, index_cv, index_cn, index_cc,
        index_nbPoints, index_rb, index_ods, index_cds, index_slr, index_cp,
-       index_sp, index_force, index_verbose, index_nbThreads, index_keep_tmp,
-                                                                    index_help ;
+       index_sp, index_force, index_verbose, index_nbThreads, index_nbThreadsCN,
+                                                    index_keep_tmp, index_help ;
 
 // Variables for projection
 int verbose = 0 ;
@@ -59,6 +59,7 @@ bool doSLR = false ;
 bool saveBundlesSeparetly = true ;
 bool force = false ;
 int nbThreads = 0 ;
+int nbThreadsCN = 0 ;
 int nbThreadsUsed ;
 // int minimumNumberFibers = 20 ;
 int minimumNumberFibers = 1 ;

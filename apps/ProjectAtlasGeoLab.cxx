@@ -766,6 +766,7 @@ int main( int argc, char* argv[] )
   index_sp = getFlagPosition( argc, argv, "-sp" ) ;
   index_force = getFlagPosition( argc, argv, "-force" ) ;
   index_nbThreads = getFlagPosition( argc, argv, "-nbThreads" ) ;
+  index_nbThreadsCN = getFlagPosition( argc, argv, "-nbThreadsCN" ) ;
   index_keep_tmp = getFlagPosition( argc, argv, "-ktf" ) ;
   index_verbose = getFlagPosition( argc, argv, "-v" ) ;
   index_help = getFlagPosition( argc, argv, "-h" ) ;
@@ -832,8 +833,12 @@ int main( int argc, char* argv[] )
 	            << ": true)\n"
               << "[-sp] : Save recognized bundles separetly (default : true)\n"
               << "[-force] : Force to overwrite files (default = false) \n"
-              << "[-nbThreads] : Sets the value of omp_set_num_threads "
-              << "(default : number of cores ) \n"
+              << "[-nbThreads] : Sets the value of omp_set_num_threads for all "
+              << "computations except neighborhoods computations if "
+              << "-nbThreadsCN is given (default : number of cores ) \n"
+              << "[-nbThreadsCN] : Sets the value of omp_set_num_threads for the "
+              << "computation of neighborhoods (default : value of -nbThreads )"
+              << " \n"
               << "[-ktf] : Keep temp files (default = false) \n"
               << "[-v] : Set verbosity level at 1 \n"
               << "[-h] : Show this message " << std::endl ;
@@ -2040,6 +2045,29 @@ int main( int argc, char* argv[] )
   omp_set_nested( 1 ) ;
 
 
+  //////////////////////////////// nbThreadsCN /////////////////////////////////
+  if ( index_nbThreadsCN )
+  {
+
+
+    nbThreadsCN = std::stoi( argv[ index_nbThreadsCN + 1 ] ) ;
+    if ( nbThreadsCN <= 0 )
+    {
+
+      std::cout << "Invalid argument for -nbThreadsCN : you must give a postive"
+                << " integer " << std::endl ;
+      exit( 1 ) ;
+
+    }
+
+  }
+  else
+  {
+
+    nbThreadsCN = nbThreads ;
+
+  }
+
 
   ////////////////////////////// Keep temp files ///////////////////////////////
   if ( index_keep_tmp )
@@ -2337,7 +2365,7 @@ int main( int argc, char* argv[] )
                                 << "-tolThr " << toleranceThrComputeNeighborhood
                                                                           << " "
                                 // << "-nbThreads " << nbCores << " "
-                                << "-nbThreads " << nbThreads << " "
+                                << "-nbThreads " << nbThreadsCN << " "
                                 << "-v " ;
   std::string computeNeighborhoodCommand = computeNeighborhoodCommandOss.str() ;
   int isNeighborhoodFail = 0 ;
@@ -2437,7 +2465,7 @@ int main( int argc, char* argv[] )
                         << "-o " << tmpNeighborhoodAtlasDir << " "
                         << "-tolThr " << toleranceThrComputeNeighborhood << " "
                         // << "-nbThreads " << nbCores << " "
-                        << "-nbThreads " << nbThreads << " "
+                        << "-nbThreads " << nbThreadsCN << " "
                         << "-v " ;
     std::string computeAtlasNeighborhoodCommand =
                                       computeAtlasNeighborhoodCommandOss.str() ;
