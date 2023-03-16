@@ -877,7 +877,22 @@ int main( int argc, char* argv[] )
 
   //////////////////////////////////////////////////////////////////////////////
   char lastChar ;
-  default_ESBA_DIR = std::getenv( "ESBA_DIR" ) ;
+  char *tmpChar = std::getenv( "ESBA_DIR" ) ;
+  if ( !tmpChar )
+  {
+
+    std::cout << "WARNING : environmental variable ESBA_DIR is not set"
+              << std::endl ;
+
+    default_ESBA_DIR = "" ;
+
+  }
+  else
+  {
+
+    default_ESBA_DIR = tmpChar ;
+
+  }
   if ( default_ESBA_DIR.size() > 0 )
   {
 
