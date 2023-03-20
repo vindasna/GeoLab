@@ -205,20 +205,7 @@ void applyGeoLab( const std::string& movedTractogramNeighborhood,
     }
 
     std::ostringstream computeCentroidsCommandClientOss ;
-    if ( index_cc )
-    {
-
-      computeCentroidsCommandClientOss << "${PYTHON_BINARY} "
-                                      << computeCentroidsClientFilename << " " ;
-
-    }
-    else
-    {
-
-      computeCentroidsCommandClientOss << computeCentroidsClientFilename
-                                                                        << " " ;
-
-    }
+    computeCentroidsCommandClientOss << computeCentroidsClientFilename << " " ;
     computeCentroidsCommandClientOss
                                    << "-i " << atlasNeighborhood << " "
                                    << "-o " << atlasNeighborhoodCentroids << " "
@@ -319,19 +306,7 @@ void applyGeoLab( const std::string& movedTractogramNeighborhood,
   }
 
   std::ostringstream computeCentroidsCommandClient2Oss ;
-  if ( index_cc )
-  {
-
-    computeCentroidsCommandClient2Oss << "${PYTHON_BINARY} "
-                                      << computeCentroidsClientFilename << " " ;
-
-  }
-  else
-  {
-
-    computeCentroidsCommandClient2Oss << computeCentroidsClientFilename << " " ;
-
-  }
+  computeCentroidsCommandClient2Oss << computeCentroidsClientFilename << " " ;
   computeCentroidsCommandClient2Oss
                          << "-i " << movedTractogramNeighborhood << " "
                          << "-o " << movedTractogramNeighborhoodCentroids << " "
@@ -366,8 +341,8 @@ void applyGeoLab( const std::string& movedTractogramNeighborhood,
   {
 
     int _tmpNbFibers = getNbFibers( movedTractogramNeighborhood ) ;
-    if (
-      ( _tmpNbFibers > 500 && !is_file( movedTractogramNeighborhoodCentroids ) )
+    if ( ( _tmpNbFibers > 500 &&
+                              !is_file( movedTractogramNeighborhoodCentroids ) )
                                             || ( _tmpNbFibers > 500 && force ) )
     {
 
@@ -426,19 +401,7 @@ void applyGeoLab( const std::string& movedTractogramNeighborhood,
   }
 
   std::ostringstream registerBundlesClientCommadOss ;
-  if ( index_rb )
-  {
-
-    registerBundlesClientCommadOss << "${PYTHON_BINARY} "
-                                           << registerBundlesClientFile << " " ;
-
-  }
-  else
-  {
-
-    registerBundlesClientCommadOss << registerBundlesClientFile << " " ;
-
-  }
+  registerBundlesClientCommadOss << registerBundlesClientFile << " " ;
   registerBundlesClientCommadOss
                          << "-s " << replaceExtension(
                                      atlasNeighborhoodCentroids, format ) << " "
@@ -620,19 +583,7 @@ void closeDipyServer( int portDipyServer )
 
   std::cout << "Closing dipy service... " ;
   std::ostringstream closeDipyServiceOss ;
-  if ( index_cds )
-  {
-
-    closeDipyServiceOss << "${PYTHON_BINARY} " << closeDipyServerClientFile
-                                                                      << " " ;
-
-  }
-  else
-  {
-
-    closeDipyServiceOss << closeDipyServerClientFile << " " ;
-
-  }
+  closeDipyServiceOss << closeDipyServerClientFile << " " ;
   closeDipyServiceOss << "-p " << portDipyServer << " " ;
   std::string closeDipyService = closeDipyServiceOss.str() ;
 
@@ -2739,18 +2690,7 @@ int main( int argc, char* argv[] )
 
 
   std::ostringstream launchDipyServiceOss ;
-  if ( index_ods )
-  {
-
-    launchDipyServiceOss << "${PYTHON_BINARY} " << openDipyServerClientFile << " " ;
-
-  }
-  else
-  {
-
-    launchDipyServiceOss << openDipyServerClientFile << " " ;
-
-  }
+  launchDipyServiceOss << openDipyServerClientFile << " " ;
   launchDipyServiceOss << "-lf " << serverLogFilePath << " " ;
   std::string launchDipyService = launchDipyServiceOss.str() ;
 

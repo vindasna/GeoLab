@@ -300,7 +300,7 @@ def main() :
     resultsFdrCorrection = readFdrCorrection( fdr_correction_path )
 
     bundles_names = os.listdir( bundles_dir )
-    with open(dict_values_path, 'rb') as handle:
+    with open( dict_values_path, 'rb') as handle:
         dict_values = pickle.load( handle )
 
     # measure_values_1 = []

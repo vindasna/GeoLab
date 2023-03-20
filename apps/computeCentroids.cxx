@@ -61,19 +61,7 @@ void closeDipyServer( int portDipyServer )
 
   std::cout << "Closing dipy service... " ;
   std::ostringstream closeDipyServiceOss ;
-  if ( index_cds )
-  {
-
-    closeDipyServiceOss << "${PYTHON_BINARY} " << closeDipyServerClientFile
-                                                                      << " " ;
-
-  }
-  else
-  {
-
-    closeDipyServiceOss << closeDipyServerClientFile << " " ;
-
-  }
+  closeDipyServiceOss << closeDipyServerClientFile << " " ;
   closeDipyServiceOss << "-p " << portDipyServer << " " ;
   std::string closeDipyService = closeDipyServiceOss.str() ;
 
@@ -652,19 +640,7 @@ int main( int argc, char* argv[] )
 
 
   std::ostringstream launchDipyServiceOss ;
-  if ( index_ods )
-  {
-
-    launchDipyServiceOss << "${PYTHON_BINARY} " << openDipyServerClientFile
-                                                                      << " " ;
-
-  }
-  else
-  {
-
-    launchDipyServiceOss << openDipyServerClientFile << " " ;
-
-  }
+  launchDipyServiceOss << openDipyServerClientFile << " " ;
   launchDipyServiceOss << "-lf " << serverLogFilePath << " " ;
   std::string launchDipyService = launchDipyServiceOss.str() ;
 
@@ -758,19 +734,7 @@ int main( int argc, char* argv[] )
 
 
     std::stringstream computeCentroidsCommandOss ;
-    if ( index_cc )
-    {
-
-      computeCentroidsCommandOss << "${PYTHON_BINARY} " << computeCentroidsClientFilename
-                                                                        << " " ;
-
-    }
-    else
-    {
-
-      computeCentroidsCommandOss << computeCentroidsClientFilename << " " ;
-
-    }
+    computeCentroidsCommandOss << computeCentroidsClientFilename << " " ;
 
     computeCentroidsCommandOss << "-i " << inputBundlePath << " "
                                << "-o " << outputCentroidsPath << " "
@@ -845,20 +809,8 @@ int main( int argc, char* argv[] )
           rmfile( outputCentroidsPath ) ;
 
           std::stringstream tmpComputeCentroidsCommandOss ;
-          if ( index_cc )
-          {
-
-            tmpComputeCentroidsCommandOss << "${PYTHON_BINARY} "
-                                      << computeCentroidsClientFilename << " " ;
-
-          }
-          else
-          {
-
-            tmpComputeCentroidsCommandOss << computeCentroidsClientFilename
-                                                                        << " " ;
-
-          }
+          tmpComputeCentroidsCommandOss << computeCentroidsClientFilename
+                                                                      << " " ;
           tmpComputeCentroidsCommandOss
                                       << "-i " << inputBundlePath << " "
                                       << "-o " << outputCentroidsPath << " "
