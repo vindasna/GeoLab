@@ -65,8 +65,8 @@ To extract the bundles of the ESBA atlas from a subject you first need to comput
     $ ProjectAtlasGeoLab -i input${format} -o outputDir -nbPoints 15 -nbThreads ${nbThreads}
 
 * Replace ${format} with {.trk, .tck, .bundles} according to your tractogram format.
-* input${format} : path to subject's tractogram (.tck/.trk/.bundles) (**must be without hyphen ("-")**).
-* outputDir : directory where to save the results (**must be without hyphen ("-")**).
+* input${format} : path to subject's tractogram (.tck/.trk/.bundles).
+* outputDir : directory where to save the results.
 * ${nbThreads} : number of threads to use for OpenMP.
  
 
@@ -74,13 +74,13 @@ To extract the bundles of the ESBA atlas from a subject you first need to comput
 
 First, you'll need to resample your atlas to a fixed number of points per fiber, if your atlas is in .tck format you can use MRTrix's command tckreample.
 
-You'll need to analyse your atlas to get the bundle-specific thresholds **this step can be done only once** :
+You'll need to analyse your atlas to get the bundle-specific thresholds, **you can do this step once, then the thresholds will be saved in the .minf files** :
 
     $ analyseAtlasBundle.py -i atlasDir -f ${format} -r referenceImage.nii
 
 * Replace ${format} with {.trk, .tck, .bundles} according to your tractogram format.
-* atlasDir : Path to your atlas directory (**must be without hyphen ("-")**).
-* referenceImage.nii : path to the reference .nii where the atlas is (**must be without hyphen ("-")**).
+* atlasDir : Path to your atlas directory.
+* referenceImage.nii : path to the reference .nii where the atlas is.
 
 
 You'll also need to precompute the full atlas (all bundles in one single file), the atlas neighborhood and the atlas centroids :
@@ -95,11 +95,11 @@ You'll also need to precompute the full atlas (all bundles in one single file), 
     $ computeCentroids -i outDirNeighborhoodAtlas -o outDirCentroidsAtlas -r referenceImage.nii -nbPoints ${nbPoints} -nbThreads ${nbThreads} -f ${format}
     
 * Replace ${format} with {.trk, .tck, .bundles} according to your tractogram format.
-* atlasDir : Path to your atlas directory (**must be without hyphen ("-")**).
-* outDirFullAtlas : output directory of command fuseAtlas (**must be without hyphen ("-")**).
-* referenceImage.nii : path to the reference .nii where the atlas is (**must be without hyphen ("-")**).
-* outDirNeighborhoodAtlas : output directory of command computeNeighborhood (**must be without hyphen ("-")**).
-* outDirCentroidsAtlas : output directory of command computeCentroids (**must be without hyphen ("-")**).
+* atlasDir : Path to your atlas directory.
+* outDirFullAtlas : output directory of command fuseAtlas.
+* referenceImage.nii : path to the reference .nii where the atlas is.
+* outDirNeighborhoodAtlas : output directory of command computeNeighborhood.
+* outDirCentroidsAtlas : output directory of command computeCentroids.
 * ${nbThreads} : number of threads to use for OpenMP.
 
 
@@ -109,12 +109,12 @@ Then use the ProjectAtlasGeoLab command :
 
 
 * Replace ${format} with {.trk, .tck, .bundles} according to your tractogram format.
-* input${format} : subject's tractogram (.tck/.trk/.bundles) (**must be without hyphen ("-")**).
-* atlasDir : Path to your atlas directory (after analysing it with analyseAtlasBundle) (**must be without hyphen ("-")**).
-* referenceImage.nii : path to the reference .nii where the atlas is (**must be without hyphen ("-")**).
-* outputDir : directory where to save the results (**must be without hyphen ("-")**).
-* NeigborhoodAtlas : outDirNeighborhoodAtlas (**must be without hyphen ("-")**).
-* CentroidsAtlas : outDirCentroidsAtlas (**must be without hyphen ("-")**).
+* input${format} : subject's tractogram (.tck/.trk/.bundles).
+* atlasDir : Path to your atlas directory (after analysing it with analyseAtlasBundle).
+* referenceImage.nii : path to the reference .nii where the atlas is.
+* outputDir : directory where to save the results.
+* NeigborhoodAtlas : outDirNeighborhoodAtlas.
+* CentroidsAtlas : outDirCentroidsAtlas.
 * ${nbThreads} : number of threads to use for OpenMP.
 
 
@@ -195,9 +195,5 @@ With :
 ## For windows
 
 GeoLab will soon be available for windows as a docker container. 
-
-## Common bugs
-
-All the commands available with GeoLab do not allow to have hyphen ("-") in the path. For example, "-i /path/to-tractogram/tractogram.tck" is not allowed, you should rename your directory to something like "-i /path/to_tractogram/tractogram.tck".
 
 
