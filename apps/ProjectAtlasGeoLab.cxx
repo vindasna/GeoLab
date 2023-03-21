@@ -1258,7 +1258,7 @@ int main( int argc, char* argv[] )
 
     isAtlasNeighborhood = true ;
 
-    atlasNeighborhoodDirectory = argv[ index_anc + 1 ] ;
+    atlasNeighborhoodDirectory = argv[ index_an + 1 ] ;
     lastChar = atlasNeighborhoodDirectory[ atlasNeighborhoodDirectory.size()
                                                                          - 1 ] ;
     if ( lastChar != '/' )
@@ -1271,7 +1271,7 @@ int main( int argc, char* argv[] )
     {
 
       std::stringstream outMessageOss ;
-      outMessageOss << "ERROR : Atlas neighborhood centroids directory "
+      outMessageOss << "ERROR : Atlas neighborhood directory "
                     << atlasNeighborhoodDirectory << " does not exists "
                     << std::endl ;
       std::string outMessage = outMessageOss.str() ;
