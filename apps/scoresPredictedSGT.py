@@ -199,11 +199,11 @@ def getLabelFromBundleName( bundlesDict, bundleName ) :
     for label in bundlesDict.keys() :
         if bundlesDict[ label ] == bundleName :
             return( label )
-    print( f"Error in getLabelFromBundleName() : \'{bundleName}\' not found in "
-           f"bundlesDict" )
-    print( f"Bundles names in bundlesDict : " )
-    for label in bundlesDict.keys() :
-        print( f"\'{bundlesDict[ label ]}\'" )
+    # print( f"Error in getLabelFromBundleName() : \'{bundleName}\' not found in "
+    #        f"bundlesDict" )
+    # print( f"Bundles names in bundlesDict : " )
+    # for label in bundlesDict.keys() :
+    #     print( f"\'{bundlesDict[ label ]}\'" )
     sys.exit( 1 )
 
 
@@ -415,8 +415,15 @@ def comparePredictionToTrue( realLabelsPath, realDictPath, predictedLabelsPath,
                     if -1 in realLabels[ i ] :
                         yTrue.append( -1 )
                     else :
-                        _tmpLabel =  getLabelFromBundleName( predictedDict,
+                        try :
+                            _tmpLabel =  getLabelFromBundleName( predictedDict,
                                               realDict[ realLabels[ i ][ 0 ] ] )
+                        except :
+                            _tmpLabelName = realDict[ realLabels[ i ][ 0 ] ]
+                            if _tmpLabelName not in predictedDict.values() :
+                                _tmpLabel = max( [ int ( i ) for i in
+                                                    predictedDict.keys() ] ) + 1
+                                predictedDict[ _tmpLabel ] = _tmpLabelName
                         yTrue.append( _tmpLabel )
 
 
@@ -436,10 +443,18 @@ def comparePredictionToTrue( realLabelsPath, realDictPath, predictedLabelsPath,
                 if not isPredictedEqualsReal :
                     if realLabels[ i ][ 0 ] == -1 :
                         _tmpLabel = -1
+                        yTrue.append( -1 )
                     else :
-                        _tmpLabel =  getLabelFromBundleName( predictedDict,
+                        try :
+                            _tmpLabel =  getLabelFromBundleName( predictedDict,
                                               realDict[ realLabels[ i ][ 0 ] ] )
-                    yTrue.append( _tmpLabel )
+                        except :
+                            _tmpLabelName = realDict[ realLabels[ i ][ 0 ] ]
+                            if _tmpLabelName not in predictedDict.values() :
+                                _tmpLabel = max( [ int ( i ) for i in
+                                                    predictedDict.keys() ] ) + 1
+                                predictedDict[ _tmpLabel ] = _tmpLabelName
+                        yTrue.append( _tmpLabel )
 
 
         print( "\nGetting predicted labels" )
@@ -449,8 +464,6 @@ def comparePredictionToTrue( realLabelsPath, realDictPath, predictedLabelsPath,
         print( "Getting real labels" )
         testRealLabels = np.unique( yTrue )
         print( f"Number of labels in yTrue : {len(testRealLabels)}" )
-
-
 
         confusion_matrix_model = confusion_matrix( yTrue, yPred )
         saveConfusionMatrix( confusion_matrix_model, confusionMatrixSavingPath )
@@ -462,13 +475,14 @@ def comparePredictionToTrue( realLabelsPath, realDictPath, predictedLabelsPath,
             if _tmp not in testRealLabels :
                 testRealLabels.append( _tmp )
         testRealLabels.sort()
-        newPredictedDict = {}
-        for _i in range( len( testRealLabels ) ) :
-            _realLabel = testRealLabels[ _i ]
-            if _realLabel == -1 :
-                newPredictedDict[ _i ] = "unlabeledFibers"
-            else :
-                newPredictedDict[ _i ] = predictedDict[ _realLabel ]
+        newPredictedDict = predictedDict
+        # newPredictedDict = {}
+        # for _i in range( len( testRealLabels ) ) :
+        #     _realLabel = testRealLabels[ _i ]
+        #     if _realLabel == -1 :
+        #         newPredictedDict[ _i ] = "unlabeledFibers"
+        #     else :
+        #         newPredictedDict[ _i ] = predictedDict[ _realLabel ]
 
 
         saveDict( newPredictedDict, confusionMatrixDictSavingPath )

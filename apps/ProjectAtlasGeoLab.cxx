@@ -192,13 +192,13 @@ void applyGeoLab( const std::string& movedTractogramNeighborhood,
       atlasNeighborhoodCentroids = replaceExtension( atlasNeighborhoodCentroids,
                                                                       format ) ;
 
-      std::string atlasNeighborhoodCentroidsMinf = replaceExtension(
-                                         atlasNeighborhoodCentroids, ".minf" ) ;
-
-      std::string atlasNeighborhoodMinf = replaceExtension(
-                                                  atlasNeighborhood, ".minf" ) ;
-
-      copy( atlasNeighborhoodMinf, atlasNeighborhoodCentroidsMinf ) ;
+      // std::string atlasNeighborhoodCentroidsMinf = replaceExtension(
+      //                                    atlasNeighborhoodCentroids, ".minf" ) ;
+      //
+      // std::string atlasNeighborhoodMinf = replaceExtension(
+      //                                             atlasNeighborhood, ".minf" ) ;
+      //
+      // copy( atlasNeighborhoodMinf, atlasNeighborhoodCentroidsMinf ) ;
 
 
 
@@ -2149,14 +2149,14 @@ int main( int argc, char* argv[] )
                                    atlasNeighborhoodPaths ) ;
 
   }
-  else
-  {
-
-    std::cout << "ERROR : atlas neighborhood must be given using -an"
-                                                                  << std::endl ;
-    exit( 1 ) ;
-
-  }
+  // else
+  // {
+  //
+  //   std::cout << "ERROR : atlas neighborhood must be given using -an"
+  //                                                                 << std::endl ;
+  //   exit( 1 ) ;
+  //
+  // }
 
   ///////////////// Getting atlas centroids if input is given //////////////////
   std::vector<std::string> atlasNeighborhoodCentroidsPaths ;
@@ -2169,14 +2169,14 @@ int main( int argc, char* argv[] )
                                    atlasNeighborhoodCentroidsPaths ) ;
 
   }
-  else
-  {
-
-    std::cout << "ERROR : atlas neighborhood centroids must be given using -anc"
-                                                                  << std::endl ;
-    exit( 1 ) ;
-
-  }
+  // else
+  // {
+  //
+  //   std::cout << "ERROR : atlas neighborhood centroids must be given using -anc"
+  //                                                                 << std::endl ;
+  //   exit( 1 ) ;
+  //
+  // }
 
 
   ///////////////////////////////// Global SLR /////////////////////////////////
@@ -2237,7 +2237,7 @@ int main( int argc, char* argv[] )
                  << "--out_moved " << movedTractogramTrk << " "
                  << "--force " ;
       std::string globalSLR = globalSLROss.str() ;
-      std::cout << "Dipy SLR command :\n " << globalSLR << std::endl ;
+
       int globaleSLRfail = 0 ;
       if ( is_file( movedTractogramTrk ) && !force )
       {
@@ -2497,7 +2497,7 @@ int main( int argc, char* argv[] )
 
   //////////////////////// Projecting atlas without SBR ////////////////////////
   const auto start_time_no_sbr = std::chrono::system_clock::now() ;
-  if ( verbose )
+  if ( verbose && doClassical )
   {
 
     std::cout << "#########################################################\n" ;
@@ -2521,7 +2521,7 @@ int main( int argc, char* argv[] )
 
   }
 
-  if ( nbBundles == 0 )
+  if ( nbBundles == 0 && doClassical )
   {
 
     std::cout << "ERROR : no valid bundles in atlas directory" << std::endl ;
@@ -2531,7 +2531,13 @@ int main( int argc, char* argv[] )
   else
   {
 
-    std::cout << "Number of bundles in atlas : " << nbBundles << std::endl ;
+    if ( doClassical )
+    {
+
+      std::cout << "Number of bundles in atlas : " << nbBundles << std::endl ;
+
+    }
+
 
   }
 
@@ -2634,15 +2640,20 @@ int main( int argc, char* argv[] )
     float overlapClassic = -1 ;
     float disimilarityClassic = -1 ;
     std::vector<int> indexInNeighborhoodRecognized ;
-    recognized.projectBundle( atlasBundleData,
-                              atlasBundleInfo,
-                              subjectBundlesData,
-                              indexInNeighborhoodRecognized,
-                              coverageClassic,
-                              adjacencyClassic,
-                              overlapClassic,
-                              disimilarityClassic,
-                              true ) ;
+    if ( doClassical )
+    {
+
+      recognized.projectBundle( atlasBundleData,
+                                atlasBundleInfo,
+                                subjectBundlesData,
+                                indexInNeighborhoodRecognized,
+                                coverageClassic,
+                                adjacencyClassic,
+                                overlapClassic,
+                                disimilarityClassic,
+                                true ) ;
+
+    }
     #pragma omp critical
     {
 
@@ -2661,7 +2672,7 @@ int main( int argc, char* argv[] )
   const std::chrono::duration< double > duration_no_sbr =
                           std::chrono::system_clock::now() - start_time_no_sbr ;
 
-  if ( verbose )
+  if ( verbose && doClassical )
   {
 
     std::cout << "Duration projection without SBR : " << duration_no_sbr.count()
