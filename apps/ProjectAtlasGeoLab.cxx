@@ -1133,6 +1133,11 @@ int main( int argc, char* argv[] )
 
     }
 
+    // std::ostringstream computeCentroidsClientFilenameOss ;
+    // computeCentroidsClientFilenameOss << "python3 "
+    //                                          << computeCentroidsClientFilename ;
+    // computeCentroidsClientFilename = computeCentroidsClientFilenameOss.str() ;
+
   }
   else
   {
@@ -1166,6 +1171,10 @@ int main( int argc, char* argv[] )
       exit( 1 ) ;
 
     }
+
+    // std::ostringstream registerBundlesClientFileOss ;
+    // registerBundlesClientFileOss << "python3 " << registerBundlesClientFile ;
+    // registerBundlesClientFile = registerBundlesClientFileOss.str() ;
 
   }
   else
@@ -1203,6 +1212,11 @@ int main( int argc, char* argv[] )
 
     }
 
+    // std::ostringstream openDipyServerClientFileOss ;
+    // openDipyServerClientFileOss << "python3 " << openDipyServerClientFile ;
+    // openDipyServerClientFile = openDipyServerClientFileOss.str() ;
+
+
   }
   else
   {
@@ -1237,6 +1251,10 @@ int main( int argc, char* argv[] )
       exit( 1 ) ;
 
     }
+
+    // std::ostringstream closeDipyServerClientFileOss ;
+    // closeDipyServerClientFileOss << "python3 " << closeDipyServerClientFile ;
+    // closeDipyServerClientFile = closeDipyServerClientFileOss.str() ;
 
 
   }

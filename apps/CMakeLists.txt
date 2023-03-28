@@ -31,3 +31,5 @@ configure_file(countFoundBundles.py ${CMAKE_BINARY_DIR}/bin/countFoundBundles.py
 configure_file(showColorCodedBundlesByAge.py ${CMAKE_BINARY_DIR}/bin/showColorCodedBundlesByAge.py FILE_PERMISSIONS OWNER_EXECUTE OWNER_WRITE OWNER_READ )
 configure_file(plotDistributionBundleByAge.py ${CMAKE_BINARY_DIR}/bin/plotDistributionBundleByAge.py FILE_PERMISSIONS OWNER_EXECUTE OWNER_WRITE OWNER_READ )
 configure_file(showColorCodedFibersPerBundle.py ${CMAKE_BINARY_DIR}/bin/showColorCodedFibersPerBundle.py FILE_PERMISSIONS OWNER_EXECUTE OWNER_WRITE OWNER_READ )
+configure_file(fslToAnts.py ${CMAKE_BINARY_DIR}/bin/fslToAnts.py FILE_PERMISSIONS OWNER_EXECUTE OWNER_WRITE OWNER_READ )
+configure_file(applyFlirtToTck.py ${CMAKE_BINARY_DIR}/bin/applyFlirtToTck.py FILE_PERMISSIONS OWNER_EXECUTE OWNER_WRITE OWNER_READ )
