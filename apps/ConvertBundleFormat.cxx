@@ -445,6 +445,245 @@ void BundlesData2Tck( const char* inputFile,
 
 }
 
+///////////////////////////////////////////////////////////////////////////////
+//////////////////////////// Function .trk -> tck /////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+void Trk2Tck( const char* inputFile,
+              const char* outputFile,
+              const char* refFile,
+              int flip_x,
+              int flip_y,
+              int flip_z )
+{
+
+  std::string inputFileStr = inputFile ;
+  if ( !endswith( inputFileStr, ".trk" ) &&
+                                     !endswith( inputFileStr, ".bundlesdata" ) )
+  {
+
+    std::stringstream outMessageOss ;
+    outMessageOss << "ConvertBundleFormat->Trk2Tck : input file must "
+                  << "be .trk" << std::endl ;
+    std::string outMessage = outMessageOss.str() ;
+
+    throw( std::invalid_argument( outMessage ) ) ;
+
+  }
+
+  std::string outputFileStr = outputFile ;
+  if ( !endswith( outputFileStr, ".tck" ) )
+  {
+
+    std::stringstream outMessageOss ;
+    outMessageOss << "ConvertBundleFormat->BundlesData2Tck : output file must "
+                  << "be .tck" << std::endl ;
+    std::string outMessage = outMessageOss.str() ;
+
+    throw( std::invalid_argument( outMessage ) ) ;
+
+  }
+
+  std::string refFileStr = refFile ;
+
+  std::cout << "Reading : " << inputFile << std::endl ;
+  BundlesData bundlesdata( inputFile ) ;
+  BundlesMinf bundlesInfo( inputFile ) ;
+
+  if ( is_file( refFileStr ) )
+  {
+
+    bundlesInfo.fillDefaultTck() ;
+
+    std::cout << "Reading : " << refFile << std::endl ;
+    NiftiImage referenceAnatomy( refFile ) ;
+
+    bundlesInfo.vox_to_ras = referenceAnatomy.vox_to_ras ;
+    bundlesInfo.resolution = referenceAnatomy.resolution ;
+    bundlesInfo.size = referenceAnatomy.size ;
+
+  }
+  else
+  {
+
+    std::stringstream outMessageOss ;
+    outMessageOss << "ConvertBundleFormat->Trk2Tck : reference image "
+                  << refFileStr << " does not exists\n" ;
+
+    std::string outMessage = outMessageOss.str() ;
+
+    throw( std::invalid_argument( outMessage ) ) ;
+
+  }
+
+
+  // ---------------------------- Writing .tck ----------------------------- //
+  std::vector<float> flippedMatrixTracks ;
+  flipTractogram( bundlesdata.matrixTracks,
+                  bundlesInfo.resolution,
+                  bundlesInfo.size,
+                  flippedMatrixTracks,
+                  - flip_x,
+                  - flip_y,
+                  - flip_z ) ;
+
+  bundlesdata.matrixTracks = flippedMatrixTracks ;
+  flippedMatrixTracks = std::vector<float>() ; // Free memory
+
+
+  // Applying vox_to_ras to tck fibers
+  std::vector<float> correctedTracks ;
+  applyVoxToRasToTractogram( bundlesdata.matrixTracks, bundlesInfo.vox_to_ras,
+                                                             correctedTracks ) ;
+
+
+  bundlesdata.matrixTracks = correctedTracks ;
+  correctedTracks = std::vector<float>() ; // Free mememory
+
+  bundlesdata.isTrk = false ;
+  bundlesdata.isTck = true ;
+
+  bundlesInfo.isTrk = false ;
+  bundlesInfo.isTck = true ;
+
+  // Because we do not want to produce a .minf when converting .bundles->.tck
+  bundlesInfo.haveMinf = false ;
+
+  std::cout << "Writing : " << outputFile << std::endl ;
+  bundlesdata.write( outputFile, bundlesInfo ) ;
+
+  // bundlesdata.isBundles = false ;
+  // bundlesdata.isTck = true ;
+  //
+  // bundlesInfo.isBundles = false ;
+  // bundlesInfo.isTck = true ;
+  //
+  // std::cout << "Writing : " << outputFile << std::endl ;
+  // bundlesdata.write( outputFile, bundlesInfo ) ;
+
+}
+
+
+
+///////////////////////////////////////////////////////////////////////////////
+//////////////////////////// Function tck -> trk //////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+void Tck2Trk( const char* inputFile,
+              const char* outputFile,
+              const char* refFile,
+              int flip_x,
+              int flip_y,
+              int flip_z )
+{
+
+  std::string inputFileStr = inputFile ;
+  if ( !endswith( inputFileStr, ".tck" ) )
+  {
+
+    std::stringstream outMessageOss ;
+    outMessageOss << "ConvertBundleFormat->Tck2Trk : input file must "
+                  << "be .tck" << std::endl ;
+    std::string outMessage = outMessageOss.str() ;
+
+    throw( std::invalid_argument( outMessage ) ) ;
+
+  }
+
+  std::string outputFileStr = outputFile ;
+  if ( !endswith( outputFileStr, ".trk" ) )
+  {
+
+    std::stringstream outMessageOss ;
+    outMessageOss << "ConvertBundleFormat->Tck2Trk : output file must "
+                  << "be .trk" << std::endl ;
+    std::string outMessage = outMessageOss.str() ;
+
+    throw( std::invalid_argument( outMessage ) ) ;
+
+  }
+
+  std::string refFileStr = refFile ;
+
+  std::cout << "Reading : " << inputFile << std::endl ;
+  BundlesData bundlesdata( inputFile ) ;
+  BundlesMinf bundlesInfo( inputFile ) ;
+
+  if ( is_file( refFileStr ) )
+  {
+
+    std::cout << "Reading : " << refFile << std::endl ;
+    NiftiImage referenceAnatomy( refFile ) ;
+
+    bundlesInfo.vox_to_ras = referenceAnatomy.vox_to_ras ;
+    bundlesInfo.resolution = referenceAnatomy.resolution ;
+    bundlesInfo.size = referenceAnatomy.size ;
+
+  }
+  else
+  {
+
+    std::stringstream outMessageOss ;
+    outMessageOss << "ConvertBundleFormat->Tck2Trk : reference image "
+                  << refFileStr << " does not exists\n" ;
+
+    std::string outMessage = outMessageOss.str() ;
+
+    throw( std::invalid_argument( outMessage ) ) ;
+
+  }
+
+
+  bundlesInfo.fillDefaultTrk() ;
+
+
+  // ------------------------- Writing .bundlesdata ------------------------- //
+  std::vector<std::vector<float>> ras_to_vox ;
+  computeInverseVoxToRas( bundlesInfo.vox_to_ras, ras_to_vox ) ;
+
+  std::vector<float> correctedTracks ;
+  // Applying vox_to_ras to tck fibers
+  applyVoxToRasToTractogram( bundlesdata.matrixTracks, ras_to_vox,
+                                                             correctedTracks ) ;
+
+  bundlesdata.matrixTracks = correctedTracks ;
+  correctedTracks = std::vector<float>() ; // Free memory
+
+  std::vector<float> flippedTracks ;
+  flipTractogram( bundlesdata.matrixTracks,
+                  bundlesInfo.resolution,
+                  bundlesInfo.size,
+                  flippedTracks,
+                  - flip_x,
+                  - flip_y,
+                  - flip_z ) ;
+
+  bundlesdata.matrixTracks = flippedTracks ;
+  flippedTracks = std::vector<float>() ; // Free memory
+
+  bundlesInfo.isTck = false ;
+  bundlesInfo.isTrk = true ;
+
+  bundlesdata.isTck = false ;
+  bundlesdata.isTrk = true ;
+
+  // Because we do not want to produce a .minf when converting .tck->.bundles
+  bundlesInfo.haveMinf = false ;
+
+  std::cout << "Writing : " << outputFile << std::endl ;
+  bundlesdata.write( outputFile, bundlesInfo ) ;
+
+
+  // bundlesInfo.isTck = false ;
+  // bundlesInfo.isBundles = true ;
+  //
+  // bundlesdata.isTck = false ;
+  // bundlesdata.isBundles = true ;
+  //
+  // std::cout << "Writing : " << outputFile << std::endl ;
+  // bundlesdata.write( outputFile, bundlesInfo ) ;
+
+}
+
+
 
 ///////////////////////////////////////////////////////////////////////////////
 ///////////// Function to apply vox_to_ras to point matrices //////////////////
@@ -1393,6 +1632,42 @@ int main( int argc, char* argv[] )
                      flip_x,
                      flip_y,
                      flip_z ) ;
+
+    return 0 ;
+
+  }
+
+
+  if ( endswith( inputFilename, ".trk" ) && endswith( outputFilename, ".tck" ) )
+  {
+
+
+    std::cout << "Conversion .trk -> .tck ... \n" ;
+
+    Trk2Tck( inputFilename.c_str(),
+             outputFilename.c_str(),
+             refFilename,
+             flip_x,
+             flip_y,
+             flip_z ) ;
+
+    return 0 ;
+
+  }
+
+
+  if ( endswith( inputFilename, ".tck" ) && endswith( outputFilename, ".trk" ) )
+  {
+
+
+    std::cout << "Conversion .tck -> .trk ... \n" ;
+
+    Tck2Trk( inputFilename.c_str(),
+             outputFilename.c_str(),
+             refFilename,
+             flip_x,
+             flip_y,
+             flip_z ) ;
 
     return 0 ;
 

@@ -56,6 +56,20 @@ void BundlesData2Tck( const char* inputFile,
                       int flip_y,
                       int flip_z ) ;
 
+void Trk2Tck( const char* inputFile,
+              const char* outputFile,
+              const char* refFile,
+              int flip_x,
+              int flip_y,
+              int flip_z ) ;
+
+void Tck2Trk( const char* inputFile,
+              const char* outputFile,
+              const char* refFile,
+              int flip_x,
+              int flip_y,
+              int flip_z ) ;
+
 
 void flipTractogram( BundlesData& inputTractogram,
                      BundlesMinf& inputTractogramInfo,

@@ -1526,6 +1526,7 @@ void convertBundlesFormat( const std::string& inputBundles,
              << "-r " << referenceImage << " "
              << "-v " ;
   std::string command = commandOss.str() ;
+
   if ( is_file( outputTrk ) && !force )
   {
 
