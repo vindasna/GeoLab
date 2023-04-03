@@ -133,6 +133,11 @@ def get_cmd_line_args():
                                                                   "threshold)"))
 
     parser.add_argument(
+        "-lw", "--linewidth",
+        type=float, metavar="<float>", default = 0.1,
+        help="Linewidth of streamlines" )
+
+    parser.add_argument(
         "-v", "--verbose",
         type=int, choices=[0, 1, 2], default=0,
         help="Increase the verbosity level: 0 silent, 1 verbose.")
@@ -286,6 +291,8 @@ def main() :
 
     thr_min_measure = inputs[ "threshold_min" ]
 
+    linewidth = inputs[ "linewidth" ]
+
     window_title = inputs[ "window_title" ]
 
 
@@ -352,24 +359,24 @@ def main() :
                     if dict_values[ _bundle_name ][ "breakpoint" ] < age :
                         # tmpMeasureValue = dict_values[ _bundle_name ][ "a2" ]
                         tmpMeasureValue = ( 100 *
-                                    ( dict_values[ _bundle_name ][ "a2" ] /
-                                    measure_population_mean_per_bundle[ bundleName ] ) )
+                            ( dict_values[ _bundle_name ][ "a2" ] /
+                            measure_population_mean_per_bundle[ bundleName ] ) )
                     else :
                         # tmpMeasureValue = dict_values[ _bundle_name ][ "a1" ]
                         tmpMeasureValue = ( 100 *
-                                    ( dict_values[ _bundle_name ][ "a1" ] /
-                                    measure_population_mean_per_bundle[ bundleName ] ) )
+                            ( dict_values[ _bundle_name ][ "a1" ] /
+                            measure_population_mean_per_bundle[ bundleName ] ) )
             except :
                 if dict_values[ _bundle_name ][ "breakpoint" ] < age :
                     # tmpMeasureValue = dict_values[ _bundle_name ][ "a2" ]
                     tmpMeasureValue = ( 100 *
-                                ( dict_values[ _bundle_name ][ "a2" ] /
-                                measure_population_mean_per_bundle[ bundleName ] ) )
+                            ( dict_values[ _bundle_name ][ "a2" ] /
+                            measure_population_mean_per_bundle[ bundleName ] ) )
                 else :
                     # tmpMeasureValue = dict_values[ _bundle_name ][ "a1" ]
                     tmpMeasureValue = ( 100 *
-                                ( dict_values[ _bundle_name ][ "a1" ] /
-                                measure_population_mean_per_bundle[ bundleName ] ) )
+                            ( dict_values[ _bundle_name ][ "a1" ] /
+                            measure_population_mean_per_bundle[ bundleName ] ) )
 
             measure_values_dict[ _bundle_name ] = tmpMeasureValue
 
@@ -430,7 +437,7 @@ def main() :
             # if measure_name == "FA" and tmpMeasureValue < 0.0 :
             #     continue
 
-            # if measure_name == "ICVF" and tmpMeasureValue < 0.0 :
+            # if measure_name == "ICVF" and tmpMeasureValue > 0.0 :
             #     continue
 
             # if measure_name == "MD" and tmpMeasureValue > 1.0 :
@@ -510,9 +517,9 @@ def main() :
                                             saturation_range = saturation )
 
     # Add streamilines
-    stream_actor = actor.line( _streamlines, _measure_values, linewidth=0.1,
-                                                      lookup_colormap=lut_cmap )
-    # stream_actor = actor.line(bundle.streamlines, fa, linewidth=0.1)
+    stream_actor = actor.line( _streamlines, _measure_values,
+                                 linewidth=linewidth, lookup_colormap=lut_cmap )
+    # stream_actor = actor.line(bundle.streamlines, fa, linewidth=linewidth)
 
 
     bar = actor.scalar_bar( lut_cmap )
