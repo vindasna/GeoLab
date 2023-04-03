@@ -406,7 +406,8 @@ def main() :
         if ( _bundle_name in dict_values.keys() and
                            _bundle_name in resultsFdrCorrection.keys() and
                                         resultsFdrCorrection[ _bundle_name ] ) :
-            bundle_data = load_tractogram( bundle_path , "same" )
+            bundle_data = load_tractogram( bundle_path , "same",
+                                                      bbox_valid_check = False )
             nbStreamlines = len( bundle_data )
             try :
                 if dict_values[ _bundle_name ] == -1 :
@@ -526,6 +527,7 @@ def main() :
 
     scene.add( stream_actor )
     scene.add( bar )
+    # scene.background( ( 255, 255, 255 ) )
 
     if ( reference_path ) :
         data, affine = load_nifti( reference_path )
