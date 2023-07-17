@@ -192,8 +192,10 @@ With :
   * outDir : output directory where to save the results.
 
 
-## For windows
+## Container
 
-GeoLab will soon be available for windows as a docker container. 
+Currently, GeoLab is available as a docker container upon request (email : nabil.vindas@cea.fr). 
+
+
 
 
