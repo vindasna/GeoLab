@@ -43,6 +43,10 @@ std::string outputDirectoryPath ;
 int nbPointsPerFiber = 0 ;
 bool force = false ;
 
+bool flip_x = false ;
+bool flip_y = false ;
+bool flip_z = false ;
+
 
 ////////////////////////////////////////////////////////////////////////////////
 int getFlagPosition( int argc, char* argv[], const std::string& flag ) ;

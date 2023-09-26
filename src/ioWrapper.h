@@ -130,6 +130,9 @@ void getNeighborhoodFilenames(
 void convertBundlesFormat( const std::string& inputBundles,
                            const std::string& outputTrk,
                            const std::string& referenceImage,
+                           bool flip_x,
+                           bool flip_y,
+                           bool flip_z,
                            bool force = false,
                            int verbose = 0 ) ;
 //
@@ -160,6 +163,9 @@ float getOverlapWithAtlas( const std::string& bundleFilename ) ;
 float getAverageRadiusAtlasBundle( const std::string& bundleFilename ) ;
 //
 float getAverageDistanceBetweenMedialPoints(
+                                           const std::string& bundleFilename ) ;
+//
+float getMaximumDistanceBetweenMedialPoints( 
                                            const std::string& bundleFilename ) ;
 //
 int getNbFibers( const std::string& bundleFilename ) ;

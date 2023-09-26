@@ -74,6 +74,7 @@ void applyGeoLab( const std::string& movedTractogramNeighborhood,
                   float& adjacencyGeoLab,
                   float& overlapGeoLab,
                   float& disimilarityGeoLab,
+                  float& time_out,
                   int verbose )
 {
 
@@ -214,6 +215,7 @@ void applyGeoLab( const std::string& movedTractogramNeighborhood,
                                    << "-nbPoints " << nbPointsPerFiber << " "
                                    << "-lf " << clientsLogFilePath << " "
                                    << "-p " << portDipyServer << " "
+                                   << "-timeOut " << time_out << " "
                                    << "-v 1 " ;
     std::string computeCentroidsCommandClient =
                                         computeCentroidsCommandClientOss.str() ;
@@ -316,6 +318,7 @@ void applyGeoLab( const std::string& movedTractogramNeighborhood,
                          // << "-mnc " << nbClustersAtlasNeighborhood << " "
                          << "-lf " << clientsLogFilePath << " "
                          << "-p " << portDipyServer << " "
+                         << "-timeOut " << time_out << " "
                          << "-v 1 " ;
   std::string computeCentroidsCommandClient2 =
                                        computeCentroidsCommandClient2Oss.str() ;
@@ -415,6 +418,7 @@ void applyGeoLab( const std::string& movedTractogramNeighborhood,
                          << "-xfm " << "rigid" << " "
                          << "-lf " << clientsLogFilePath << " "
                          << "-p " << portDipyServer << " "
+                         << "-timeOut " << time_out << " "
                          << "-v 1" ;
   std::string registerBundlesClientCommad =
                                           registerBundlesClientCommadOss.str() ;
@@ -517,7 +521,7 @@ void applyGeoLab( const std::string& movedTractogramNeighborhood,
   {
 
     thrDistanceBetweenMedialPointsBundle =
-                  getAverageDistanceBetweenMedialPoints( atlasInfoPath ) ;
+                  getMaximumDistanceBetweenMedialPoints( atlasInfoPath ) ;
     thrDistanceBetweenMedialPointsBundle *= ( 1 +
                                         toleranceDistanceBetweenMedialPoints ) ;
 
@@ -525,7 +529,7 @@ void applyGeoLab( const std::string& movedTractogramNeighborhood,
 
 
   RecognizedBundles recognized( 0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-                                true, false, true, false,
+                                true, useMDF, true, useSimple,
                                 toleranceP,
                                 toleranceThr,
                                 toleranceMaxAngle,
@@ -555,6 +559,7 @@ void applyGeoLab( const std::string& movedTractogramNeighborhood,
                             adjacencyGeoLab,
                             overlapGeoLab,
                             disimilarityGeoLab,
+                            useMeanForMDAD,
                             true ) ;
 
 
@@ -714,11 +719,15 @@ int main( int argc, char* argv[] )
   index_cn = getFlagPosition( argc, argv, "-cn" ) ;
   index_slr = getFlagPosition( argc, argv, "-slr" ) ;
   index_cp = getFlagPosition( argc, argv, "-cp" )  ;
+  index_mdf = getFlagPosition( argc, argv, "-mdf" )  ;
+  index_simple = getFlagPosition( argc, argv, "-simple" )  ;
   index_sp = getFlagPosition( argc, argv, "-sp" ) ;
   index_force = getFlagPosition( argc, argv, "-force" ) ;
   index_nbThreads = getFlagPosition( argc, argv, "-nbThreads" ) ;
   index_nbThreadsCN = getFlagPosition( argc, argv, "-nbThreadsCN" ) ;
   index_keep_tmp = getFlagPosition( argc, argv, "-ktf" ) ;
+  index_time_out = getFlagPosition( argc, argv, "-timeOut" ) ;
+  index_useMeanForMDAD = getFlagPosition( argc, argv, "-useMeanMDAD" ) ;
   index_verbose = getFlagPosition( argc, argv, "-v" ) ;
   index_help = getFlagPosition( argc, argv, "-h" ) ;
 
@@ -754,19 +763,19 @@ int main( int argc, char* argv[] )
               << "[-tolThr] : Tolerance for parameter thr (for advanced users, "
               << "default = 0) \n"
               << "[-tolMaxAng] : Tolerance for parameter max angle (for "
-              << "advanced users,  default = 0) \n"
+              << "advanced users,  default = 0.0) \n"
               << "[-tolMaxDirAng] : Tolerance for parameter max direction angle"
-              << " (for advanced users,  default = 0) \n"
+              << " (for advanced users,  default = 0.0) \n"
               << "[-tolMinShapeAng] : Tolerance for parameter min shape angle"
-              << " (for advanced users,  default = 0) \n"
+              << " (for advanced users,  default = 0.0) \n"
               << "[-tolMaxShapeAng] : Tolerance for parameter max shape angle"
-              << " (for advanced users,  default = 0) \n"
+              << " (for advanced users,  default = 0.0) \n"
               << "[-tolLenght] : Tolerance for parameter lenght (for advanced "
-              << "users, default = 0) \n"
+              << "users, default = 0.0) \n"
               << "[-tolThrCN] : tolerance for computeNeighborhood threshold "
-              << "(default = 2.0) \n"
+              << "(default = 0.0) \n"
               << "[-tolDBMP] : Tolerance for distance between medial points "
-              << "(for advanced users, default = 1.0) \n"
+              << "(for advanced users, default = -0.9) \n"
               << "[-thrAdj] : keep bundle with adjacency greater than given "
               << " value (default : 0 -> keep all bundles ) \n"
               << "[-minNbFibers] : Minimum number of fiber to consider a bundle"
@@ -782,6 +791,8 @@ int main( int argc, char* argv[] )
               << "[-slr] : Do global SLR step (default : false)\n"
               << "[-cp] : Do first a classical projection without SBR (default "
 	            << ": true)\n"
+	            << "[-mdf]: Use MDF distance\n"
+	            << "[-simple]: Do projection only using distance and length\n"
               << "[-sp] : Save recognized bundles separetly (default : true)\n"
               << "[-force] : Force to overwrite files (default = false) \n"
               << "[-nbThreads] : Sets the value of omp_set_num_threads for all "
@@ -791,6 +802,9 @@ int main( int argc, char* argv[] )
               << "computation of neighborhoods (default : value of -nbThreads )"
               << " \n"
               << "[-ktf] : Keep temp files (default = false) \n"
+              << "[-timeOut] : Time out (in s) for computation of centroids and "
+              << "local SBR registration (default = 50 s) \n"
+              << "[-useMeanMDAD] : Use mean instead of max for MDAD (default : true ) \n"
               << "[-v] : Set verbosity level at 1 \n"
               << "[-h] : Show this message " << std::endl ;
     exit( 1 ) ;
@@ -1133,18 +1147,8 @@ int main( int argc, char* argv[] )
 
     }
 
-    // std::ostringstream computeCentroidsClientFilenameOss ;
-    // computeCentroidsClientFilenameOss << "python3 "
-    //                                          << computeCentroidsClientFilename ;
-    // computeCentroidsClientFilename = computeCentroidsClientFilenameOss.str() ;
-
   }
-  else
-  {
 
-    computeCentroidsClientFilename = "clientComputeCentroids.py" ;
-
-  }
 
   ////////////////////////// Register bundles command //////////////////////////
   if ( index_rb )
@@ -1172,17 +1176,8 @@ int main( int argc, char* argv[] )
 
     }
 
-    // std::ostringstream registerBundlesClientFileOss ;
-    // registerBundlesClientFileOss << "python3 " << registerBundlesClientFile ;
-    // registerBundlesClientFile = registerBundlesClientFileOss.str() ;
-
   }
-  else
-  {
 
-    registerBundlesClientFile = "clientRegisterBundles.py" ;
-
-  }
 
 
 
@@ -1212,18 +1207,8 @@ int main( int argc, char* argv[] )
 
     }
 
-    // std::ostringstream openDipyServerClientFileOss ;
-    // openDipyServerClientFileOss << "python3 " << openDipyServerClientFile ;
-    // openDipyServerClientFile = openDipyServerClientFileOss.str() ;
-
-
   }
-  else
-  {
 
-    openDipyServerClientFile = "dipyServer.py" ;
-
-  }
 
   //////////////////////////// Close server command ////////////////////////////
   if ( index_cds )
@@ -1251,17 +1236,6 @@ int main( int argc, char* argv[] )
       exit( 1 ) ;
 
     }
-
-    // std::ostringstream closeDipyServerClientFileOss ;
-    // closeDipyServerClientFileOss << "python3 " << closeDipyServerClientFile ;
-    // closeDipyServerClientFile = closeDipyServerClientFileOss.str() ;
-
-
-  }
-  else
-  {
-
-    closeDipyServerClientFile = "clientCloseServer.py" ;
 
   }
 
@@ -1684,12 +1658,6 @@ int main( int argc, char* argv[] )
     // }
 
   }
-  else
-  {
-
-    toleranceDistanceBetweenMedialPoints = 1.0 ;
-
-  }
 
 
   /////////////////////////// Minimum number of fibers /////////////////////////
@@ -1935,6 +1903,76 @@ int main( int argc, char* argv[] )
 
   }
 
+  ///////////////////////////////// Use MDF distance //////////////////////////
+  if ( index_mdf )
+  {
+
+    std::string _tmpIndexMDF( argv[ index_mdf + 1 ] ) ;
+    if ( _tmpIndexMDF == "true" )
+    {
+
+      useMDF = true ;
+
+    }
+    else if ( _tmpIndexMDF == "false" )
+    {
+
+      useMDF = false ;
+
+    }
+    else
+    {
+
+      std::cout << "Argument of -mdf must be either \"true\" or \"false\" "
+                << std::endl ;
+      exit( 1 ) ;
+
+    }
+
+  }
+
+  if ( useMDF )
+  {
+
+    std::cout << "WARNING : Using MDF distance" << std::endl ;
+
+  }
+
+  ////////////////////////////// Use simple projection ////////////////////////
+  if ( index_simple )
+  {
+
+    std::string _tmpIndexSimple( argv[ index_simple + 1 ] ) ;
+    if ( _tmpIndexSimple == "true" )
+    {
+
+      useSimple = true ;
+
+    }
+    else if ( _tmpIndexSimple == "false" )
+    {
+
+      useSimple = false ;
+
+    }
+    else
+    {
+
+      std::cout << "Argument of -simple must be either \"true\" or \"false\" "
+                << std::endl ;
+      exit( 1 ) ;
+
+    }
+
+  }
+
+  if ( useSimple )
+  {
+
+    std::cout << "WARNING : Using simple projection" << std::endl ;
+
+  }
+
   //////////////////////// Separate recognized bundles /////////////////////////
   if ( index_sp )
   {
@@ -2011,8 +2049,8 @@ int main( int argc, char* argv[] )
   else
   {
 
-    // nbThreads = nbCores ;
-    nbThreads = -1 ;
+    nbThreads = nbCores ;
+    // nbThreads = -1 ;
 
   }
 
@@ -2074,6 +2112,53 @@ int main( int argc, char* argv[] )
     {
 
       std::cout << "Argument of -ktf must be either \"true\" or \"false\" "
+                << std::endl ;
+      exit( 1 ) ;
+
+    }
+
+  }
+
+  ///////////////// Time out for centroids computations and SBR //////////////////
+  if ( index_time_out )
+  {
+
+    time_out = std::stof( argv[ index_time_out + 1 ] ) ;
+    if ( time_out <= 0 )
+    {
+
+      std::cout << "ERROR : -timeOut must be greater than 0, got "
+                << time_out << std::endl ;
+      exit( 1 ) ;
+
+    }
+
+
+  }
+
+
+  /////////////////////// Use mean instead of max for MDAD ////////////////////////
+
+  if ( index_useMeanForMDAD )
+  {
+
+    std::string _tmpUseMeanForMDAD( argv[ index_useMeanForMDAD + 1 ] ) ;
+    if ( _tmpUseMeanForMDAD == "true" )
+    {
+
+      useMeanForMDAD = true ;
+
+    }
+    else if ( _tmpUseMeanForMDAD == "false" )
+    {
+
+      useMeanForMDAD = false ;
+
+    }
+    else
+    {
+
+      std::cout << "Argument of -useMeanMDAD must be either \"true\" or \"false\" "
                 << std::endl ;
       exit( 1 ) ;
 
@@ -2365,6 +2450,7 @@ int main( int argc, char* argv[] )
                 << "computations with existing directory" << std::endl ;
 
     }
+    
 
   }
   else
@@ -2373,6 +2459,7 @@ int main( int argc, char* argv[] )
     isNeighborhoodFail = run_sh_process( computeNeighborhoodCommand ) ;
 
   }
+
   if ( isNeighborhoodFail )
   {
 
@@ -2447,6 +2534,8 @@ int main( int argc, char* argv[] )
                         << "-i " << fullAtlasFilename << " "
                         << "-a " << atlasDirectory << " "
                         << "-o " << tmpNeighborhoodAtlasDir << " "
+			<< "-minLen " << 10 << " "
+                        << "-maxLen " << 200 << " "
                         << "-tolThr " << toleranceThrComputeNeighborhood << " "
                         // << "-nbThreads " << nbCores << " "
                         << "-nbThreads " << nbThreadsCN << " "
@@ -2625,14 +2714,14 @@ int main( int argc, char* argv[] )
     {
 
       thrDistanceBetweenMedialPointsBundle =
-                  getAverageDistanceBetweenMedialPoints( atlasInfoPath ) / 2.0 ;
+                  getMaximumDistanceBetweenMedialPoints( atlasInfoPath ) ;
       thrDistanceBetweenMedialPointsBundle *= ( 1 +
                                         toleranceDistanceBetweenMedialPoints ) ;
 
     }
 
     RecognizedBundles recognized( 0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
-                                  true, false, true, false,
+                                  true, useMDF, true, useSimple,
                                   toleranceP,
                                   toleranceThr,
                                   toleranceMaxAngle,
@@ -2669,6 +2758,7 @@ int main( int argc, char* argv[] )
                                 adjacencyClassic,
                                 overlapClassic,
                                 disimilarityClassic,
+                                useMeanForMDAD,
                                 true ) ;
 
     }
@@ -2701,7 +2791,7 @@ int main( int argc, char* argv[] )
   }
 
 
-
+  
 
 
   std::cout << "#########################################################\n" ;
@@ -2826,6 +2916,7 @@ int main( int argc, char* argv[] )
                    adjacencyGeoLab,
                    overlapGeoLab,
                    disimilarityGeoLab,
+                   time_out,
                    verbose ) ;
 
       #pragma omp critical
@@ -3435,7 +3526,7 @@ int main( int argc, char* argv[] )
   if ( verbose )
   {
 
-    std::cout << "Duration : " << duration.count() << std::endl ;
+    std::cout << "\n\nDuration : " << duration.count() << std::endl ;
 
   }
 

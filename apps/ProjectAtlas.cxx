@@ -65,8 +65,8 @@ int main( int argc, char* argv[] )
     index_tolMinShapeAngle, index_tolMaxShapeAngle, index_tolLenght,
     index_tolDistBetMedPts, index_useAvgThr, index_useMDF, index_useSimple,
     index_useMPAF, index_compare, index_saveExtractedBundles,
-    index_save_unlabeled, index_nbThreads, index_oca_append, index_verbose,
-                                                                    index_help ;
+    index_save_unlabeled, index_nbThreads, index_oca_append, index_useMeanForMDAD,
+                                                       index_verbose, index_help ;
 
   std::vector<std::string> possibleFlags{
             "-i", "-o", "-l", "-a",
@@ -77,7 +77,7 @@ int main( int argc, char* argv[] )
 					  "-tolMaxDirAng", "-tolMinShapeAng", "-tolMaxShapeAng", "-tolLenght",
             "-tolDBMP", "-useAvgThr", "-useMPAF", "-useMDF",
             "-useSimple", "-cb", "-seb", "-su",
-            "-nbThreads", "-ocaApp", "-v", "-h" } ;
+            "-nbThreads", "-ocaApp", "-useMeanMDAD", "-v", "-h" } ;
 
   std::vector<bool> possibleFlagsNeedArgument{ true, true, true, true,
                                                true, true, true, true,
@@ -87,7 +87,8 @@ int main( int argc, char* argv[] )
                                                true, true, true, true,
                                                true, true, true, false,
                                                false, false, true, false,
-                                               true, true, true, false } ;
+                                               true, true, true, true,
+                                                                false } ;
 
   if ( possibleFlagsNeedArgument.size() != possibleFlags.size() )
   {
@@ -206,6 +207,7 @@ int main( int argc, char* argv[] )
   index_save_unlabeled = getFlagPosition( argc, argv, "-su" ) ;
   index_nbThreads = getFlagPosition( argc, argv, "-nbThreads" ) ;
   index_oca_append = getFlagPosition( argc, argv, "-ocaApp" ) ;
+  index_useMeanForMDAD = getFlagPosition( argc, argv, "-useMeanMDAD" ) ;
   index_verbose = getFlagPosition( argc, argv, "-v" ) ;
   index_help = getFlagPosition( argc, argv, "-h" ) ;
 
@@ -282,6 +284,7 @@ int main( int argc, char* argv[] )
               << "[-su] : Save bundle containing unlabeled fibers \n"
               << "[-ocaApp] : If true, appends values to comparison with atlas "
               << ".tsv file (default : false)\n"
+              << "[-useMeanMDAD] : Use mean instead of max for MDAD (default : false ) \n"
               << "[-v] : Set verbosity level at 1 \n"
               << "[-h] : Show this message " << std::endl ;
     exit( 1 ) ;
@@ -903,6 +906,35 @@ int main( int argc, char* argv[] )
   }
 
 
+  if ( index_useMeanForMDAD )
+  {
+
+    std::string _tmpUseMeanForMDAD( argv[ index_useMeanForMDAD + 1 ] ) ;
+    if ( _tmpUseMeanForMDAD == "true" )
+    {
+
+      useMeanForMDAD = true ;
+
+    }
+    else if ( _tmpUseMeanForMDAD == "false" )
+    {
+
+      useMeanForMDAD = false ;
+
+    }
+    else
+    {
+
+      std::cout << "Argument of -ktf must be either \"true\" or \"false\" "
+                << std::endl ;
+      exit( 1 ) ;
+
+    }
+
+  }
+
+
+
   if ( index_verbose )
   {
     if ( argv[ index_verbose + 1 ] )
@@ -1254,7 +1286,8 @@ int main( int argc, char* argv[] )
                              labelsName,
                              comparisonWithAtlasFilename,
                              comparisonWithAtlasAppend,
-                             saveExtractedBundles ) ;
+                             saveExtractedBundles,
+                             useMeanForMDAD ) ;
 
 
   return 0 ;

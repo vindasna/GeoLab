@@ -1279,6 +1279,8 @@ bool BundlesData::matrixTracksEquals( std::vector<float>& matrixTracks ) const
 
   }
 
+  return( true ) ;
+
 
 }
 
@@ -1974,12 +1976,6 @@ void BundlesData::computeDirectionVectorFiberTractogram(
     vector2[ i ] = point2[ i ] - medialPointFiberTractogram[ i ] ;
 
 
-
-    // point1[ i ] = tractogramFibers[ 3 * 0 + i + offsetTractogram ] ;
-    // point2[ i ] = tractogramFibers[ 3 * ( nbPoints - 1 ) + i +
-    //                                                       offsetTractogram ] ;
-    // vector1[ i ] = point2[ i ] - point1[ i ] ;
-
   }
 
   normalizeVector( vector1 ) ;
@@ -1992,11 +1988,8 @@ void BundlesData::computeDirectionVectorFiberTractogram(
   }
 
 
-  // crossProduct( vector1, normalVector, vector3 ) ;
-
   directionVector = vector3 ;
 
-  // projectVectorToPlane( normalVector, vector3, directionVector ) ;
 
   normalizeVector( directionVector ) ;
 
@@ -2140,14 +2133,20 @@ float BundlesData::computeMDADBetweenTwoFibers(
 
     tmpMDA = sqrt( tmpMDA ) ;
 
+    dMDA += tmpMDA ;
+
+    /*
     if ( tmpMDA > dMDA )
     {
 
       dMDA = tmpMDA ;
 
     }
+    */
 
   }
+
+  dMDA /= nbPoints ;
 
   return dMDA ;
 
@@ -2286,6 +2285,113 @@ float BundlesData::computeMDADBetweenTwoFibers(
 
 }
 
+
+////////////////////////////////////////////////////////////////////////////////
+float BundlesData::computeMDADBetweenTwoFibersAfterAlignement(
+              const std::vector<float>& tractogramFibers_1_to_tractogramFibers2,
+              const std::vector<float>& tractogramFibers_2,
+              int fiberIndex_1,
+              int fiberIndex_2,
+              bool useMeanForMDAD,
+              int nbPoints ) const
+{
+
+  std::vector<float> fiber1( 3 * nbPoints, 0 ) ;
+  getFiberFromTractogram( tractogramFibers_1_to_tractogramFibers2, 
+                                              fiberIndex_1, nbPoints, fiber1 ) ;
+  std::vector<float> resampledFiber1( 3 * nbPoints, 0 ) ;
+  resampleFiberEquidistant( fiber1, resampledFiber1, nbPoints ) ;
+
+  std::vector<float> fiber2( 3 * nbPoints, 0 ) ;
+  getFiberFromTractogram( tractogramFibers_2, fiberIndex_2, nbPoints, fiber2 ) ;
+  std::vector<float> resampledFiber2( 3 * nbPoints, 0 ) ;
+  resampleFiberEquidistant( fiber2, resampledFiber2, nbPoints ) ;
+
+  float dMDA = 0 ;
+
+  //////////////////// Checking direct or flipped distance /////////////////////
+  float tmpDirectDistance = 0 ;
+  float tmpFlippedDistance = 0 ;
+
+  for ( int i = 0 ; i < 3 ; i++ )
+  {
+
+    tmpDirectDistance += pow( resampledFiber1[ i + 3 * 0 ] -
+                                resampledFiber2[ i + 3 * 0 ], 2 ) ;
+
+    tmpFlippedDistance += pow( resampledFiber1[
+                                i + 3 * 0 ] -
+                                resampledFiber2[ i + 3 * ( nbPoints - 1 ) ], 2 ) ;
+
+  }
+
+  bool isDirectSens = true ;
+  if ( tmpFlippedDistance < tmpDirectDistance )
+  {
+
+    isDirectSens = false ;
+
+  }
+
+  // Computing MDA when distance
+  dMDA = 0 ;
+
+  for ( int point = 0 ; point < nbPoints ; point++ )
+  {
+
+    int k = point ;
+    if ( !isDirectSens )
+    {
+
+      k = nbPoints - point - 1 ;
+
+    }
+
+    float tmpMDA = 0 ;
+
+    for ( int i = 0 ; i < 3 ; i++ )
+    {
+
+      tmpMDA += pow( resampledFiber1[ i + 3 * point ] - resampledFiber2[
+                                                             i + 3 * k ], 2 ) ;
+
+    }
+
+    tmpMDA = sqrt( tmpMDA ) ;
+
+    if ( useMeanForMDAD )
+    {
+      
+      dMDA += tmpMDA ;
+
+    }
+    else
+    {
+
+      if ( tmpMDA > dMDA )
+      {
+
+        dMDA = tmpMDA ;
+
+      }
+
+    }
+    
+
+  }
+
+  if ( useMeanForMDAD )
+  {
+    
+    dMDA /= nbPoints ;
+
+  }
+
+
+  return dMDA ;
+
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 float BundlesData::computeMDFBetweenTwoFibers(
                               const std::vector<float>& tractogramFibers_1,
@@ -2297,7 +2403,7 @@ float BundlesData::computeMDFBetweenTwoFibers(
                               int nbPoints ) const
 {
 
-
+  
   std::vector<float> fiber1( 3 * nbPoints, 0 ) ;
   getFiberFromTractogram( tractogramFibers_1, fiberIndex_1, nbPoints, fiber1 ) ;
   std::vector<float> resampledFiber1( 3 * nbPoints, 0 ) ;
@@ -2364,8 +2470,6 @@ float BundlesData::computeMDFBetweenTwoFibers(
     for ( int i = 0 ; i < 3 ; i++ )
     {
 
-      // tmpMDF += pow( resampledFiber1[ i + 3 * point ] - ( resampledFiber2[
-      //                                 i + 3 * k ] + translation[ i ] ), 2 ) ;
       tmpMDF += pow( resampledFiber1[ i + 3 * point ] -  resampledFiber2[
                                                               i + 3 * k ], 2 ) ;
 
@@ -2849,14 +2953,20 @@ void BundlesData::computeNumberAdjacentFibersBundle1toBundle2(
 
         tmpMDA = sqrt( tmpMDA ) ;
 
+        dMDA += tmpMDA ;
+
+        /*
         if ( tmpMDA > dMDA )
         {
 
           dMDA = tmpMDA ;
 
         }
+        */
 
       }
+
+      dMDA /= nbPoints ;
 
       if ( dMDA < threshold )
       {
@@ -2994,14 +3104,21 @@ void BundlesData::computeNumberAdjacentFibersBundle1toBundle2(
 
         tmpMDA = sqrt( tmpMDA ) ;
 
+
+        dMDA += tmpMDA ;
+        
+        /*
         if ( tmpMDA > dMDA )
         {
 
           dMDA = tmpMDA ;
 
         }
+        */
 
       }
+
+      dMDA /= nbPoints ;
 
       if ( dMDA < threshold )
       {
@@ -3173,7 +3290,8 @@ float BundlesData::computeAngleBetweenPlanes(
   }
 
   float angle = computeAngleBetweenVectors( vector1, correctedVector2 ) ;
-
+  
+  /*
   if ( angle > 90 )
   {
 
@@ -3186,6 +3304,66 @@ float BundlesData::computeAngleBetweenPlanes(
   {
 
     angle = 0 ;
+
+  }
+  */
+
+
+  if ( angle != angle )
+  {
+
+    angle = 0 ;
+    return angle ;
+
+  }
+  
+  if ( angle < 0 )
+  {
+
+    angle = -angle ;
+
+  }
+
+  if ( angle > 90 )
+  {
+
+    if ( angle < 360 )
+    {
+
+      angle = 180 - angle ;
+      if ( angle < 0 )
+      {
+
+        angle = -angle ;
+
+      }
+
+    }
+    else
+    {
+
+      angle = angle - 360 ;
+      if ( angle < 0 )
+      {
+
+        angle = -angle ;
+
+      }
+
+      if ( angle > 90 )
+      {
+
+        angle = 180 - angle ;
+        if ( angle < 0 )
+        {
+          
+          angle = -angle ;
+
+        }
+
+      }
+
+    }
 
   }
 
@@ -3203,7 +3381,7 @@ float BundlesData::computeAngleBetweenDirections(
 
   float vector1DotVector2 = scalarProduct( vector1, vector2 ) ;
 
-
+  /*
   if ( vector1DotVector2 < 0 && angle < 90 )
   {
 
@@ -3216,6 +3394,40 @@ float BundlesData::computeAngleBetweenDirections(
   {
 
     angle = 0 ;
+
+  }
+  */
+
+  // If is angle = nan then angle = 0
+  if ( angle != angle )
+  {
+
+    angle = 0 ;
+    return angle ;
+
+  }
+
+  if ( angle < 0 )
+  {
+
+    angle = -angle ;
+  }
+
+  if ( angle > 180 )
+  {
+
+    if ( angle > 360 )
+    {
+
+      angle = angle - 360 ;
+
+    }
+    else
+    {
+
+      angle = 360 - angle ;
+
+    }
 
   }
 

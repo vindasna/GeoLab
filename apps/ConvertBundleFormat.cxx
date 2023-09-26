@@ -1371,14 +1371,14 @@ int main( int argc, char* argv[] )
 
   int index_input, index_output, index_reference, index_x, index_y, index_z,
                                                     index_verbose, index_help ;
-  index_input =   getFlagPosition( argc, argv, "-i" ) ;
-  index_output =   getFlagPosition( argc, argv, "-o" ) ;
-  index_reference =   getFlagPosition( argc, argv, "-r" ) ;
-  index_x =   getFlagPosition( argc, argv, "-x" ) ;
-  index_y =   getFlagPosition( argc, argv, "-y" ) ;
-  index_z =   getFlagPosition( argc, argv, "-z" ) ;
-  index_verbose =   getFlagPosition( argc, argv, "-v" ) ;
-  index_help =   getFlagPosition( argc, argv, "-h" ) ;
+  index_input = getFlagPosition( argc, argv, "-i" ) ;
+  index_output = getFlagPosition( argc, argv, "-o" ) ;
+  index_reference = getFlagPosition( argc, argv, "-r" ) ;
+  index_x = getFlagPosition( argc, argv, "-x" ) ;
+  index_y = getFlagPosition( argc, argv, "-y" ) ;
+  index_z = getFlagPosition( argc, argv, "-z" ) ;
+  index_verbose = getFlagPosition( argc, argv, "-v" ) ;
+  index_help = getFlagPosition( argc, argv, "-h" ) ;
 
   if ( index_help > 0 )
   {

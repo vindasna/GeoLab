@@ -465,17 +465,38 @@ def comparePredictionToTrue( realLabelsPath, realDictPath, predictedLabelsPath,
         testRealLabels = np.unique( yTrue )
         print( f"Number of labels in yTrue : {len(testRealLabels)}" )
 
-        confusion_matrix_model = confusion_matrix( yTrue, yPred )
+        tmpLabels = list ( np.unique( list( testPredictedLabels ) + list( testRealLabels ) ) )
+        tmpLabelsDict = {}
+        newPredictedDict = {}
+        for tmpI in range( len( tmpLabels ) ) :
+            tmpLabelsDict[ tmpLabels[ tmpI ] ] = tmpI
+            if tmpI not in newPredictedDict.keys() :
+                if tmpLabels[ tmpI ] == -1 :
+                    newPredictedDict[ tmpI ] = "Unlabelled"
+                else :
+                    newPredictedDict[ tmpI ] = predictedDict[ tmpLabels[ tmpI ] ]
+
+        newYpred = []
+        newYtrue = []
+        for tmpI in range( len( yPred ) ) :
+            tmpYpred = yPred[ tmpI ]
+            tmpYtrue = yTrue[ tmpI ]
+            newYpred.append( tmpLabelsDict[ tmpYpred ] )
+            newYtrue.append( tmpLabelsDict[ tmpYtrue ] )
+
+        confusion_matrix_model = confusion_matrix( newYtrue, newYpred )
         saveConfusionMatrix( confusion_matrix_model, confusionMatrixSavingPath )
 
+        
 
-        testPredictedLabels = list( testPredictedLabels )
-        testRealLabels = list( testRealLabels )
-        for _tmp in testPredictedLabels :
-            if _tmp not in testRealLabels :
-                testRealLabels.append( _tmp )
-        testRealLabels.sort()
-        newPredictedDict = predictedDict
+        # testPredictedLabels = list( testPredictedLabels )
+        # testRealLabels = list( testRealLabels )
+        # for _tmp in testPredictedLabels :
+        #     if _tmp not in testRealLabels :
+        #         testRealLabels.append( _tmp )
+        # testRealLabels.sort()
+        # newPredictedDict = predictedDict
+
         # newPredictedDict = {}
         # for _i in range( len( testRealLabels ) ) :
         #     _realLabel = testRealLabels[ _i ]

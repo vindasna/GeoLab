@@ -78,6 +78,8 @@ bool comparisonWithAtlasAppend = false ;
 
 bool haveMinf = false ;
 
+bool useMeanForMDAD = false ;
+
 std::string default_ESBA_DIR ;
 
 

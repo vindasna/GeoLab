@@ -316,14 +316,16 @@ int main( int argc, char* argv[] )
 
     toleranceThr = std::stof( argv[ index_tolThr + 1 ] ) ;
 
-    if ( toleranceThr <= 0 )
+    
+    if ( toleranceThr < -1 )
     {
 
-      std::cout << "Error argument : -tolThr must be greater than 0"
+      std::cout << "Error argument : -tolThr must be greater than -1"
                 << std::endl ;
       exit( 1 ) ;
 
     }
+    
 
   }
 
@@ -558,12 +560,12 @@ int main( int argc, char* argv[] )
     std::vector<float> medialPointAtlasBundle = atlasBundleInfo.centerBundle ;
 
 
-    float thresholdDistanceBundle = thresholdDistance * toleranceThr ;
+    float thresholdDistanceBundle = thresholdDistance * ( 1 + toleranceThr ) ;
     if ( !index_thr )
     {
 
 
-      thresholdDistanceBundle = atlasBundleInfo.maxRadius * toleranceThr ;
+      thresholdDistanceBundle = atlasBundleInfo.maxRadius * ( 1 + toleranceThr ) ;
       // float thresholdDistanceBundle = atlasBundleInfo.averageRadius ;
       if ( thresholdDistanceBundle == 0 )
       {

@@ -104,6 +104,11 @@ def get_cmd_line_args():
         type=int, metavar="<int>", default=21,
         help=( "Number of points to resampling for streamline registration "
                "( default = 21 )" ) )
+    
+    parser.add_argument(
+        "-timeOut", "--time-out",
+        type=float, metavar="<float>", default=50,
+        help="Time out for computation of centroids and SBR ( default : 50 s)" )
 
     parser.add_argument(
         "-xfm", "--xfm-type",
@@ -209,6 +214,9 @@ def client_program() :
     # Number of points for alignement
     nbPoints = inputs[ "nbPoints"]
 
+    # Time out
+    timeOut = inputs[ "time_out" ]
+
     # ConvertBundleFormat binary
     convert_bundle_format = inputs[ "convert_bundles" ]
     if not convert_bundle_format :
@@ -247,7 +255,7 @@ def client_program() :
     closeClient = False
     time_beginning = time.time()
     client_socket.send( "\t".join( argsToSend ).encode() )  # send message
-    timeOut = 50 # In s
+    
     duration = 0
     printInLog( "Connection successful", logFilePath )
     # tmpDebug = 0

@@ -63,8 +63,8 @@ int main( int argc, char* argv[] )
   const auto start_time = std::chrono::system_clock::now() ;
 
   int index_input, index_reference, index_output, index_input_format,
-                         index_output_format, index_nbPoints, index_force,
-                                                     index_verbose, index_help ;
+                         index_output_format, index_nbPoints, index_x, index_y, 
+                               index_z, index_force, index_verbose, index_help ;
 
   index_input = getFlagPosition( argc, argv, "-i") ;
   index_reference =   getFlagPosition( argc, argv, "-r" ) ;
@@ -72,6 +72,9 @@ int main( int argc, char* argv[] )
   index_input_format = getFlagPosition( argc, argv, "-if") ;
   index_output_format = getFlagPosition( argc, argv, "-of") ;
   index_nbPoints = getFlagPosition( argc, argv, "-nbPoints") ;
+  index_x = getFlagPosition( argc, argv, "-x" ) ;
+  index_y = getFlagPosition( argc, argv, "-y" ) ;
+  index_z = getFlagPosition( argc, argv, "-z" ) ;
   index_force = getFlagPosition( argc, argv, "-force") ;
   index_verbose = getFlagPosition( argc, argv, "-v") ;
   index_help = getFlagPosition( argc, argv, "-h") ;
@@ -87,6 +90,9 @@ int main( int argc, char* argv[] )
               << "-of : ouput bundles format among .bundles/.trk/.tck \n"
               << "[-nbPoints] : Number of points per fiber (same number for all "
               << "fibers) \n"
+              << "[-x] : Flip around x brain axis \n"
+              << "[-y] : Flip around y brain axis \n"
+              << "[-z] : Flip around z brain axis \n"
               << "[-force] : Force to overwrite files (default = false) \n"
               << "[-v] : Set verbosity level at 1 \n"
               << "[-h] : Show this message " << std::endl ;
@@ -131,6 +137,45 @@ int main( int argc, char* argv[] )
 
     std::cout << "-of argument required ..." << std::endl ;
     exit( 1 ) ;
+
+  }
+
+  if ( index_x )
+  {
+
+    flip_x = true ;
+
+  }
+  else
+  {
+
+    flip_x = false ;
+
+  }
+
+  if ( index_y )
+  {
+
+    flip_y = true ;
+
+  }
+  else
+  {
+
+    flip_y = false ;
+
+  }
+
+  if ( index_z )
+  {
+
+    flip_z = true ;
+
+  }
+  else
+  {
+
+    flip_z = false ;
 
   }
 
@@ -352,7 +397,7 @@ int main( int argc, char* argv[] )
     outBundlePathOss << outputDirectoryPath << bundleName << outputFormat ;
 
     convertBundlesFormat( _s, outBundlePathOss.str(), referenceImagePath, force,
-                                                                           0 ) ;
+                                                    flip_x, flip_y, flip_z, 0 ) ;
 
     counter++ ;
 

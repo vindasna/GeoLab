@@ -95,6 +95,10 @@ def get_cmd_line_args():
         type=int, metavar="<int>",
         help="QuickBundles resample number of points ( default = 21 )" )
     parser.add_argument(
+        "-timeOut", "--time-out",
+        type=float, metavar="<float>", default=50,
+        help="Time out for computation of centroids and SBR ( default : 50 s)" )
+    parser.add_argument(
         "-mnc", "--max-nb-clusters",
         type=int, metavar="<int>",
         help="QuickBundles max number of clusters ( default = 200 )" )
@@ -157,6 +161,8 @@ def client_program() :
     nbPoints = inputs[ "number_points" ]
     if not nbPoints :
         nbPoints = 21
+    
+    timeOut = inputs[ "time_out" ]
 
     max_nb_clusters = inputs[ "max_nb_clusters" ]
     if not max_nb_clusters :
@@ -200,7 +206,6 @@ def client_program() :
     printInLog( f"Sending message to server port {port}... ", logFilePath )
     client_socket.send( "\t".join( argsToSend ).encode() )  # send message
     printInLog( "Done", logFilePath )
-    timeOut = 50 # In s
     duration = 0
     t1 = time.time()
     while not closeClient :

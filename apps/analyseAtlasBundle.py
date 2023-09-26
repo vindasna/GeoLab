@@ -115,6 +115,10 @@ def get_cmd_line_args():
         action='store_true', default=False,
         help="Use MDF distance for analysis" )
     parser.add_argument(
+        "-useMeanMDAD", "--useMeanMDAD",
+        action='store_true', default=False,
+        help="Use mean instead of max for MDAD" )
+    parser.add_argument(
         "-force", "--overwrite",
         action='store_true', default=False,
         help="Overwrite output file even if it already exists" )
@@ -1162,6 +1166,8 @@ def main():
 
     useMDF = inputs[ "useMDF" ]
 
+    useMeanMDAD = inputs[ "useMeanMDAD" ]
+
     force = inputs[ "overwrite" ]
 
     parallel = inputs[ "multiprocessing" ]
@@ -1169,22 +1175,11 @@ def main():
     analyse_atlas_bundles_command = inputs[ "analyse_command_file" ]
     if not analyse_atlas_bundles_command :
         analyse_atlas_bundles_command = ( "analyseAtlasBundle" )
-        # analyse_atlas_bundles_command = ( "/volatile/backup_laptop/Codes/bin/"
-        #                                                   "analyseAtlasBundle" )
-        # if not os.path.isfile( analyse_atlas_bundles_command ) :
-        #     print( f'ERROR analyseAtlasBundle command : file '
-        #            f'{analyse_atlas_bundles_command} does not exists' )
-        #     sys.exit( 1 )
 
     process_atlas_information_command = inputs[ "process_atlas_information" ]
     if not process_atlas_information_command :
         process_atlas_information_command = ( "processAtlasInformation" )
-        # process_atlas_information_command = ( "/volatile/backup_laptop/Codes/"
-        #                                          "bin/processAtlasInformation" )
-        # if not os.path.isfile( process_atlas_information_command ) :
-        #     print( f'ERROR processAtlasInformation command : file '
-        #            f'{process_atlas_information_command} does not exists' )
-        #     sys.exit( 1 )
+
 
     ############################################################################
     tmp_dir = ""
@@ -1207,15 +1202,6 @@ def main():
     bundles_path = input_path
 
 
-    # for bundle in os.listdir( input_path ) :
-    #     if bundle.endswith( ".bundles" ):
-    #         bundle_filename = os.path.join( input_path, bundle )
-    #         curve_count = getCurvesCount( bundle_filename = bundle_filename,
-    #                                                                verbose = 0 )
-    #         if curve_count == 0:
-    #             os.remove( bundle_filename )
-    #             os.remove( bundle_filename.replace( ".bundles",
-    #                                                           ".bundlesdata" ) )
 
     print( "Processing atlas information ...   ", end = "", flush = True )
     if os.path.isfile( reference_filename ) :
@@ -1224,28 +1210,40 @@ def main():
                                   "-r ", reference_filename,
                                   "-f ", inputFormat,
                                   "-v ", str( 1 ) ]
+        if useMDF :
+            process_atlas_command.append( "-useMDF" )
+            process_atlas_command.append( "true" )
+        if useMeanMDAD :
+            process_atlas_command.append( "-useMeanMDAD" )
+            process_atlas_command.append( "true" )
     else :
         process_atlas_command = [ process_atlas_information_command,
                                   "-a ", input_path,
                                   "-f ", inputFormat,
                                   "-v ", str( 1 ) ]
+        if useMDF :
+            process_atlas_command.append( "-useMDF" )
+            process_atlas_command.append( "true" )
+        if useMeanMDAD :
+            process_atlas_command.append( "-useMeanMDAD" )
+            process_atlas_command.append( "true" )
+
     run_sh_process( cmd = process_atlas_command, shell = True )
     print( "Done", flush = True )
 
     print( "Analysing bundles ...   ", end = "", flush = True )
+    analyse_command = [ analyse_atlas_bundles_command,
+                            "-a ", input_path,
+                            "-f ", inputFormat,
+                            "-o ", output_path,
+                            "-v ", str( 1 ) ]
     if useMDF :
-        analyse_command = [ analyse_atlas_bundles_command,
-                            "-a ", input_path,
-                            "-o ", output_path,
-                            "-f ", inputFormat,
-                            "-useMDF ",
-                            "-v " ]
-    else :
-        analyse_command = [ analyse_atlas_bundles_command,
-                            "-a ", input_path,
-                            "-f ", inputFormat,
-                            "-o ", output_path,
-                            "-v " ]
+            analyse_command.append( "-useMDF" )
+            analyse_command.append( "true" )
+    if useMeanMDAD :
+        analyse_command.append( "-useMeanMDAD" )
+        analyse_command.append( "true" )
+    
     run_sh_process( cmd = analyse_command, shell = True )
     print( "Done", flush = True )
 

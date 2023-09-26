@@ -95,11 +95,13 @@ def readComparisonWithAtlas( path ) :
                 outDict[ "Coverage" ] = []
                 outDict[ "Adjacency" ] = []
                 outDict[ "Overlap" ] = []
+                outDict[ "NbFibers" ] = []
             else :
                 outDict[ "bundleName" ].append( words[ 0 ] )
                 outDict[ "Coverage" ].append( float( words[ 1 ] ) )
                 outDict[ "Adjacency" ].append( float( words[ 2 ] ) )
                 outDict[ "Overlap" ].append( float( words[ 3 ] ) )
+                outDict[ "NbFibers" ].append( float( words[ 5 ] ) )
 
     return( outDict )
 
@@ -122,11 +124,31 @@ def main() :
     overlapMean = np.mean( dictComparison[ "Overlap" ] )
     overlapMedian = np.median( dictComparison[ "Overlap" ] )
     overlapStd = np.std( dictComparison[ "Overlap" ] )
+    nbFibersMean = np.mean( dictComparison[ "NbFibers" ] )
+    nbFibersMedian = np.median( dictComparison[ "NbFibers" ] )
+    nbFibersStd = np.std( dictComparison[ "NbFibers" ] )
+
+    # PBE-1 and PBE-10
+    counter = 0
+    pbe1 = 0
+    pbe10 = 0
+    for tmp in dictComparison[ "NbFibers" ] :
+        if tmp >= 1 :
+            pbe1 += 1
+        if tmp >= 10 :
+            pbe10 += 1
+        counter += 1 
+    pbe1 /= counter
+    pbe10 /= counter
+
 
     print( f"Scores per bundles ( mean (median) +- std ) :\n"
            f"Coverage : {coverageMean}({coverageMedian}) +- {coverageStd} \n"
            f"Adjacency : {adjacencyMean}({adjacencyMedian}) +- {adjacencyStd}\n"
-           f"Overlap : {overlapMean}({overlapMedian}) +- {overlapStd}" )
+           f"Overlap : {overlapMean}({overlapMedian}) +- {overlapStd}\n" 
+           f"NbFibers : {nbFibersMean}({nbFibersMedian}) +- {nbFibersStd}\n" 
+           f"PBE-1 : {pbe1}\n" 
+           f"PBE-10 : {pbe10}" )
 
 if __name__ == "__main__" :
     main()

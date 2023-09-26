@@ -38,8 +38,9 @@ int index_input, index_atlas, index_reference, index_output, index_fa, index_an,
        index_tolMaxShapeAngle, index_tolLenght, index_tolThrCN,
        index_tolDistBetMedPts, index_pa, index_cv, index_cn, index_cc,
        index_nbPoints, index_rb, index_ods, index_cds, index_slr, index_cp,
-       index_sp, index_force, index_verbose, index_nbThreads, index_nbThreadsCN,
-                                                    index_keep_tmp, index_help ;
+       index_mdf, index_simple, index_sp, index_force, index_verbose,  
+       index_nbThreads, index_nbThreadsCN, index_keep_tmp, index_time_out, 
+       index_useMeanForMDAD, index_help ;
 
 // Variables for projection
 int verbose = 0 ;
@@ -47,10 +48,10 @@ std::string projectAtlasFile = "ProjectAtlas" ;
 std::string convertBundleFormatsFile = "ConvertBundleFormat" ;
 std::string computeNeighborhoodFile = "computeNeighborhood" ;
 std::string applyTransformBundleFile = "applyTransformBundle" ;
-std::string computeCentroidsClientFilename ;
-std::string registerBundlesClientFile ;
-std::string openDipyServerClientFile ;
-std::string closeDipyServerClientFile ;
+std::string computeCentroidsClientFilename = "clientComputeCentroids.py" ;
+std::string registerBundlesClientFile = "clientRegisterBundles.py" ;
+std::string openDipyServerClientFile = "dipyServer.py" ;
+std::string closeDipyServerClientFile = "clientCloseServer.py" ;
 float coverageThreshold = 0.0 ;
 float adjacencyThreshold = 0.0 ;
 float thrDistanceBetweenMedialPoints = 50.0 ;
@@ -72,22 +73,30 @@ bool isAtlasNeighborhood = false ;
 
 float toleranceP = 0.0 ;
 float toleranceThr = 0.0 ;
-float toleranceMaxAngle = 1.0 ;
-float toleranceMaxDirectionAngle = 1.0 ;
-float toleranceMinShapeAngle = 1.0 ;
-float toleranceMaxShapeAngle = 1.0 ;
+float toleranceMaxAngle = 0.0 ;
+float toleranceMaxDirectionAngle = 0.0 ;
+float toleranceMinShapeAngle = 0.0 ;
+float toleranceMaxShapeAngle = 0.0 ;
 float toleranceLenght = 0.0 ;
-float toleranceDistanceBetweenMedialPoints = 1.0 ;
+float toleranceDistanceBetweenMedialPoints = -0.9 ;
 
-float toleranceThrComputeNeighborhood = 6.0 ;
+float toleranceThrComputeNeighborhood = 0.0 ;
 
 float adjacencyForCompareBundles = 5.0 ; // In mm
 
 bool doClassical = true ;
 
+bool useMDF = false ;
+
+bool useSimple = false ;
+
 bool keepTmpFiles = false ;
 
 bool haveMinf = false ;
+
+float time_out = 50 ; // In s
+
+bool useMeanForMDAD = true ;
 
 std::string default_ESBA_DIR ;
 
@@ -113,6 +122,7 @@ void applyGeoLab( const std::string& movedTractogramNeighborhood,
                   float& adjacencyGeoLab,
                   float& overlapGeoLab,
                   float& disimilarityGeoLab,
+                  float& time_out,
                   int verbose ) ;
 //
 int getPortNumberDipyService( std::string& logFilePath ) ;

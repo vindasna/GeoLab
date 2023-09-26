@@ -638,6 +638,7 @@ void computeAverageDisimilarity(
                         const std::vector<float>& normalVectorsBundle,
                         const std::vector<float>& medialPointsAtlasBundleFibers,
                         int nbPoints,
+                        bool useMeanForMDAD,
                         std::vector<float>& disimilaritiesAtlasBundle )
 {
 
@@ -722,12 +723,12 @@ void computeAverageDisimilarity(
 
         // Computing MDA distance
         std::vector<float> origin( 3, 0 ) ;
-        float dMDA = atlasBundleData.computeMDADBetweenTwoFibers( fiber1,
+        float dMDA = atlasBundleData.computeMDADBetweenTwoFibersAfterAlignement( 
+                                                                  fiber1,
                                                                   fiber2,
-                                                                  origin,
-                                                                  origin,
                                                                   0,
                                                                   0,
+                                                                  useMeanForMDAD,
                                                                   nbPoints ) ;
 
 
@@ -828,12 +829,13 @@ void computeAverageDisimilarityMDF(
 int main( int argc, char* argv[] )
 {
 
-  int index_atlas, index_outDir, index_format, index_useMDF, index_verbose,
-                                                                    index_help ;
+  int index_atlas, index_outDir, index_format, index_useMDF, 
+                              index_useMeanForMDAD, index_verbose, index_help ;
   index_atlas =   getFlagPosition( argc, argv, "-a") ;
   index_outDir = getFlagPosition( argc, argv, "-o") ;
   index_format = getFlagPosition( argc, argv, "-f") ;
   index_useMDF = getFlagPosition( argc, argv, "-useMDF") ;
+  index_useMeanForMDAD = getFlagPosition( argc, argv, "-useMeanMDAD" ) ;
   index_verbose =   getFlagPosition( argc, argv, "-v") ;
   index_help =   getFlagPosition( argc, argv, "-h") ;
 
@@ -846,6 +848,7 @@ int main( int argc, char* argv[] )
               << "-f : Format of atlas bundles ( optios = [ .bundles, .trk, "
               << ".tck ] ) \n"
               << "[-useMDF] : analyse using MDF \n"
+              << "[-useMeanMDAD] : Use mean instead of max for MDAD (default : false ) \n"
               << "[-v] : set verbosity level at 1 \n"
               << "[-h] : Show this message " << std::endl ;
     exit( 1 ) ;
@@ -925,6 +928,33 @@ int main( int argc, char* argv[] )
   {
 
     useMDF = true ;
+
+  }
+
+  if ( index_useMeanForMDAD )
+  {
+
+    std::string _tmpUseMeanForMDAD( argv[ index_useMeanForMDAD + 1 ] ) ;
+    if ( _tmpUseMeanForMDAD == "true" )
+    {
+
+      useMeanForMDAD = true ;
+
+    }
+    else if ( _tmpUseMeanForMDAD == "false" )
+    {
+
+      useMeanForMDAD = false ;
+
+    }
+    else
+    {
+
+      std::cout << "Argument of -useMeanMDAD must be either \"true\" or \"false\" "
+                << std::endl ;
+      exit( 1 ) ;
+
+    }
 
   }
 
@@ -1105,6 +1135,7 @@ int main( int argc, char* argv[] )
                                   normalVectorsBundle,
                                   medialPointsAtlasBundleFibers,
                                   nbPoints,
+                                  useMeanForMDAD,
                                   disimilaritiesAtlasBundle ) ;
 
 

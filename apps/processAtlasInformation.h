@@ -30,6 +30,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 int verbose = 0 ;
 bool useMDFDistance = false ;
+bool useMeanForMDAD = false ;
 
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
@@ -90,6 +91,7 @@ void computeAverageDisimilarity(
                         const std::vector<float>& normalVectorsBundle,
                         const std::vector<float>& medialPointsAtlasBundleFibers,
                         int nbPoints,
+                        bool useMean,
                         std::vector<float>& disimilaritiesAtlasBundle ) ;
 
 void computeAverageDisimilarityMDF(

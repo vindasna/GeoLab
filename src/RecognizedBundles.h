@@ -120,7 +120,7 @@ class RecognizedBundles : public AtlasBundles
 
 
   ////////////////////////////////// Mehtods ///////////////////////////////////
-  void MDADLabeling( const BundlesData& atlasBundleData,
+  void labeling( const BundlesData& atlasBundleData,
                      const BundlesData& subjectBundlesData,
                      int atlasBundleIndex,
                      const std::vector<float>& medialPointAtlasBundle,
@@ -129,8 +129,9 @@ class RecognizedBundles : public AtlasBundles
                      const std::vector<float>& directionVectorsAtlasBundle,
                      const std::vector<float>& lengthsAtlasBundleFibers,
                      int nbPoints,
+                     bool useMeanForMDAD,
                      std::vector<std::vector<int16_t>>& labels ) ;
-  void MDADLabeling( const BundlesData& atlasBundleData,
+  void labeling( const BundlesData& atlasBundleData,
                      const BundlesData& subjectBundlesData,
                      const std::vector<float>& medialPointAtlasBundle,
                      const std::vector<float>& medialPointAtlasBundleFibers,
@@ -138,10 +139,11 @@ class RecognizedBundles : public AtlasBundles
                      const std::vector<float>& directionVectorsAtlasBundle,
                      const std::vector<float>& lengthsAtlasBundleFibers,
                      int nbPoints,
+                     bool useMeanForMDAD,
                      std::vector<int>& indexInTractogramRecognized ) ;
 
 
-  void MDADLabelingSimple(
+  void labelingSimple(
                          const BundlesData& atlasBundleData,
                          const BundlesData& subjectBundlesData,
                          int atlasBundleIndex,
@@ -149,54 +151,18 @@ class RecognizedBundles : public AtlasBundles
                          const std::vector<float>& medialPointAtlasBundleFibers,
                          const std::vector<float>& lengthsAtlasBundleFibers,
                          int nbPoints,
+                         bool useMeanForMDAD,
                          std::vector<std::vector<int16_t>>& labels ) ;
-  void MDADLabelingSimple(
+  void labelingSimple(
                          const BundlesData& atlasBundleData,
                          const BundlesData& subjectBundlesData,
                          const std::vector<float>& medialPointAtlasBundle,
                          const std::vector<float>& medialPointAtlasBundleFibers,
                          const std::vector<float>& lengthsAtlasBundleFibers,
                          int nbPoints,
+                         bool useMeanForMDAD,
                          std::vector<int>& indexInTractogramRecognized ) ;
 
-  //
-  void MDFLabeling( const BundlesData& atlasBundleData,
-                    const BundlesData& subjectBundlesData,
-                    int atlasBundleIndex,
-                    const std::vector<float>& medialPointAtlasBundle,
-                    const std::vector<float>& medialPointAtlasBundleFibers,
-                    const std::vector<float>& normalVectorsAtlasBundle,
-                    const std::vector<float>& directionVectorsAtlasBundle,
-                    const std::vector<float>& lengthsAtlasBundleFibers,
-                    int nbPoints,
-                    std::vector<std::vector<int16_t>>& labels ) ;
-  void MDFLabeling( const BundlesData& atlasBundleData,
-                    const BundlesData& subjectBundlesData,
-                    const std::vector<float>& medialPointAtlasBundle,
-                    const std::vector<float>& medialPointAtlasBundleFibers,
-                    const std::vector<float>& normalVectorsAtlasBundle,
-                    const std::vector<float>& directionVectorsAtlasBundle,
-                    const std::vector<float>& lengthsAtlasBundleFibers,
-                    int nbPoints,
-                    std::vector<int>& indexInTractogramRecognized ) ;
-
-  void MDFLabelingSimple(
-                         const BundlesData& atlasBundleData,
-                         const BundlesData& subjectBundlesData,
-                         int atlasBundleIndex,
-                         const std::vector<float>& medialPointAtlasBundle,
-                         const std::vector<float>& medialPointAtlasBundleFibers,
-                         const std::vector<float>& lengthsAtlasBundleFibers,
-                         int nbPoints,
-                         std::vector<std::vector<int16_t>>& labels ) ;
-  void MDFLabelingSimple(
-                         const BundlesData& atlasBundleData,
-                         const BundlesData& subjectBundlesData,
-                         const std::vector<float>& medialPointAtlasBundle,
-                         const std::vector<float>& medialPointAtlasBundleFibers,
-                         const std::vector<float>& lengthsAtlasBundleFibers,
-                         int nbPoints,
-                         std::vector<int>& indexInTractogramRecognized ) ;
 
   void saveLabels( const char* labelsBinaryFilename,
                    const std::vector<std::vector<int16_t>>& labels ) ;
@@ -212,7 +178,8 @@ class RecognizedBundles : public AtlasBundles
                      std::string labelsName,
                      std::string comparisonWithAtlasFilename,
                      bool comparisonWithAtlasAppend,
-                     bool saveBundlesSeparetly ) ;
+                     bool saveBundlesSeparetly,
+                     bool useMeanForMDAD ) ;
 
   void projectBundle( const BundlesData& atlasBundleData,
                       const BundlesMinf& atlasBundleInfo,
@@ -222,6 +189,7 @@ class RecognizedBundles : public AtlasBundles
                       float& adjacency,
                       float& overlap,
                       float& disimilarity,
+                      bool useMeanForMDAD,
                       bool comparisonWithAtlas ) ;
 
   void printParams() ;

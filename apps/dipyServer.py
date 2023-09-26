@@ -487,15 +487,14 @@ def registerBundles( static, moving, bundle_filename, reference_anatomy,
         aligned = srm.transform( moving_trk_streamlines )
 
 
-    # print( "Done", flush = True )
 
 
-    # Saving results
-    # print( "Saving..." , end = " ", flush = True )
-
+    #-------------------- Saving results --------------------#
+    
     if ( output_moved.endswith( ".bundles" ) ) :
         output_moved_trk = output_moved.replace( ".bundles", ".trk" )
         output_moved_minf_trk = output_moved.replace( ".bundles", ".minf" )
+        output_moved_matrix = output_moved.replace( ".bundles", ".mat" )
         if ( bundle_filename_minf_trk != output_moved_minf_trk
                               and os.path.isfile( bundle_filename_minf_trk ) ) :
             shutil.copy2( bundle_filename_minf_trk, output_moved_minf_trk )
@@ -511,12 +510,25 @@ def registerBundles( static, moving, bundle_filename, reference_anatomy,
         output_moved_trk = output_moved
         if ( output_moved.endswith( ".trk" ) ) :
             output_moved_minf_trk = output_moved.replace( ".trk", ".minf" )
+            output_moved_matrix = output_moved.replace( ".trk", ".mat" )
         else :
             output_moved_minf_trk = output_moved.replace( ".tck", ".minf" )
+            output_moved_matrix = output_moved.replace( ".tck", ".mat" )
+    
 
+    # Saving transformation matrix
+    transformation_matrix = srm.matrix
+    with open( output_moved_matrix, "w" ) as f :
+        for tmpI in range( 4 ) :
+            for tmpJ in range( 4 ) :
+                f.write( str( transformation_matrix[ tmpI, tmpJ ] ) )
+                if tmpJ < 3 :
+                    f.write( "\t" )
+                elif tmpJ == 3 and tmpI < 3 :
+                    f.write( "\n" )
 
-    # moved_tractogram = StatefulTractogram( aligned, reference_anatomy,
-    #                                                                Space.RASMM )
+    # Saving moved bundle 
+
     if ( moving_trk_filename.endswith( ".trk" ) ) :
         moved_tractogram = StatefulTractogram( aligned, moving_trk_filename,
                                                                    Space.RASMM )

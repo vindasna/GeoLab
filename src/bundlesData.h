@@ -184,6 +184,16 @@ class BundlesData
                                    int fiberIndex_1,
                                    int fiberIndex_2,
                                    int nbPoints ) const ;
+  
+
+  
+  float computeMDADBetweenTwoFibersAfterAlignement(
+              const std::vector<float>& tractogramFibers_1_to_tractogramFibers2,
+              const std::vector<float>& tractogramFibers_2,
+              int fiberIndex_1,
+              int fiberIndex_2,
+              bool useMean,
+              int nbPoints ) const ;
 
   float computeMDFBetweenTwoFibers(
                               const std::vector<float>& tractogramFibers_1,

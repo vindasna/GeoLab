@@ -88,6 +88,12 @@ def get_cmd_line_args():
         help=( "Output labels in .txt format" ) )
 
     # Optional arguments
+    parser.add_argument(
+        "-tn", "--template-name",
+        type=str, default = "moved_{}_recognized",
+        help=("Template for .trk bundles names in the form of \"prefix_{}_sufix\""
+              " where {} is replaced by the bundle name (default : "
+              "moved_{}_recognized). ") )
 
     parser.add_argument(
         "-v", "--verbose",
@@ -156,25 +162,38 @@ def main() :
         print( "ERROR : output file must be .txt" )
         sys.exit( 1 )
 
+    template_bundle_name = inputs[ "template_name" ]
+
     tmpFiles = os.listdir( recoBundlesDir )
-    recoLabelsPahts = []
+    recoLabelsPaths = []
     for _file in tmpFiles :
         if _file.endswith( ".npy" ) :
-            recoLabelsPahts.append( os.path.join( recoBundlesDir, _file ) )
+            recoLabelsPaths.append( os.path.join( recoBundlesDir, _file ) )
     tmpFiles = None # Free memory
 
 
     labelNames = readDict( labelsNamesPath )
 
-    nbBundles = len( recoLabelsPahts )
+    nbBundles = len( recoLabelsPaths )
 
     outRecoLabels = {} # Use dict instead of list for simplicity
     counter = 1
-    for labelsPath in recoLabelsPahts :
+    tmpPrefix = template_bundle_name.split( "_{}_" )[ 0 ]
+    tmpSufix = template_bundle_name.split( "_{}_" )[ 1 ]
+    max_value_recobundles_dict = int( np.max( list( labelNames.keys() ) ) )
+    for labelsPath in recoLabelsPaths :
         print( f"Processing : [{counter}/{nbBundles}]", end = "\r" )
         tmp = np.load( labelsPath )
-        _bundleName = os.path.basename( labelsPath ).replace( "_labels.npy",
+        _bundleName = os.path.basename( labelsPath ).replace( "__labels.npy",
                                                                             "" )
+        
+        _bundleName = _bundleName.replace( f"{tmpPrefix}_", "" )
+        _bundleName = _bundleName.replace( f"_{tmpSufix}", "" )
+
+        if _bundleName not in labelNames.keys() :
+            max_value_recobundles_dict += 1
+            labelNames[ max_value_recobundles_dict ] = _bundleName
+
         _labelValue = getLabelFromBundleName( labelNames, _bundleName )
         for _fiber in tmp :
             if _fiber not in outRecoLabels.keys() :

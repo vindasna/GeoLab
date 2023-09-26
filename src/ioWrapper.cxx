@@ -1513,6 +1513,9 @@ void getNeighborhoodFilenames(
 void convertBundlesFormat( const std::string& inputBundles,
                            const std::string& outputTrk,
                            const std::string& referenceImage,
+                           bool flip_x,
+                           bool flip_y,
+                           bool flip_z,
                            bool force,
                            int verbose )
 {
@@ -1523,8 +1526,30 @@ void convertBundlesFormat( const std::string& inputBundles,
   commandOss << convertBundleFormatsFile << "  "
              << "-i " << inputBundles << " "
              << "-o " << outputTrk << " "
-             << "-r " << referenceImage << " "
-             << "-v " ;
+             << "-r " << referenceImage << " " ;
+  
+  if ( flip_x )
+  {
+
+    commandOss << "-x " ;
+
+  }
+
+  if ( flip_y )
+  {
+
+    commandOss << "-y " ;
+
+  }
+
+  if ( flip_x )
+  {
+
+    commandOss << "-z " ;
+
+  }
+
+  commandOss << "-v " ;
   std::string command = commandOss.str() ;
 
   if ( is_file( outputTrk ) && !force )
@@ -1849,6 +1874,28 @@ float getAverageDistanceBetweenMedialPoints( const std::string& bundleFilename )
 
   }
   return( bundle.averageDistanceBetweenMedialPoints ) ;
+
+}
+
+////////////////////////////////////////////////////////////////////////////////
+/// Function to get maximum distance between medial points of atlas  bundle ////
+////////////////////////////////////////////////////////////////////////////////
+
+float getMaximumDistanceBetweenMedialPoints( const std::string& bundleFilename )
+{
+
+  BundlesMinf bundle( bundleFilename.c_str() ) ;
+  // BundlesFormat bundle( bundleFilename.c_str(), 0 ) ;
+  if ( bundle.maxDistanceBetweenMedialPoints <= 0 )
+  {
+
+    std::cout << "ERROR : got invalid radius of "
+              << bundle.maxDistanceBetweenMedialPoints
+              << " for file " << bundleFilename << std::endl ;
+    exit( 1 ) ;
+
+  }
+  return( bundle.maxDistanceBetweenMedialPoints ) ;
 
 }
 

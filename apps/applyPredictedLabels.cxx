@@ -393,7 +393,7 @@ int main( int argc, char* argv[] )
   {
 
     predictedLabelsFilename = predictedLabelsFilename.substr( 0,
-                                                    inputFilename.size() - 1 ) ;
+                                       predictedLabelsFilename.size() - 1 ) ;
 
   }
 
