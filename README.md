@@ -194,7 +194,11 @@ With :
 
 ## Container
 
-Currently, GeoLab is available as a docker container upon request (email : nabil.vindas@cea.fr). 
+Currently, GeoLab is available as a docker container upon request (email : nabil.vindas@cea.fr).
+
+## Access to Atlases
+
+The atlases are available upon request (email : nabil.vindas@cea.fr)
 
 
 
