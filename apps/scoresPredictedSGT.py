@@ -2,6 +2,8 @@
 
 import os, sys, shutil
 
+import json
+
 import numpy as np
 
 from sklearn.metrics import f1_score
@@ -89,12 +91,6 @@ def get_cmd_line_args():
         help="Path to the predicted labels .txt (or .bin for SupWMA)" )
 
     required.add_argument(
-        "-pd", "--predicted-dictionary",
-        type=is_file, required=True, metavar="<path>",
-        help=("Path to the predicted labels dictionary .dict (or .bin for "
-                                                                    "SupWMA)") )
-
-    required.add_argument(
         "-tl", "--true-labels",
         type=is_file, required=True, metavar="<path>",
         help="Path to the true labels .txt (or .bin for SupWMA)" )
@@ -112,6 +108,11 @@ def get_cmd_line_args():
 
     # Optional arguments
     parser.add_argument(
+        "-pd", "--predicted-dictionary",
+        type=str, metavar="<path>", default="",
+        help=("Path to the predicted labels dictionary .dict (MANDATORY "
+              "for GeoLab and SupWMA)" ) )
+    parser.add_argument(
         "-force", "--overwrite",
         action='store_true', default=False,
         help="Overwrite output file even if it already exists" )
@@ -119,6 +120,10 @@ def get_cmd_line_args():
         "-supWMA", "--supWMA",
         action='store_true', default=False,
         help="Use flag if labels come from SupWMA" )
+    parser.add_argument(
+        "-rbx", "--rbx",
+        action='store_true', default=False,
+        help="Use flag if labels come from RecoBundlesX" )
     parser.add_argument(
         "-v", "--verbose",
         type=int, choices=[0, 1, 2], default=1,
@@ -154,6 +159,16 @@ def readLabels( path ) :
 
     return( labels )
 
+def saveLabels( in_list, path ) :
+    nbStreamlines = len( in_list )
+    with open( path, 'w' ) as f :
+        for tmpFiberIndex in range( nbStreamlines ) :
+            tmpCounter = 0
+            for tmpLabel in in_list[ tmpFiberIndex ] :
+                f.write( f"{tmpFiberIndex} : {tmpLabel}" )
+                if tmpFiberIndex != ( nbStreamlines - 1 ) or tmpCounter != ( len( in_list[ tmpFiberIndex ] ) - 1 ) :
+                    f.write( "\n" )
+
 def readLabelsSupWMA( path ) :
     with open( path, "rb" ) as f:
         x = np.fromfile( f, dtype = np.int16 )
@@ -178,6 +193,40 @@ def saveDict( inDict, path ) :
     with open( path, 'w' ) as f :
         for _key in inDict :
             f.write( f"{inDict[ _key ]} : {_key}\n" )
+
+
+def readRecoBundlesX( path, nbStreamlines ) :
+    out_labels_dict = {}
+    out_labels = {}
+    for tmpFiber in range( nbStreamlines ) :
+        out_labels[ tmpFiber ] = [ -1 ]
+
+    with open( path, 'r' ) as f :
+        tmpDict = json.load( f )
+    
+    counter = 0
+    for tmpFile in tmpDict.keys() :
+        tmpBundleName = os.path.basename( tmpFile )
+        tmpBundleName = tmpBundleName.replace( ".trk", "" )
+        tmpLabel = counter
+        if tmpLabel not in out_labels_dict.keys() :
+            out_labels_dict[ counter ] = tmpBundleName
+            counter += 1
+        
+        for tmpIndex in tmpDict[ tmpFile ][ "indices" ] :
+            if len( out_labels[ tmpIndex ] ) == 1 and out_labels[ tmpIndex ][ 0 ] == -1 :
+                out_labels[ tmpIndex ] = [ tmpLabel ]
+            else :
+                out_labels[ tmpIndex ].append( tmpLabel )
+    
+    """
+    out_dict_path = "/volatile/articles_Nabil/GeoLab/RecoBundlesX/labels.dict"
+    saveDict( out_labels_dict, out_dict_path )
+    out_labels_path = "/volatile/articles_Nabil/GeoLab/RecoBundlesX/labels.txt"
+    saveLabels( out_labels, out_labels_path )
+    """
+    
+    return( out_labels_dict, out_labels )
 
 
 def printScoresPerBundles( bundlesNames, scores, scoreName = None ) :
@@ -332,7 +381,11 @@ def readConfusionMatrix( path ) :
 
 
 def comparePredictionToTrue( realLabelsPath, realDictPath, predictedLabelsPath,
-                  predictedDictPath, outDir, isSupWMA = False, force = False ) :
+                  predictedDictPath, outDir, isSupWMA = False, isRBX = False, 
+                                                               force = False ) :
+    if isSupWMA and isRBX :
+        print( f"ERROR : isSupWMA and isRBX both True at the same time" )
+        sys.exit( 1 )
     confusionMatrixSavingPath = os.path.join( outDir, f"confusionMatrix.tsv" )
 
     confusionMatrixDictSavingPath = os.path.join( outDir,
@@ -350,10 +403,14 @@ def comparePredictionToTrue( realLabelsPath, realDictPath, predictedLabelsPath,
         print( "Done\nReading predicted labels... ", end = "" )
         if ( isSupWMA ) :
             predictedLabels = readLabelsSupWMA( predictedLabelsPath )
+        elif isRBX :
+            nbStreamlines = len( realLabels )
+            predictedDict, predictedLabels = readRecoBundlesX( predictedLabelsPath, nbStreamlines )
         else :
             predictedLabels = readLabels( predictedLabelsPath )
         print( "Done\nReading predicted labels dictionary... ", end = "" )
-        predictedDict = readDict( predictedDictPath )
+        if not isRBX :
+            predictedDict = readDict( predictedDictPath )
         print( "Done" )
         nbRealLabels = len( realLabels )
         nbPredictedLabels = len( predictedLabels )
@@ -383,7 +440,9 @@ def comparePredictionToTrue( realLabelsPath, realDictPath, predictedLabelsPath,
             print( f"Unlabeled in SupWMA dict : {labelSupWMAUnlabelled}" )
 
 
+        ##################################################################################################################
         # Putting missing labels in dictionaries
+        """
         if len( realDict.keys() ) > len( predictedDict.keys() ) :
             for _key in realDict :
                 if realDict[ _key ] not in predictedDict.values() :
@@ -397,6 +456,60 @@ def comparePredictionToTrue( realLabelsPath, realDictPath, predictedLabelsPath,
                     if predictedDict[ _key ] not in realDict.values() :
                         realDict[ len( realDict.keys() ) ] = predictedDict[
                                                                           _key ]
+        """
+        
+        # Getting only labels in SGT
+        tmpNewPredictedDict = {}
+        for tmpKey in predictedDict.keys() :
+            tmpPredictedBundleName = predictedDict[ tmpKey ]
+            tmpRealLabel = getLabelFromBundleName( realDict, tmpPredictedBundleName )
+            if tmpRealLabel :
+                tmpNewPredictedDict[ tmpKey ] = predictedDict[ tmpKey ]
+        
+        # Rebuild labels and dict to start bundle label at 0 and end at the number of labels bundles
+        print( "Rebuilding predicted dictionnary... " )
+        newPredictedLabelsDict = {}
+        correspondenceDict = {}
+        counter = 0
+        tmpNbKeys = len( tmpNewPredictedDict.keys() )
+        for tmpLabel in tmpNewPredictedDict.keys() :
+            print( f"Rebuilding dictionnary... Processing : [{counter+1}/{tmpNbKeys}]", end = "\r" )
+            newPredictedLabelsDict[ counter ] = tmpNewPredictedDict[ tmpLabel ]
+            correspondenceDict[ tmpLabel ] = counter
+            counter += 1
+
+        print( "\nDone" )
+
+        nbFibers = len( predictedLabels.keys() )
+        counter = 1
+        for tmpFiberIndex in predictedLabels.keys() :
+            print( f"Rebuilding predicted labels... Processing : [{counter}/{nbFibers}]", end = "\r" )
+            tmpI = 0
+            while tmpI < len( predictedLabels[ tmpFiberIndex ] ) :
+                tmpLabel = predictedLabels[ tmpFiberIndex ][ tmpI ]
+                if tmpLabel != -1 :
+                    if tmpLabel in tmpNewPredictedDict.keys() :
+                        predictedLabels[ tmpFiberIndex ][ tmpI ] = correspondenceDict[ predictedLabels[ tmpFiberIndex ][ tmpI ] ]
+                        tmpI += 1
+                    else :
+                        # Pas d'incrementation de tmpI car on enlève un élement de la liste
+                        while tmpLabel in predictedLabels[ tmpFiberIndex ] :
+                            predictedLabels[ tmpFiberIndex ].remove( tmpLabel )
+
+                        if len( predictedLabels[ tmpFiberIndex ] ) == 0 :
+                            predictedLabels[ tmpFiberIndex ] = [ -1 ]
+
+                else :
+                    tmpI += 1
+
+                            
+            counter += 1
+        
+
+        predictedDict = newPredictedLabelsDict
+        
+
+        ##################################################################################################################
 
         yTrue = []
         yPred = []
@@ -652,6 +765,7 @@ def computeJaccard( confusion_matrix_model, index_class ) :
     return( jaccard )
 
 
+
 ################################################################################
 ################################################################################
 ################################################################################
@@ -668,6 +782,11 @@ def main() :
     trueLabelsPath = inputs[ "true_labels" ]
     trueDictPath = inputs[ "true_dictionary" ]
     isSupWMA = inputs[ "supWMA" ]
+    isRBX = inputs[ "rbx" ]
+
+    if ( isSupWMA or ( not isSupWMA and not isRBX ) ) and not os.path.isfile( predictedDictPath ) :
+        print( f"ERROR : -pd must be given for SupWMA or GeoLab" )
+        sys.exit( 1 )
 
     outDir = inputs[ "output" ]
     if not os.path.isdir( outDir ) :
@@ -687,7 +806,7 @@ def main() :
 
 
     comparePredictionToTrue( trueLabelsPath, trueDictPath, predictedLabelsPath,
-                                    predictedDictPath, outDir, isSupWMA, force )
+                                    predictedDictPath, outDir, isSupWMA, isRBX, force )
 
 
 if __name__ == "__main__":

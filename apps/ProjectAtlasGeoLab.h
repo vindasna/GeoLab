@@ -32,9 +32,9 @@
 ////////////////////////////////////////////////////////////////////////////////
 // Variables for parse
 int index_input, index_atlas, index_reference, index_output, index_fa, index_an,
-       index_anc, index_thrCov, index_thrAdj, index_minNbFibers, index_thrSim,
-       index_adjCB, index_thrDBMP, index_tolP, index_tolThr, index_tolMaxAngle,
-       index_tolMaxDirectionAngle, index_tolMinShapeAngle,
+       index_anc, index_thr, index_thrCov, index_thrAdj, index_minNbFibers, 
+       index_thrSim, index_adjCB, index_thrDBMP, index_tolP, index_tolThr, 
+       index_tolMaxAngle, index_tolMaxDirectionAngle, index_tolMinShapeAngle,
        index_tolMaxShapeAngle, index_tolLenght, index_tolThrCN,
        index_tolDistBetMedPts, index_pa, index_cv, index_cn, index_cc,
        index_nbPoints, index_rb, index_ods, index_cds, index_slr, index_cp,
@@ -52,6 +52,7 @@ std::string computeCentroidsClientFilename = "clientComputeCentroids.py" ;
 std::string registerBundlesClientFile = "clientRegisterBundles.py" ;
 std::string openDipyServerClientFile = "dipyServer.py" ;
 std::string closeDipyServerClientFile = "clientCloseServer.py" ;
+float thrDistance = 10 ; // In mm
 float coverageThreshold = 0.0 ;
 float adjacencyThreshold = 0.0 ;
 float thrDistanceBetweenMedialPoints = 50.0 ;
@@ -97,6 +98,8 @@ bool haveMinf = false ;
 float time_out = 50 ; // In s
 
 bool useMeanForMDAD = true ;
+
+bool useDefaultThr = false ;
 
 std::string default_ESBA_DIR ;
 

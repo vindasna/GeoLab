@@ -63,8 +63,8 @@ int main( int argc, char* argv[] )
   const auto start_time = std::chrono::system_clock::now() ;
 
   int index_input, index_atlas, index_reference, index_output, index_nbPoints,
-                            index_thr, index_force, index_format, index_verbose,
-                                                                    index_help ;
+                            index_thr, index_force, index_format, index_nbThreads, 
+                                                        index_verbose, index_help ;
 
   index_input = getFlagPosition( argc, argv, "-i") ;
   index_atlas = getFlagPosition( argc, argv, "-a") ;
@@ -72,6 +72,7 @@ int main( int argc, char* argv[] )
   index_output = getFlagPosition( argc, argv, "-o") ;
   index_nbPoints = getFlagPosition( argc, argv, "-nbPoints") ;
   index_thr = getFlagPosition( argc, argv, "-thr" ) ;
+  index_nbThreads = getFlagPosition( argc, argv, "-nbThreads" ) ;
   index_format = getFlagPosition( argc, argv, "-f") ;
   index_force = getFlagPosition( argc, argv, "-force") ;
   index_verbose = getFlagPosition( argc, argv, "-v") ;
@@ -89,6 +90,8 @@ int main( int argc, char* argv[] )
               << " fibers) \n"
               << "[-thr] : Threshold for computing adjacency between fibers "
               << "(default = 10mm) \n"
+              << "[-nbThreads] : Sets the value of omp_set_num_threads for parallel "
+              << "regions (default : 1)\n"
               << "[-force] : Force to overwrite files (default = false) \n"
               << "[-v] : Set verbosity level at 1 \n"
               << "[-h] : Show this message " << std::endl ;
@@ -291,6 +294,44 @@ int main( int argc, char* argv[] )
   }
 
 
+  ///////////////////////////////// nbThreads //////////////////////////////////
+  if ( index_nbThreads )
+  {
+
+
+    nbThreads = std::stoi( argv[ index_nbThreads + 1 ] ) ;
+    if ( nbThreads <= 0 )
+    {
+
+      std::cout << "Invalid argument for -nbThreads : you must give a postive "
+                << "integer " << std::endl ;
+      exit( 1 ) ;
+
+    }
+
+  }
+  else
+  {
+
+    nbThreads = 1 ;
+    // nbThreads = -1 ;
+
+  }
+
+  omp_set_num_threads( nbThreads ) ;
+
+  omp_set_nested( 1 ) ;
+  
+  
+  #pragma omp parallel
+  {
+
+    nbThreadsUsed = omp_get_num_threads() ;
+
+  }
+  std::cout << "Number of threads : " << nbThreadsUsed << std::endl ;
+
+
   ////////////////////////////////// Verbose ///////////////////////////////////
   if ( index_verbose )
   {
@@ -334,10 +375,27 @@ int main( int argc, char* argv[] )
   std::vector<float> overlapBundles ;
   std::vector<float> disimilarityBundles ;
   std::vector<int> nbFibersBundles ;
+  std::vector<std::string> outBundlesNames ;
+  int tmpCounter = 1 ;
+  #pragma omp parallel for num_threads(nbThreads) shared(nbFibersBundles) shared(disimilarityBundles) shared(overlapBundles) shared(adjacencyBundles) shared(coveragesBundles)
   for ( int _bundle = 0 ; _bundle < nbBundlesInput ; _bundle++ )
   {
 
     std::string _bundleName = bundlesNames[ _bundle ] ;
+
+    if ( verbose == 1 )
+    {
+
+      #pragma omp critical
+      {
+
+        printf( "\rProcessing : [ %d  /  %d ]",
+                                   tmpCounter, nbBundlesInput ) ;
+        std::cout << "" << std::flush ;
+
+      }
+
+    }
 
     if ( verbose > 1 )
     {
@@ -467,8 +525,8 @@ int main( int argc, char* argv[] )
     float _tmpDisimilarity =  inputData.distanceBetweenBundles(
                                                          atlasBundle,
                                                          inputBundle,
+                                                         nbThreads,
                                                          nbPointsPerFiber ) ;
-    disimilarityBundles.push_back( _tmpDisimilarity ) ;
 
     std::vector<int> nbAdjacentFibersInputToAtlas( nbCurvesInputBundle, 0 ) ;
     inputData.computeNumberAdjacentFibersBundle1ToBundle2(
@@ -478,6 +536,7 @@ int main( int argc, char* argv[] )
                                                 nbCurvesAtlasBundle,
                                                 nbPointsPerFiber,
                                                 thresholdMetrics,
+                                                nbThreads,
                                                 nbAdjacentFibersInputToAtlas ) ;
 
     std::vector<int> nbAdjacentFibersAtlasToInput( nbCurvesAtlasBundle, 0 ) ;
@@ -488,25 +547,46 @@ int main( int argc, char* argv[] )
                                                 nbCurvesInputBundle,
                                                 nbPointsPerFiber,
                                                 thresholdMetrics,
+                                                nbThreads,
                                                 nbAdjacentFibersAtlasToInput ) ;
 
     float coverageInputToAtlas = inputData.coverageRecognizedToAtlasBundles(
                                                 nbAdjacentFibersInputToAtlas ) ;
-    coveragesBundles.push_back( coverageInputToAtlas ) ;
+    
 
     float coverageAtlasToInput = inputData.coverageRecognizedToAtlasBundles(
                                                 nbAdjacentFibersAtlasToInput ) ;
 
     float _tmpOverlap = inputData.overlapRecognizedToAtlasBundles(
                                                 nbAdjacentFibersInputToAtlas ) ;
-    overlapBundles.push_back( _tmpOverlap ) ;
+    
 
     float _tmpAdjacency = inputData.bundlesAdjacency( coverageInputToAtlas,
                                                       coverageAtlasToInput ) ;
-    adjacencyBundles.push_back( _tmpAdjacency ) ;
+  
 
+    if ( verbose > 1 )
+    {
 
-    nbFibersBundles.push_back( nbCurvesInputBundle ) ;
+      std::cout << "\tAjacency : " << _tmpAdjacency << std::endl ;
+      std::cout << "\nNumber of fibers : " << nbCurvesInputBundle << std::endl ;
+
+    }
+
+    #pragma omp critical
+    {
+
+      disimilarityBundles.push_back( _tmpDisimilarity ) ;
+      coveragesBundles.push_back( coverageInputToAtlas ) ;
+      overlapBundles.push_back( _tmpOverlap ) ;
+      adjacencyBundles.push_back( _tmpAdjacency ) ;
+      nbFibersBundles.push_back( nbCurvesInputBundle ) ;
+      outBundlesNames.push_back( _bundleName ) ;
+
+      tmpCounter += 1 ;
+
+    }
+    
 
 
 
@@ -518,7 +598,7 @@ int main( int argc, char* argv[] )
                                    overlapBundles,
                                    disimilarityBundles,
                                    nbFibersBundles,
-                                   bundlesNames,
+                                   outBundlesNames,
                                    outputFilename.c_str() ) ;
 
 }

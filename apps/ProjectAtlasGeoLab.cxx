@@ -546,6 +546,15 @@ void applyGeoLab( const std::string& movedTractogramNeighborhood,
                                 false, false, saveBundlesSeparetly, false,
 			                          false,
                                 nbThreads ) ;
+  
+  if ( useDefaultThr )
+  {
+
+    recognized.useDefaultThr = true ;
+    recognized.thrDistance = thrDistance ;
+
+
+  }
 
   BundlesData atlasBundleData( atlasBundleDirectory.c_str() ) ;
   BundlesMinf atlasBundleInfo( atlasBundleDirectory.c_str() ) ;
@@ -699,6 +708,7 @@ int main( int argc, char* argv[] )
   index_fa = getFlagPosition( argc, argv, "-fa" ) ;
   index_an = getFlagPosition( argc, argv, "-an" ) ;
   index_anc = getFlagPosition( argc, argv, "-anc" ) ;
+  index_thr = getFlagPosition( argc, argv, "-thr" ) ;
   index_thrCov = getFlagPosition( argc, argv, "-thrCov" ) ;
   index_thrAdj = getFlagPosition( argc, argv, "-thrAdj" ) ;
   index_thrDBMP = getFlagPosition( argc, argv, "-thrDBMP" )  ;
@@ -754,6 +764,8 @@ int main( int argc, char* argv[] )
               << " is not given if other than ESBA atlas)\n"
               << "[-anc] : Path to the atlas neighborhoods centroids (must be "
               << "given is -fa is not given for other than ESBA atlas)\n"
+              << "[-thr] : Threshold (in mm) of the MDA distance to decide if "
+              << "the fiber belong to a bundle in the atlas (Default = 10 mm) \n"
               << "[-thrCov] : Threshold to keep bundles where coverage is "
               << "greater than thrCov (default : 0 -> keep all bundles ) \n"
               << "[-thrDBMP] : Threshold for maximum distance between medial "
@@ -1387,6 +1399,25 @@ int main( int argc, char* argv[] )
       }
 
     }
+
+  }
+
+  ////////////////////// Threshold on the MDAD/MDF distance //////////////////////
+  if ( index_thr )
+  {
+
+    thrDistance = std::stof( argv[ index_thr + 1 ] ) ;
+    if ( thrDistance <= 0 )
+    {
+
+      std::cout << "Error argument: thrDistance must be positive ( "
+                << "thrDistance > 0 ), got thrDistance = " << thrDistance
+                << std::endl ;
+      exit( 1 ) ;
+
+    }
+    useDefaultThr = true ;
+
 
   }
 
@@ -2720,6 +2751,8 @@ int main( int argc, char* argv[] )
 
     }
 
+
+
     RecognizedBundles recognized( 0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0,
                                   true, useMDF, true, useSimple,
                                   toleranceP,
@@ -2738,6 +2771,15 @@ int main( int argc, char* argv[] )
                                   true, false, false, saveBundlesSeparetly,
   			                          false, false,
                                   nbThreads ) ;
+    
+    if ( useDefaultThr )
+    {
+
+      recognized.useDefaultThr = true ;
+      recognized.thrDistance = thrDistance ;
+
+
+    }
 
     BundlesData atlasBundleData( atlasBundleDirectory.c_str() ) ;
     BundlesMinf atlasBundleInfo( atlasBundleDirectory.c_str() ) ;

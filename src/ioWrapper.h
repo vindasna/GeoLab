@@ -82,6 +82,9 @@ void readingPredictedLabels( const char* predictedLabelsFilename,
                              std::vector<std::vector<int16_t>>& predictedLabels,
                              int nbFibers ) ;
 //
+void readingPredictedLabels( const char* predictedLabelsFilename,
+                             std::vector<std::vector<int16_t>>& predictedLabels ) ;
+//
 void saveLabels( const char* labelsBinaryFilename,
                  const std::vector<std::vector<int16_t>>& labels ) ;
 //

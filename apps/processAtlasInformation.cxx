@@ -1174,11 +1174,20 @@ int main( int argc, char* argv[] )
     BundlesData& atlasBundleData = atlasData.bundlesData[
                                                             atlasBundleIndex ] ;
 
-    if ( verbose )
+    if ( verbose <= 1 )
     {
 
       printf( "\rProcessing atlas bundles : [ %d  /  %d ]",
                                         atlasBundleIndex + 1, nbBundlesAtlas ) ;
+      fflush( stdout ) ;
+
+    }
+    else
+    {
+
+      std::cout << "Processing atlas bundles : [" <<  atlasBundleIndex + 1
+                                   << "/" << nbBundlesAtlas << "]\t|\t"
+                                   << atlasBundleInfo.bundleName << std::endl ;
       fflush( stdout ) ;
 
     }

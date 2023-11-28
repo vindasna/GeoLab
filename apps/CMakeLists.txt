@@ -33,3 +33,4 @@ configure_file(plotDistributionBundleByAge.py ${CMAKE_BINARY_DIR}/bin/plotDistri
 configure_file(showColorCodedFibersPerBundle.py ${CMAKE_BINARY_DIR}/bin/showColorCodedFibersPerBundle.py FILE_PERMISSIONS OWNER_EXECUTE OWNER_WRITE OWNER_READ )
 configure_file(fslToAnts.py ${CMAKE_BINARY_DIR}/bin/fslToAnts.py FILE_PERMISSIONS OWNER_EXECUTE OWNER_WRITE OWNER_READ )
 configure_file(applyFlirtToTck.py ${CMAKE_BINARY_DIR}/bin/applyFlirtToTck.py FILE_PERMISSIONS OWNER_EXECUTE OWNER_WRITE OWNER_READ )
+configure_file(rbxLabelsToGeoLab.py ${CMAKE_BINARY_DIR}/bin/rbxLabelsToGeoLab.py FILE_PERMISSIONS OWNER_EXECUTE OWNER_WRITE OWNER_READ )

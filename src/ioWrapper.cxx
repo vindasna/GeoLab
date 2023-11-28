@@ -817,6 +817,94 @@ void readingPredictedLabels( const char* predictedLabelsFilename,
 
 }
 
+void readingPredictedLabels( const char* predictedLabelsFilename,
+                             std::vector<std::vector<int16_t>>& predictedLabels )
+{
+  
+  // Counting streamlines
+  const char delim = ':' ;
+  std::string line ;
+  std::ifstream dictFile ;
+  std::vector<int64_t> tmpStreamlinesIndex ;
+  dictFile.open( predictedLabelsFilename ) ;
+  if ( dictFile.fail() )
+  {
+
+    std::cout << "Problem reading file : " << predictedLabelsFilename
+                                           << std::endl ;
+
+    exit( 1 ) ;
+
+  }
+  while ( std::getline( dictFile, line ) )
+  {
+
+    std::vector< std::string > out ;
+    std::stringstream ss( line ) ;
+    std::string s ;
+    while ( std::getline( ss, s, delim ) )
+    {
+
+      s.erase( std::remove( s.begin(), s.end(), ' ' ), s.end() ) ;
+      out.push_back( s ) ;
+
+    }
+
+    int64_t tmpFiberIndex = stoi( out[ 0 ] ) ;
+    if ( tmpStreamlinesIndex.size() == 0 )
+    {
+
+      tmpStreamlinesIndex.push_back( tmpFiberIndex ) ;
+
+    }
+    else if ( std::find( tmpStreamlinesIndex.begin(), tmpStreamlinesIndex.end(), 
+                                                            tmpFiberIndex ) == tmpStreamlinesIndex.end() )
+    {
+
+        tmpStreamlinesIndex.push_back( tmpFiberIndex ) ;
+
+    }
+
+  }
+  dictFile.close() ;
+
+  std::cout << "Number of streamlines in labels file : " << tmpStreamlinesIndex.size() << std::endl ;
+
+
+  predictedLabels.resize( tmpStreamlinesIndex.size() ) ;
+  dictFile.open( predictedLabelsFilename ) ;
+  if ( dictFile.fail() )
+  {
+
+    std::cout << "Problem reading file : " << predictedLabelsFilename
+                                           << std::endl ;
+
+    exit( 1 ) ;
+
+  }
+  while ( std::getline( dictFile, line ) )
+  {
+
+    std::vector< std::string > out ;
+    std::stringstream ss( line ) ;
+    std::string s ;
+    while ( std::getline( ss, s, delim ) )
+    {
+
+      s.erase( std::remove( s.begin(), s.end(), ' ' ), s.end() ) ;
+      out.push_back( s ) ;
+
+    }
+
+    predictedLabels[ stoi( out[ 0 ] ) ].push_back( stoi( out[ 1 ] ) ) ;
+
+  }
+
+  dictFile.close() ;
+
+}
+
+
 
 ///////////////////////////////////////////////////////////////////////////////
 /////////////// Function to save the predicted labels file ////////////////////

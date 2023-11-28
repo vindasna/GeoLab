@@ -134,10 +134,19 @@ class AtlasBundles
                          const BundlesData& bundle1,
                          const BundlesData& bundle2,
                          int nbPoints ) const ;
+  double compareDisimilarityBundles(
+                         const BundlesData& bundle1,
+                         const BundlesData& bundle2,
+                         int nbThreads,
+                         int nbPoints ) const ;
 
 
   double distanceBetweenBundles( const BundlesData& bundle1,
                                  const BundlesData& bundle2,
+                                 int nbPoints ) const ;
+  double distanceBetweenBundles( const BundlesData& bundle1,
+                                 const BundlesData& bundle2,
+                                 int nbThreads,
                                  int nbPoints ) const ;
   double distanceBetweenBundles( int bundleIndex,
                                  const BundlesData& bundle,
@@ -152,6 +161,15 @@ class AtlasBundles
                               int nbPoints, // Same for 2 bundles
                               float threshold,
                               std::vector<int>& nbAdjacentFibersBundle ) const ;
+void computeNumberAdjacentFibersBundle1ToBundle2(
+                            const std::vector<float>& bundle1,
+                            const std::vector<float>& bundle2,
+                            int nbFibersBundle1,
+                            int nbFibersBundle2,
+                            int nbPoints, // Same for 2 bundles
+                            float threshold,
+                            int nbThreads,
+                            std::vector<int>& nbAdjacentFibersBundle ) const ;
 
   void computeNumberAdjacentFibersRecognizedToAtlasBundles(
                               const BundlesData& bundle,

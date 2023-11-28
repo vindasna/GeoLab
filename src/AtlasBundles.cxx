@@ -771,6 +771,87 @@ double AtlasBundles::compareDisimilarityBundles( const BundlesData& bundle1,
 
 }
 
+
+///                           ###################                            ///
+double AtlasBundles::compareDisimilarityBundles( const BundlesData& bundle1,
+                                                 const BundlesData& bundle2,
+                                                 int nbThreads,
+                                                 int nbPoints ) const
+{
+
+  if ( nbThreads <= 0 )
+  {
+
+    std::cout << "ERROR AtlasBundles::compareDisimilarityBundles : "
+              << "nbThreads argument must be strictly positive" ;
+    exit( 1 ) ;
+
+  }
+
+  omp_set_num_threads( nbThreads ) ;
+
+  int nbFibersBundle1 = bundle1.curves_count ;
+  int nbFibersBundle2 = bundle2.curves_count ;
+
+  double disimilarity = 0 ;
+
+  #pragma omp parallel for reduction( + : disimilarity )
+  for ( int fiberIndex1 = 0 ; fiberIndex1 < nbFibersBundle1 ; fiberIndex1++ )
+  {
+
+    // Searching the medial point of tractogram 1 fiber
+    std::vector<float> medialPointTractFiber1( 3, 0 ) ;
+    bundle1.computeMedialPointFiberWithDistance( fiberIndex1,
+                                                 medialPointTractFiber1 ) ;
+
+
+    float minDMDA = 1000 ;
+
+
+    for ( int fiberIndex2 = 0 ; fiberIndex2 < nbFibersBundle2 ; fiberIndex2++ )
+    {
+
+      // Registering fibers
+      int verbose = 0 ;
+      std::vector<float> fiber2Tofiber1( 3 * nbPoints, 0 ) ;
+      std::vector<float> newNormalVectorFiber2( 3, 0 ) ;
+      bundle1.registerFiber( bundle1.matrixTracks,
+                             bundle2.matrixTracks,
+                             fiberIndex1,
+                             fiberIndex2,
+                             nbPoints,
+                             fiber2Tofiber1,
+                             newNormalVectorFiber2 ) ;
+
+      // Computing MDA when distance between middle points is below threshold
+      // float dMDA = bundle1.computeMDADBetweenTwoFibers( bundle1.matrixTracks,
+      float dMDA = bundle1.computeMDFBetweenTwoFibers( bundle1.matrixTracks,
+                                                       fiber2Tofiber1,
+                                                       medialPointTractFiber1,
+                                                       medialPointTractFiber1,
+                                                       fiberIndex1,
+                                                       0,
+                                                       nbPoints ) ;
+
+      if ( minDMDA > dMDA )
+      {
+
+        minDMDA = dMDA ;
+
+      }
+
+    }
+
+    disimilarity += minDMDA ;
+
+  }
+
+  disimilarity /= nbFibersBundle1 ;
+
+  return disimilarity ;
+
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 double AtlasBundles::distanceBetweenBundles( const BundlesData& bundle1,
                                              const BundlesData& bundle2,
@@ -803,6 +884,44 @@ double AtlasBundles::distanceBetweenBundles( const BundlesData& bundle1,
   return disimilarity ;
 
 }
+
+
+///                           ###################                            ///
+double AtlasBundles::distanceBetweenBundles( const BundlesData& bundle1,
+                                             const BundlesData& bundle2,
+                                             int nbThreads,
+                                             int nbPoints ) const
+{
+
+  double disimilarity_1 = compareDisimilarityBundles( bundle1,
+                                                      bundle2,
+                                                      nbThreads,
+                                                      nbPoints ) ;
+
+  double disimilarity_2 = compareDisimilarityBundles( bundle2,
+                                                      bundle1,
+                                                      nbThreads,
+                                                      nbPoints ) ;
+
+  double disimilarity = 0 ;
+
+  if ( disimilarity_1 > disimilarity_2 )
+  {
+
+    disimilarity = disimilarity_1 ;
+
+  }
+  else
+  {
+
+    disimilarity = disimilarity_2 ;
+
+  }
+
+  return disimilarity ;
+
+}
+
 
 ///                           ###################                            ///
 double AtlasBundles::distanceBetweenBundles( int bundleIndex,
@@ -844,6 +963,7 @@ void AtlasBundles::computeNumberAdjacentFibersBundle1ToBundle2(
                                 float threshold,
                                 std::vector<int>& nbAdjacentFibersBundle ) const
 {
+  
 
   if ( threshold <= 0 )
   {
@@ -854,6 +974,121 @@ void AtlasBundles::computeNumberAdjacentFibersBundle1ToBundle2(
     threshold = 10 ;
 
   }
+  
+
+  // #pragma omp parallel for reduction( + : nbAdjacentFibersBundle )
+  // No need for reduction because there is no race conditions on
+  // nbAdjacentFibersBundle[ fiberIndex1 ] givent that it is modified at
+  // the interior of other loops and the value of
+  // nbAdjacentFibersBundle[ fiberIndex1 ] is not modified for a fiber
+  // greater or less to fiberIndex1
+  #pragma omp parallel for shared(nbAdjacentFibersBundle)
+  for ( int fiberIndex1 = 0 ; fiberIndex1 < nbFibersBundle1 ; fiberIndex1++ )
+  {
+
+    // Getting fiber
+    std::vector<float> fiber1( 3 * nbPoints, 0 ) ;
+    this->bundlesData[ 0 ].getFiberFromTractogram( bundle1,
+                                                   fiberIndex1,
+                                                   nbPoints,
+                                                   fiber1 ) ;
+
+    // Searching the medial point of tractogram 1 fiber
+    std::vector<float> medialPointTractFiber1( 3, 0 ) ;
+    this->bundlesData[ 0 ].computeMedialPointFiberWithDistance(
+                                                      fiber1,
+                                                      medialPointTractFiber1 ) ;
+
+    float minDMDA = 1000 ;
+    nbAdjacentFibersBundle[ fiberIndex1 ] = 0 ;
+
+    for ( int fiberIndex2 = 0 ; fiberIndex2 < nbFibersBundle2 ; fiberIndex2++ )
+    {
+
+      // Getting fiber
+      std::vector<float> fiber2( 3 * nbPoints, 0 ) ;
+      this->bundlesData[ 0 ].getFiberFromTractogram( bundle2,
+                                                     fiberIndex2,
+                                                     nbPoints,
+                                                     fiber2 ) ;
+
+      // Searching the medial point of tractogram 2 fiber
+      std::vector<float> medialPointTractFiber2( 3, 0 ) ;
+      this->bundlesData[ 0 ].computeMedialPointFiberWithDistance(
+                                                      fiber2,
+                                                      medialPointTractFiber2 ) ;
+
+
+      // Computing MDA when distance between middle points is below threshold
+      // float dMDA = this->bundlesData[ 0 ].computeMDADBetweenTwoFibers(
+      float dMDA = this->bundlesData[ 0 ].computeMDFBetweenTwoFibers(
+                                                         fiber1,
+                                                         fiber2,
+                                                         medialPointTractFiber1,
+                                                         medialPointTractFiber2,
+                                                         0,
+                                                         0,
+                                                         nbPoints ) ;
+
+      if ( dMDA < threshold )
+      {
+
+        nbAdjacentFibersBundle[ fiberIndex1 ] += 1 ;
+
+      }
+
+    }
+
+  }
+
+}
+
+//----------------------------------------------------------------------------//
+void AtlasBundles::computeNumberAdjacentFibersBundle1ToBundle2(
+                                const std::vector<float>& bundle1,
+                                const std::vector<float>& bundle2,
+                                int nbFibersBundle1,
+                                int nbFibersBundle2,
+                                int nbPoints, // Same for 2 bundles
+                                float threshold,
+                                int nbThreads,
+                                std::vector<int>& nbAdjacentFibersBundle ) const
+{
+ 
+
+  if ( nbThreads <= 0 )
+  {
+
+    std::cout << "ERROR AtlasBundles::computeNumberAdjacentFibersBundle1ToBundle2 : "
+              << "nbThreads argument must be strictly positive" ;
+    exit( 1 ) ;
+
+  }
+
+  omp_set_num_threads( nbThreads ) ;
+
+  /*
+  int nbThreadsUsed = 0 ;
+  #pragma omp parallel
+  {
+
+    nbThreadsUsed = omp_get_num_threads() ;
+
+  }
+  std::cout << "Number of threads : " << nbThreadsUsed << std::endl ;
+  */
+  
+
+  if ( threshold <= 0 )
+  {
+    std::cout << "Warning : the threshold value in bundlesAdjacency method "
+              << "must be greater than 0 but got " << threshold
+              << "... Using default value of 10 " << std::endl ;
+
+    threshold = 10 ;
+
+  }
+  
 
   // #pragma omp parallel for reduction( + : nbAdjacentFibersBundle )
   // No need for reduction because there is no race conditions on
