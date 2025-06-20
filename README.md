@@ -10,7 +10,7 @@ GeoLab is a tool for superficial white matter parcellation, which improves the R
 
 ## Licence
 
-The contents of this repository are released under Apache-2.0 license.
+The contents of this repository are released under GPLv3 license.
 
 ## Dependencies
 
