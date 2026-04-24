@@ -95,6 +95,11 @@ def get_cmd_line_args():
         "-lf", "--log-file",
         type=str, metavar="<path>",
         help="Path where to save logFile" )
+    
+    parser.add_argument(
+        "-p", "--port",
+        type=int, default=5000, metavar="<int>",
+        help=( "Port number (must be greater or equal to 5000). Default : 5000" ) )
 
     parser.add_argument(
         "-v", "--verbose",
@@ -581,6 +586,12 @@ def server_program() :
     Parse the command line.
     """
     inputs, verbose = get_cmd_line_args()
+
+    port = inputs[ "port" ]
+    if port < 5000 :
+        print( f"ERROR : port must be greater than 5000" )
+        sys.exit( 1 )
+
     logFilePath = inputs[ "log_file" ]
     if logFilePath :
         sys.stdout = open( os.devnull, 'w' )
@@ -601,7 +612,7 @@ def server_program() :
 
 
     # Creating server socket
-    port = 5000 # Ports smaller than 1024 are used for internet protocols
+    # port = 5000 # Ports smaller than 1024 are used for internet protocols
     print( f"Creating server socket... Trying port {port}", end = "\r",
                                                                 file = logFile )
     isServerLaunched = False

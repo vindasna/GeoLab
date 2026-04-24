@@ -1,0 +1,2 @@
+/usr/bin/ar qc ../lib/libBundlesMinf.a CMakeFiles/BundlesMinf.dir/bundlesMinf.cxx.o
+/usr/bin/ranlib ../lib/libBundlesMinf.a

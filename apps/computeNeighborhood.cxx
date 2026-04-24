@@ -645,7 +645,7 @@ int main( int argc, char* argv[] )
 
         }
 
-        std::vector<float> medialPointFiberTractogram( 3, 0 ) ;
+        std::array<float, 3> medialPointFiberTractogram{0, 0, 0} ;
 
         // inputTractogram.computeMedialPointFiberTractogram(
         //                                           fiberIndex,

@@ -75,7 +75,7 @@ void computeCenterAtlasBundleFibers(
   {
 
     // Searching the medial point of atlas fiber
-    std::vector<float> medialPointAtlasBundleFiber( 3, 0 ) ;
+    std::array<float, 3> medialPointAtlasBundleFiber{0, 0, 0} ;
     atlasBundleData.computeMedialPointFiberWithDistance(
                                                  atlasBundleFiberIndex,
                                                  medialPointAtlasBundleFiber ) ;
@@ -100,7 +100,7 @@ void computeAverageFiberBundle(
                         const std::vector<float>& medialPointsAtlasBundleFibers,
                         int nbPoints,
                         std::vector<float>& averageFiber,
-                        std::vector<float>& medialPointAtlasBundle )
+                        std::array<float, 3>& medialPointAtlasBundle )
 {
 
   int nbFibersAtlasBundle = atlasBundleData.curves_count ;
@@ -115,7 +115,7 @@ void computeAverageFiberBundle(
 
 
 
-  std::vector<float> centerReferenceFiber( 3, 0 ) ;
+  std::array<float, 3> centerReferenceFiber{0, 0, 0} ;
   for ( int i = 0 ; i < 3 ; i++ )
   {
 
@@ -132,7 +132,7 @@ void computeAverageFiberBundle(
 
     int offsetAtlas = 3 * nbPoints * atlasBundleFiberIndex ;
 
-    std::vector<float> translation( 3, 0 ) ;
+    std::array<float, 3> translation{0, 0, 0} ;
     for ( int i = 0 ; i < 3 ; i++ )
     {
 
@@ -213,7 +213,7 @@ void computeAverageFiberBundle(
 void computeGravityCenterAtlasBundle(
                                   BundlesData& atlasBundleData,
                                   int nbPoints,
-                                  std::vector<float>& gravityCenterAtlasBundle )
+                                  std::array<float, 3>& gravityCenterAtlasBundle )
 {
 
   int nbFibersAtlasBundle = atlasBundleData.curves_count ;
@@ -530,7 +530,7 @@ int main( int argc, char* argv[] )
     computeCenterAtlasBundleFibers( atlasBundleData,
                                     medialPointsAtlasBundleFibers ) ;
 
-    std::vector<float> gravityCenterAtlasBundle( 3, 0 ) ;
+    std::array<float, 3> gravityCenterAtlasBundle{0, 0, 0} ;
     computeGravityCenterAtlasBundle( atlasBundleData,
                                      nbPoints,
                                      gravityCenterAtlasBundle ) ;

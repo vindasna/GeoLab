@@ -58,9 +58,9 @@ int getFlagPosition( int argc, char* argv[], const std::string& flag )
 ///////////////////////////////////////////////////////////////////////////////
 void computeFiberWithVectors( BundlesData& inputFiber,
                               BundlesMinf& inputFiberInfo,
-                              std::vector<float> vector1,
-                              std::vector<float> vector2,
-                              std::vector<float> vector3,
+                              const std::array<float, 3>& vector1,
+                              const std::array<float, 3>& vector2,
+                              const std::array<float, 3>& vector3,
                               int nbPoints,
                               std::string outputDirectory,
                               std::string fiberName )
@@ -68,7 +68,7 @@ void computeFiberWithVectors( BundlesData& inputFiber,
 
   int fiberIndex = 0 ;
 
-  std::vector<float> medialPointFiber( 3, 0 ) ;
+  std::array<float, 3> medialPointFiber{0, 0, 0} ;
   inputFiber.computeMedialPointFiberWithDistance(
                                                 fiberIndex, medialPointFiber ) ;
 
@@ -135,8 +135,8 @@ void computeFiberWithVectors( BundlesData& inputFiber,
 
 void computeFiberWithVectors( BundlesData& inputFiber,
                               BundlesMinf& inputFiberInfo,
-                              std::vector<float>& vector1,
-                              std::vector<float>& vector2,
+                              const std::array<float, 3>& vector1,
+                              const std::array<float, 3>& vector2,
                               int nbPoints,
                               std::string outputDirectory,
                               std::string fiberName )
@@ -144,7 +144,7 @@ void computeFiberWithVectors( BundlesData& inputFiber,
 
   int fiberIndex = 0 ;
 
-  std::vector<float> medialPointFiber( 3, 0 ) ;
+  std::array<float, 3> medialPointFiber{0, 0, 0} ;
   inputFiber.computeMedialPointFiberWithDistance(
                                                fiberIndex, medialPointFiber ) ;
   // inputFiber.computeGravityCenterFiber( fiberIndex, medialPointFiber ) ;
@@ -211,12 +211,12 @@ void computeFiberWithVectors( BundlesData& inputFiber,
 
   int fiberIndex = 0 ;
 
-  std::vector<float> medialPointFiber( 3, 0 ) ;
+  std::array<float, 3> medialPointFiber{0, 0, 0} ;
   inputFiber.computeMedialPointFiberWithDistance(
                                                fiberIndex, medialPointFiber ) ;
-  std::vector<float> normalVector( 3, 0 ) ;
+  std::array<float, 3> normalVector{0, 0, 0} ;
   inputFiber.computeNormalVectorFiberTractogram( fiberIndex, normalVector ) ;
-  std::vector<float> directionVector( 3, 0 ) ;
+  std::array<float, 3> directionVector{0, 0, 0} ;
   inputFiber.computeDirectionVectorFiberTractogram( fiberIndex, normalVector,
                                                              directionVector ) ;
 
@@ -580,17 +580,17 @@ int main( int argc, char* argv[] )
   // std::vector<float> movingFiber = inputFiber2.matrixTracks ;
   //
   //
-  // std::vector<float> normalVector1( 3, 0 ) ;
+  // std::array<float, 3> normalVector1{0, 0, 0} ;
   // inputFiber1.computeNormalVectorFiberTractogram( referenceFiber,
   //                                                              normalVector1 ) ;
-  // std::vector<float> directionVector1( 3, 0 ) ;
+  // std::array<float, 3> directionVector1{0, 0, 0} ;
   // inputFiber1.computeDirectionVectorFiberTractogram( referenceFiber,
   //                                            normalVector1, directionVector1 ) ;
   //
 
   // std::cout << "Registering fibers ... " << std::endl ;
   // std::vector<float> samePlaneAndDirectionTranslatedFiber2( 3 * nbPoints, 0 ) ;
-  // std::vector<float> newNormalVectorFiber2( 3, 0 ) ;
+  // std::array<float, 3> newNormalVectorFiber2{0, 0, 0} ;
   // inputFiber1.registerFiber( referenceFiber,
   //                            movingFiber,
   //                            nbPoints,
@@ -620,9 +620,9 @@ int main( int argc, char* argv[] )
   //                          outputDirectory,
   //                          fiberName2 ) ;
   //
-  // std::vector<float> normalVectorRegistered( 3, 0 ) ;
+  // std::array<float, 3> normalVectorRegistered{0, 0, 0} ;
   // movedFiber.computeNormalVectorFiberTractogram( 0, normalVectorRegistered ) ;
-  // std::vector<float> directionVectorRegistered( 3, 0 ) ;
+  // std::array<float, 3> directionVectorRegistered{0, 0, 0} ;
   // movedFiber.computeDirectionVectorFiberTractogram( 0, normalVectorRegistered,
   //                                                  directionVectorRegistered ) ;
   //
@@ -640,14 +640,14 @@ int main( int argc, char* argv[] )
   std::vector<float> fiber1 = inputFiber1.matrixTracks ;
   std::vector<float> fiber2 = inputFiber2.matrixTracks ;
 
-  std::vector<float> normalVectorFiber1( 3, 0 ) ;
+  std::array<float, 3> normalVectorFiber1{0, 0, 0} ;
   inputFiber1.computeNormalVectorFiberTractogram( fiber1,
                                                   normalVectorFiber1 ) ;
-  std::vector<float> medialPointFiber1( 3, 0 ) ;
+  std::array<float, 3> medialPointFiber1{0, 0, 0} ;
   inputFiber1.computeMedialPointFiberWithDistance( fiber1,
                                                    medialPointFiber1 ) ;
   std::vector<float> fiber1XY( 3 * nbPoints, 0 ) ;
-  std::vector<float> newNormalVectorFiber1( 3, 0 ) ;
+  std::array<float, 3> newNormalVectorFiber1{0, 0, 0} ;
   inputFiber1.registerFiberToPlaneXYAndDirectionX( fiber1,
                                                    normalVectorFiber1,
                                                    medialPointFiber1,
@@ -656,14 +656,14 @@ int main( int argc, char* argv[] )
                                                    newNormalVectorFiber1 ) ;
 
 
-  std::vector<float> normalVectorFiber2( 3, 0 ) ;
+  std::array<float, 3> normalVectorFiber2{0, 0, 0} ;
   inputFiber1.computeNormalVectorFiberTractogram( fiber2,
                                                   normalVectorFiber2 ) ;
-  std::vector<float> medialPointFiber2( 3, 0 ) ;
+  std::array<float, 3> medialPointFiber2{0, 0, 0} ;
   inputFiber1.computeMedialPointFiberWithDistance( fiber2,
                                                    medialPointFiber2 ) ;
   std::vector<float> fiber2XY( 3 * nbPoints, 0 ) ;
-  std::vector<float> newNormalVectorFiber2( 3, 0 ) ;
+  std::array<float, 3> newNormalVectorFiber2{0, 0, 0} ;
   inputFiber1.registerFiberToPlaneXYAndDirectionX( fiber2,
                                                    normalVectorFiber2,
                                                    medialPointFiber2,
@@ -675,7 +675,7 @@ int main( int argc, char* argv[] )
   movedFiber1.matrixTracks = fiber1XY ;
 
   BundlesMinf movedFiber1Info( inputFiberInfo1 ) ;
-  std::vector<float> directionVectorFiber1XY( 3, 0 ) ;
+  std::array<float, 3> directionVectorFiber1XY{0, 0, 0} ;
   inputFiber1.computeDirectionVectorFiberTractogram( fiber1XY,
                                                      newNormalVectorFiber1,
                                                      directionVectorFiber1XY ) ;
@@ -692,7 +692,7 @@ int main( int argc, char* argv[] )
   BundlesData movedFiber2 = inputFiber2 ;
   movedFiber2.matrixTracks = fiber2XY ;
   BundlesMinf movedFiber2Info( inputFiberInfo2 ) ;
-  std::vector<float> directionVectorFiber2XY( 3, 0 ) ;
+  std::array<float, 3> directionVectorFiber2XY{0, 0, 0} ;
   inputFiber1.computeDirectionVectorFiberTractogram( fiber2XY,
                                                      newNormalVectorFiber2,
                                                      directionVectorFiber2XY ) ;

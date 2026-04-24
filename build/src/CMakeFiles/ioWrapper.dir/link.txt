@@ -1,0 +1,2 @@
+/usr/bin/ar qc ../lib/libioWrapper.a CMakeFiles/ioWrapper.dir/ioWrapper.cxx.o
+/usr/bin/ranlib ../lib/libioWrapper.a

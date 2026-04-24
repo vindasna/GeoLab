@@ -502,7 +502,7 @@ void AtlasBundles::findCenterBundle(
   {
 
     // Searching the medial point of atlas fiber
-    std::vector<float> medialPointFiber( 3, 0 ) ;
+    std::array<float, 3> medialPointFiber{0, 0, 0} ;
     atlasBundleData.computeMedialPointFiberWithDistance( atlasBundleFiberIndex,
                                                          medialPointFiber ) ;
 
@@ -559,7 +559,7 @@ void AtlasBundles::computeNormalVectorFibersAtlasBundle(
                                                       atlasBundleFiberIndex++ )
   {
 
-    std::vector<float> medialPointFiberAtlas( 3, 0 ) ;
+    std::array<float, 3> medialPointFiberAtlas{0, 0, 0} ;
     for ( int i = 0 ; i < 3 ; i++ )
     {
 
@@ -568,7 +568,7 @@ void AtlasBundles::computeNormalVectorFibersAtlasBundle(
 
     }
 
-    std::vector<float> normalVector( 3, 0 ) ;
+    std::array<float, 3> normalVector{0, 0, 0} ;
     atlasBundleData.computeNormalVectorFiberTractogram(
                                                   atlasBundleData.matrixTracks,
                                                   medialPointFiberAtlas,
@@ -600,8 +600,8 @@ void AtlasBundles::computeDirectionVectorFibersAtlasBundle(
                                                        atlasBundleFiberIndex++ )
   {
 
-    std::vector<float> medialPointFiberAtlas( 3, 0 ) ;
-    std::vector<float> normalVectorFiberAtlas( 3, 0 ) ;
+    std::array<float, 3> medialPointFiberAtlas{0, 0, 0} ;
+    std::array<float, 3> normalVectorFiberAtlas{0, 0, 0} ;
     for ( int i = 0 ; i < 3 ; i++ )
     {
 
@@ -612,7 +612,7 @@ void AtlasBundles::computeDirectionVectorFibersAtlasBundle(
 
     }
 
-    std::vector<float> directionVector( 3, 0 ) ;
+    std::array<float, 3> directionVector{0, 0, 0} ;
     atlasBundleData.computeDirectionVectorFiberTractogram(
                                                    atlasBundleData.matrixTracks,
                                                    medialPointFiberAtlas,
@@ -646,7 +646,7 @@ double AtlasBundles::compareDisimilarityBundles(
   {
 
     // Searching the medial point of tractogram 1 fiber
-    std::vector<float> medialPointTractFiber1( 3, 0 ) ;
+    std::array<float, 3> medialPointTractFiber1{0, 0, 0} ;
     for ( int i = 0 ; i < 3 ; i++ )
     {
 
@@ -664,7 +664,7 @@ double AtlasBundles::compareDisimilarityBundles(
       // Registering fibers
       int verbose = 0 ;
       std::vector<float> fiber2Tofiber1( 3 * nbPoints, 0 ) ;
-      std::vector<float> newNormalVectorFiber2( 3, 0 ) ;
+      std::array<float, 3> newNormalVectorFiber2{0, 0, 0} ;
       bundle1.registerFiber( bundle1.matrixTracks,
                              bundle2.matrixTracks,
                              fiberIndex1,
@@ -719,7 +719,7 @@ double AtlasBundles::compareDisimilarityBundles( const BundlesData& bundle1,
   {
 
     // Searching the medial point of tractogram 1 fiber
-    std::vector<float> medialPointTractFiber1( 3, 0 ) ;
+    std::array<float, 3> medialPointTractFiber1{0, 0, 0} ;
     bundle1.computeMedialPointFiberWithDistance( fiberIndex1,
                                                  medialPointTractFiber1 ) ;
 
@@ -733,7 +733,7 @@ double AtlasBundles::compareDisimilarityBundles( const BundlesData& bundle1,
       // Registering fibers
       int verbose = 0 ;
       std::vector<float> fiber2Tofiber1( 3 * nbPoints, 0 ) ;
-      std::vector<float> newNormalVectorFiber2( 3, 0 ) ;
+      std::array<float, 3> newNormalVectorFiber2{0, 0, 0} ;
       bundle1.registerFiber( bundle1.matrixTracks,
                              bundle2.matrixTracks,
                              fiberIndex1,
@@ -800,7 +800,7 @@ double AtlasBundles::compareDisimilarityBundles( const BundlesData& bundle1,
   {
 
     // Searching the medial point of tractogram 1 fiber
-    std::vector<float> medialPointTractFiber1( 3, 0 ) ;
+    std::array<float, 3> medialPointTractFiber1{0, 0, 0} ;
     bundle1.computeMedialPointFiberWithDistance( fiberIndex1,
                                                  medialPointTractFiber1 ) ;
 
@@ -814,7 +814,7 @@ double AtlasBundles::compareDisimilarityBundles( const BundlesData& bundle1,
       // Registering fibers
       int verbose = 0 ;
       std::vector<float> fiber2Tofiber1( 3 * nbPoints, 0 ) ;
-      std::vector<float> newNormalVectorFiber2( 3, 0 ) ;
+      std::array<float, 3> newNormalVectorFiber2{0, 0, 0} ;
       bundle1.registerFiber( bundle1.matrixTracks,
                              bundle2.matrixTracks,
                              fiberIndex1,
@@ -994,7 +994,7 @@ void AtlasBundles::computeNumberAdjacentFibersBundle1ToBundle2(
                                                    fiber1 ) ;
 
     // Searching the medial point of tractogram 1 fiber
-    std::vector<float> medialPointTractFiber1( 3, 0 ) ;
+    std::array<float, 3> medialPointTractFiber1{0, 0, 0} ;
     this->bundlesData[ 0 ].computeMedialPointFiberWithDistance(
                                                       fiber1,
                                                       medialPointTractFiber1 ) ;
@@ -1013,7 +1013,7 @@ void AtlasBundles::computeNumberAdjacentFibersBundle1ToBundle2(
                                                      fiber2 ) ;
 
       // Searching the medial point of tractogram 2 fiber
-      std::vector<float> medialPointTractFiber2( 3, 0 ) ;
+      std::array<float, 3> medialPointTractFiber2{0, 0, 0} ;
       this->bundlesData[ 0 ].computeMedialPointFiberWithDistance(
                                                       fiber2,
                                                       medialPointTractFiber2 ) ;
@@ -1108,7 +1108,7 @@ void AtlasBundles::computeNumberAdjacentFibersBundle1ToBundle2(
                                                    fiber1 ) ;
 
     // Searching the medial point of tractogram 1 fiber
-    std::vector<float> medialPointTractFiber1( 3, 0 ) ;
+    std::array<float, 3> medialPointTractFiber1{0, 0, 0} ;
     this->bundlesData[ 0 ].computeMedialPointFiberWithDistance(
                                                       fiber1,
                                                       medialPointTractFiber1 ) ;
@@ -1127,7 +1127,7 @@ void AtlasBundles::computeNumberAdjacentFibersBundle1ToBundle2(
                                                      fiber2 ) ;
 
       // Searching the medial point of tractogram 2 fiber
-      std::vector<float> medialPointTractFiber2( 3, 0 ) ;
+      std::array<float, 3> medialPointTractFiber2{0, 0, 0} ;
       this->bundlesData[ 0 ].computeMedialPointFiberWithDistance(
                                                       fiber2,
                                                       medialPointTractFiber2 ) ;

@@ -54,6 +54,108 @@ int getFlagPosition( int argc, char* argv[], const std::string& flag )
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+//////////////////// Save index in tractogram of neighbors /////////////////////
+////////////////////////////////////////////////////////////////////////////////
+void saveIndexInTractogram( const char* labelsBinaryFilename,
+                            const std::vector<int64_t>& labels )
+{
+  std::ofstream file ;
+  file.open( labelsBinaryFilename, std::ios::binary | std::ios::out ) ;
+  if ( file.fail() ) { std::cout << "Problem writing: " << labelsBinaryFilename << std::endl; exit(1); }
+  for ( int64_t l : labels ) file.write( reinterpret_cast<char*>( &l ), sizeof(int64_t) );
+  file.close() ;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+//////////////// Native In-Memory computeNeighborhood implementation ///////////
+////////////////////////////////////////////////////////////////////////////////
+void computeNeighborhoodNative( const std::string& inputTractogramPath,
+                                const std::string& atlasDirectory,
+                                const std::string& outputDirectory,
+                                float minLength,
+                                float maxLength,
+                                float toleranceThr,
+                                bool useDefaultMaxLength,
+                                int nbThreadsCN,
+                                int verbose )
+{
+    BundlesData inputTractogram( inputTractogramPath.c_str() ) ;
+    std::string outFormat = ".bundles"; 
+    if (endswith(inputTractogramPath,".tck")) outFormat=".tck"; 
+    if (endswith(inputTractogramPath,".trk")) outFormat=".trk";
+    
+    AtlasBundles atlasBundles( atlasDirectory.c_str(), inputTractogram.isBundles, inputTractogram.isTrk, inputTractogram.isTck, verbose ) ;
+    int nbThreadsUsed = nbThreadsCN > 0 ? nbThreadsCN : omp_get_max_threads();
+
+    #pragma omp parallel for num_threads( nbThreadsUsed ) schedule(dynamic)
+    for ( int bundle = 0 ; bundle < atlasBundles.bundlesMinf.size() ; bundle++ ) {
+        BundlesMinf& atlasBundleInfo = atlasBundles.bundlesMinf[ bundle ] ;
+        std::vector<float> medialPointAtlasBundle = atlasBundleInfo.centerBundle ;
+
+        float thresholdDistanceBundle = atlasBundleInfo.maxRadius * ( 1 + toleranceThr ) ; if (!thresholdDistanceBundle) thresholdDistanceBundle = 10;
+        float maxLengthBundle = useDefaultMaxLength ? atlasBundleInfo.maxLength * 1.2 : maxLength;
+
+        int64_t nbFibersTractogram = inputTractogram.curves_count ;
+        int nbPoints = inputTractogram.pointsPerTrack[ 0 ] ;
+
+        std::vector<int64_t> indexNeighborFibers ;
+        int curveCountNeighborhood = 0 ;
+        int64_t nbElementsExtracted = 0 ;
+
+        bool isOK = false ;
+        while ( !isOK ) {
+            indexNeighborFibers.clear();
+            curveCountNeighborhood = 0 ;
+            nbElementsExtracted = 0 ;
+
+            for ( int fiberIndex = 0 ; fiberIndex < nbFibersTractogram ; fiberIndex++ ) {
+                std::array<float, 3> medialPointFiberTractogram{0, 0, 0} ;
+                inputTractogram.computeMedialPointFiberWithDistance( fiberIndex, medialPointFiberTractogram ) ;
+
+                float distance = 0 ;
+                for ( int i = 0 ; i < 3 ; i++ ) distance += pow( medialPointFiberTractogram[ i ] - medialPointAtlasBundle[ i ], 2 ) ;
+                distance = sqrt( distance ) ;
+
+                float lengthFiber = inputTractogram.computeLengthFiber( fiberIndex ) ;
+
+                if ( distance < thresholdDistanceBundle && lengthFiber > minLength && lengthFiber < maxLengthBundle ) {
+                    indexNeighborFibers.push_back( fiberIndex ) ;
+                    nbElementsExtracted += 3 * nbPoints ;
+                    curveCountNeighborhood += 1 ;
+                }
+            }
+
+            if ( curveCountNeighborhood > 20 ) { isOK = true ; } else { thresholdDistanceBundle += 5 ; }
+        }
+
+        std::vector<float> extractedNeighborhoodTotal( nbElementsExtracted, 0 ) ;
+        std::vector<int32_t> pointsPerTrackNeighborhood ;
+        int32_t fiberIndexNeighborhood = 0 ;
+
+        for ( int selectedFiberIndex = 0 ; selectedFiberIndex < indexNeighborFibers.size() ; selectedFiberIndex++ ) {
+            int fiberIndex = indexNeighborFibers[ selectedFiberIndex ] ;
+            pointsPerTrackNeighborhood.push_back( nbPoints ) ;
+            std::copy( inputTractogram.matrixTracks.begin() + (3*nbPoints*fiberIndex), inputTractogram.matrixTracks.begin() + (3*nbPoints*(fiberIndex+1)), extractedNeighborhoodTotal.begin() + (3*nbPoints*fiberIndexNeighborhood) ) ;
+            fiberIndexNeighborhood += 1 ;
+        }
+
+        std::string outputBundlesFilename = outputDirectory + atlasBundles.bundlesNames[ bundle ] + outFormat ;
+        BundlesMinf extractedInfo( inputTractogramPath.c_str() ) ; extractedInfo.curves_count = curveCountNeighborhood ;
+        if ( outFormat != ".bundles" ) extractedInfo.haveMinf = false ;
+
+        std::vector<int64_t> nans; std::vector<std::vector<float>> sc, pr;
+        if (curveCountNeighborhood > 0) {
+            BundlesData extractedData( extractedNeighborhoodTotal, pointsPerTrackNeighborhood, nans, sc, pr, curveCountNeighborhood, (outFormat==".bundles"), (outFormat==".trk"), (outFormat==".tck") ) ;
+            extractedData.write( outputBundlesFilename.c_str(), extractedInfo ) ;
+        }
+
+        std::string labelsFilename = replaceExtension( outputBundlesFilename, "Index.bin" ) ;
+        saveIndexInTractogram( labelsFilename.c_str(), indexNeighborFibers ) ;
+    }
+}
+
+
+////////////////////////////////////////////////////////////////////////////////
 /////////////////////////// Function to apply GeoLab ///////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 void applyGeoLab( const std::string& movedTractogramNeighborhood,
@@ -68,7 +170,6 @@ void applyGeoLab( const std::string& movedTractogramNeighborhood,
                   float adjacency_classic,
                   int nbFibersClassic,
                   int nbPointsPerFiber,
-                  int portDipyServer,
                   bool& keepClassic,
                   float& coverageGeoLab,
                   float& adjacencyGeoLab,
@@ -141,7 +242,7 @@ void applyGeoLab( const std::string& movedTractogramNeighborhood,
                   << "be in .bundles/.trk/.tck format, got "
                   << atlasNeighborhoodFile << std::endl ;
     std::string outMessage = outMessageOss.str() ;
-    closeDipyServer( portDipyServer ) ;
+    // closeDipyServer( portDipyServer ) ;
     throw( std::invalid_argument( outMessage ) ) ;
 
 
@@ -159,333 +260,111 @@ void applyGeoLab( const std::string& movedTractogramNeighborhood,
     std::cout << "ERROR : in applyGeoLab, atlas neighborhood file "
               << atlasNeighborhood << " does not exists " << std::endl ;
 
-    closeDipyServer( portDipyServer ) ;
+    // closeDipyServer( portDipyServer ) ;
     exit( 1 ) ;
 
   }
 
 
-  // Computing centroids neighborhood atlas
-  std::ostringstream atlasBundleFileOss ;
-  if ( is_dir( atlasBundleDirectory ) )
-  {
-
-    atlasBundleFileOss << atlasBundleDirectory << bundleName << format ;
-
-  }
-  else
-  {
-
-      atlasBundleFileOss << atlasBundleDirectory ;
-
-  }
-  std::string atlasBundleFile = atlasBundleFileOss.str() ;
-  float averageRadius = getAverageRadiusAtlasBundle( atlasBundleFile ) ;
-  std::string atlasNeighborhoodCentroids ;
-  if ( !isAtlasNeighborhoodCentroids )
-  {
-
-    atlasNeighborhoodCentroids = replaceExtension( atlasNeighborhood,
-                                                   "_centroids.bundles" ) ;
-    if ( format == ".trk" || format == ".tck" )
-    {
-
-      atlasNeighborhoodCentroids = replaceExtension( atlasNeighborhoodCentroids,
-                                                                      format ) ;
-
-      // std::string atlasNeighborhoodCentroidsMinf = replaceExtension(
-      //                                    atlasNeighborhoodCentroids, ".minf" ) ;
-      //
-      // std::string atlasNeighborhoodMinf = replaceExtension(
-      //                                             atlasNeighborhood, ".minf" ) ;
-      //
-      // copy( atlasNeighborhoodMinf, atlasNeighborhoodCentroidsMinf ) ;
+  // Native registration using registerFast (GeoLab)
 
 
 
-    }
-
-    std::ostringstream computeCentroidsCommandClientOss ;
-    computeCentroidsCommandClientOss << computeCentroidsClientFilename << " " ;
-    computeCentroidsCommandClientOss
-                                   << "-i " << atlasNeighborhood << " "
-                                   << "-o " << atlasNeighborhoodCentroids << " "
-                                   << "-r " << referenceImage << " "
-                                   << "-thr " << averageRadius << " "
-                                   << "-nbPoints " << nbPointsPerFiber << " "
-                                   << "-lf " << clientsLogFilePath << " "
-                                   << "-p " << portDipyServer << " "
-                                   << "-timeOut " << time_out << " "
-                                   << "-v 1 " ;
-    std::string computeCentroidsCommandClient =
-                                        computeCentroidsCommandClientOss.str() ;
-    int isFailCentroids = 0 ;
-    if ( countFilesDirectory( atlasNeighborhoodCentroids ) > 5 && !force )
-    {
-
-      if ( verbose > 1 )
-      {
-
-        std::cout << "WARNING : output directory of "
-                  << computeCentroidsClientFilename << " : "
-                  << atlasNeighborhoodCentroids << " already exists and "
-                  << "with more than 5 files and th -force flag was not used, "
-                  << "trying computations with existing directory"
-                  << std::endl ;
-
-      }
-
-    }
-    else
-    {
-
-      int _tmpNbFibers = getNbFibers( atlasNeighborhood ) ;
-      if ( _tmpNbFibers > 500 )
-      {
-
-        isFailCentroids = run_sh_process( computeCentroidsCommandClient ) ;
-        if ( is_file( atlasNeighborhoodCentroids ) )
-        {
-
-          isFailCentroids = 0 ;
-
-        }
-        else
-        {
-
-          isFailCentroids = 1 ;
-
-        }
-
-      }
-      else
-      {
-
-        atlasNeighborhoodCentroids = atlasNeighborhood ;
-        isFailCentroids = 0 ;
-
-      }
-
-
-    }
-    if ( isFailCentroids )
-    {
-
-      std::cout << "ERROR : could not compute centroids for "
-                << atlasNeighborhood << ", got exit_code " << isFailCentroids
-                                                                  << std::endl ;
-
-      std::cout << "ERROR WITH COMMAND : \n " << computeCentroidsCommandClient
-                                              << std::endl ;
-
-
-      closeDipyServer( portDipyServer ) ;
-      exit( 1 ) ;
-
-    }
-
-  }
-  else
-  {
-
-    atlasNeighborhoodCentroids = atlasNeighborhoodCentroidsFile ;
-
-  }
-
-  // Compute centroids neighborhood moved tractogram
-  // int nbClustersAtlasNeighborhood = getNbFibers( atlasNeighborhoodCentroids ) ;
-  std::string movedTractogramNeighborhoodCentroids = replaceExtension(
-                                                    movedTractogramNeighborhood,
-                                                    "_centroids.bundles" ) ;
-
-  if ( ( format == ".trk" || format == ".tck" ) )
-  {
-
-    movedTractogramNeighborhoodCentroids = replaceExtension(
-                                           movedTractogramNeighborhoodCentroids,
-                                           format ) ;
-
-  }
-
-  std::ostringstream computeCentroidsCommandClient2Oss ;
-  computeCentroidsCommandClient2Oss << computeCentroidsClientFilename << " " ;
-  computeCentroidsCommandClient2Oss
-                         << "-i " << movedTractogramNeighborhood << " "
-                         << "-o " << movedTractogramNeighborhoodCentroids << " "
-                         << "-r " << referenceImage << " "
-                         << "-thr " << averageRadius << " "
-                         << "-nbPoints " << nbPointsPerFiber << " "
-                         // << "-mnc " << nbClustersAtlasNeighborhood << " "
-                         << "-lf " << clientsLogFilePath << " "
-                         << "-p " << portDipyServer << " "
-                         << "-timeOut " << time_out << " "
-                         << "-v 1 " ;
-  std::string computeCentroidsCommandClient2 =
-                                       computeCentroidsCommandClient2Oss.str() ;
-  int isFailCentroids = 0 ;
-  if ( countFilesDirectory( movedTractogramNeighborhoodCentroids ) > 5 &&
-                                                                        !force )
-  {
-
-    if ( verbose > 1 )
-    {
-
-      std::cout << "WARNING : output directory of "
-                << computeCentroidsClientFilename << " : "
-                << movedTractogramNeighborhoodCentroids << " already exists "
-                << "with more than 5 files and -force flag was not used,"
-                << " trying computations  with existing directory"
-                << std::endl ;
-
-    }
-
-  }
-  else
-  {
-
-    int _tmpNbFibers = getNbFibers( movedTractogramNeighborhood ) ;
-    if ( ( _tmpNbFibers > 500 &&
-                              !is_file( movedTractogramNeighborhoodCentroids ) )
-                                            || ( _tmpNbFibers > 500 && force ) )
-    {
-
-      isFailCentroids = run_sh_process( computeCentroidsCommandClient2 ) ;
-      if ( is_file( movedTractogramNeighborhoodCentroids ) )
-      {
-
-        isFailCentroids = 0 ;
-
-      }
-      else
-      {
-
-        isFailCentroids = 1 ;
-
-      }
-
-    }
-    else
-    {
-
-      movedTractogramNeighborhoodCentroids = movedTractogramNeighborhood ;
-      isFailCentroids = 0 ;
-
-    }
-
-
-  }
-  if ( isFailCentroids )
-  {
-
-    std::cout << "ERROR : could not compute centroids for "
-              << movedTractogramNeighborhood << ", got exit_code "
-                                               << isFailCentroids << std::endl ;
-
-    std::cout << "ERROR WITH COMMAND : \n " << computeCentroidsCommandClient2
-                                            << std::endl ;
-
-    closeDipyServer( portDipyServer ) ;
-    exit( 1 ) ;
-
-  }
-
-
-  // Registering centroids
   std::string neighborhoodRegistered = replaceExtension(
+
+
+
                                                     movedTractogramNeighborhood,
+
+
+
                                                     "_moved.bundles" ) ;
 
 
+
   if ( ( format == ".trk" || format == ".tck" ) )
+
+
+
   {
+
+
 
     neighborhoodRegistered = replaceExtension( neighborhoodRegistered, format) ;
 
+
+
   }
 
-  std::ostringstream registerBundlesClientCommadOss ;
-  registerBundlesClientCommadOss << registerBundlesClientFile << " " ;
-  registerBundlesClientCommadOss
-                         << "-s " << replaceExtension(
-                                     atlasNeighborhoodCentroids, format ) << " "
-                         << "-m " << replaceExtension(
-                           movedTractogramNeighborhoodCentroids, format ) << " "
-                         << "-ra " << referenceImage << " "
-                         << "-b " << replaceExtension(
-                                    movedTractogramNeighborhood, format ) << " "
-                         << "-o " << neighborhoodRegistered << " "
-                         << "-n " << nbPointsPerFiber << " "
-                         << "-xfm " << "rigid" << " "
-                         << "-lf " << clientsLogFilePath << " "
-                         << "-p " << portDipyServer << " "
-                         << "-timeOut " << time_out << " "
-                         << "-v 1" ;
-  std::string registerBundlesClientCommad =
-                                          registerBundlesClientCommadOss.str() ;
 
 
-  // int timeout = 100 ; // In s
-  int timeout = 500 ; // In s
-  std::string _tmpError1 ;
+
   if ( is_file( neighborhoodRegistered ) && !force )
+
+
+
   {
 
-    if ( verbose > 1 )
-    {
 
-      std::cout << "WARNING : output file of " << registerBundlesClientFile
-                << " : " << neighborhoodRegistered << " already exists and "
-                << "the -force flag was not used, trying computations with "
-                << "existing file" << std::endl ;
 
-    }
+      if ( verbose > 1 ) std::cout << "Using existing registered file: " << neighborhoodRegistered << std::endl;
+
+
 
   }
+
+
+
   else
+
+
+
   {
 
-    _tmpError1 = run_sh_process_timeout( registerBundlesClientCommad,
-                                                                     timeout ) ;
-    if ( is_file( neighborhoodRegistered ) )
-    {
 
-      _tmpError1 = " OK" ;
 
-    }
-    else
-    {
+      try {
 
-      _tmpError1 = "PROBLEM" ;
 
-    }
+
+          BundlesData atlasNeighborhoodBundles( atlasNeighborhoodFile.c_str() ) ;
+
+
+
+          BundlesData movingNeighborhoodBundles( movedTractogramNeighborhood.c_str() ) ;
+
+
+
+          movingNeighborhoodBundles.registerFast( atlasNeighborhoodBundles, TransformType::RIGID ) ;
+
+
+
+          BundlesMinf movingInfo( movedTractogramNeighborhood.c_str() ) ;
+
+
+
+          movingNeighborhoodBundles.write( neighborhoodRegistered.c_str(), movingInfo ) ;
+
+
+
+      } catch (const std::exception& e) {
+
+
+
+          std::cerr << "ERROR in native registerFast: " << e.what() << std::endl;
+
+
+
+          return;
+
+
+
+      }
+
+
 
   }
 
-  int isFailRegister = 0 ;
-  if ( !is_file( neighborhoodRegistered ) )
-  {
-
-    isFailRegister = 1 ;
-
-  }
-  if ( isFailRegister )
-  {
-
-    if ( verbose > 1 )
-    {
-
-      std::cout << "\nERROR : Fail with command :\n"
-                << registerBundlesClientCommad << "\nFail to register "
-                << movedTractogramNeighborhoodCentroids << " to "
-                << atlasNeighborhoodCentroids << ", got : \"" << _tmpError1
-                                                          << "\"" << std::endl ;
-
-    }
-
-
-    return ;
-
-  }
 
 
   // Projection
@@ -2355,65 +2234,55 @@ int main( int argc, char* argv[] )
     movedTractogramTrkOss << tmpSLRdir << "moved" << format ;
     std::string movedTractogramTrk = movedTractogramTrkOss.str() ;
 
-    std::ostringstream globalSLROss ;
-    // globalSLROss << "dipy_slr "
-    //              << fullAtlasFilename << " "
-    //              << inputBundlesFilename << " "
-    //              << "--greater_than 10 "
-    //              << "--less_than 200 "
-    //              << "--out_dir " << tmpSLRdir << " "
-    //              << "--out_moved " << movedTractogramTrk << " "
-    //              << "--force " ;
-    globalSLROss << "dipy_slr "
-                 << fullAtlasFilename << " "
-                 << inputBundlesFilename << " "
-                 << "--out_dir " << tmpSLRdir << " "
-                 << "--out_moved " << movedTractogramTrk << " "
-                 << "--force " ;
-      std::string globalSLR = globalSLROss.str() ;
+    int nationaleSLRfail = 0 ;
 
-      int globaleSLRfail = 0 ;
-      if ( is_file( movedTractogramTrk ) && !force )
-      {
 
-        if ( verbose > 1 )
-        {
+    if ( is_file( movedTractogramTrk ) && !force ) {
 
-          std::cout << "WARNING : output file of dipy_slr : "
-                    << movedTractogramTrk << " already exists and -force flag "
-                    << "was not used, trying computations with existing file"
-                    << std::endl ;
+
+        if ( verbose > 1 ) std::cout << "Using existing global SLR: " << movedTractogramTrk << std::endl;
+
+
+    } else {
+
+
+        try {
+
+
+            if (verbose) std::cout << "Starting native global registerFast..." << std::endl;
+
+
+            BundlesData atlasFull( fullAtlasFilename.c_str() ) ;
+
+
+            BundlesData movingFull( inputBundlesFilename.c_str() ) ;
+
+
+            movingFull.registerFast( atlasFull, TransformType::RIGID ) ;
+
+
+            BundlesMinf movingInfo( inputBundlesFilename.c_str() ) ;
+
+
+            movingFull.write( movedTractogramTrk.c_str(), movingInfo ) ;
+
+
+        } catch (const std::exception& e) {
+
+
+            std::cerr << "ERROR in native global registerFast: " << e.what() << std::endl;
+
+
+            nationaleSLRfail = 1;
+
 
         }
 
-      }
-      else
-      {
 
-        globaleSLRfail = run_sh_process( globalSLR ) ;
-
-      }
-      if ( is_file( movedTractogramTrk ) )
-      {
-
-        globaleSLRfail = 0 ;
+    }
 
 
-      }
-      if ( globaleSLRfail )
-      {
-
-        std::cout << "ERROR : could not compute global SLR, got exit code "
-                  << globaleSLRfail << std::endl ;
-        // if ( is_dir( outputDirectory ) )
-        // {
-        //
-        //   rmdir( outputDirectory ) ;
-        //
-        // }
-        exit( 1 ) ;
-
-      }
+    if ( nationaleSLRfail ) exit(1) ;
 
       std::ostringstream movedTractogramOss ;
       movedTractogramOss << tmpSLRdir << "moved" << format ;
@@ -2454,59 +2323,7 @@ int main( int argc, char* argv[] )
 
   }
 
-  std::ostringstream computeNeighborhoodCommandOss ;
-  computeNeighborhoodCommandOss << computeNeighborhoodFile << " "
-                                << "-i " << movedTractogram << " "
-                                << "-a " << atlasDirectory << " "
-                                << "-o " << tmpNeighborhoodDir << " "
-				                        << "-minLen " << 10 << " "
-				                        // << "-maxLen " << 100 << " "
-				                        << "-maxLen " << 200 << " "
-                                << "-tolThr " << toleranceThrComputeNeighborhood
-                                                                          << " "
-                                // << "-nbThreads " << nbCores << " "
-                                << "-nbThreads " << nbThreadsCN << " "
-                                << "-v " ;
-  std::string computeNeighborhoodCommand = computeNeighborhoodCommandOss.str() ;
-  int isNeighborhoodFail = 0 ;
-  if ( countFilesDirectory( tmpNeighborhoodDir ) > 5 && !force )
-  {
-
-    if ( verbose > 1 )
-    {
-
-      std::cout << "WARNING : output directory of " << computeNeighborhoodFile
-                << " : " <<  tmpNeighborhoodDir << " exists with more than 5 "
-                << "files and  the -force flag was not used, trying "
-                << "computations with existing directory" << std::endl ;
-
-    }
-    
-
-  }
-  else
-  {
-
-    isNeighborhoodFail = run_sh_process( computeNeighborhoodCommand ) ;
-
-  }
-
-  if ( isNeighborhoodFail )
-  {
-
-    std::cout << "ERROR : could not compute neighborhood of atlas bundles "
-              << "in tractogram, got exit code "
-              << isNeighborhoodFail << std::endl ;
-
-    // if ( is_dir( outputDirectory ) )
-    // {
-    //
-    //   rmdir( outputDirectory ) ;
-    //
-    // }
-    exit( 1 ) ;
-
-  }
+  computeNeighborhoodNative( movedTractogram, atlasDirectory, tmpNeighborhoodDir, 10, 200, toleranceThrComputeNeighborhood, true, nbThreadsCN, verbose ) ;
 
 
   std::vector<std::string> neighborhoodFilenames ;
@@ -2560,58 +2377,7 @@ int main( int argc, char* argv[] )
 
     }
 
-    std::ostringstream computeAtlasNeighborhoodCommandOss ;
-    computeAtlasNeighborhoodCommandOss << computeNeighborhoodFile << " "
-                        << "-i " << fullAtlasFilename << " "
-                        << "-a " << atlasDirectory << " "
-                        << "-o " << tmpNeighborhoodAtlasDir << " "
-			<< "-minLen " << 10 << " "
-                        << "-maxLen " << 200 << " "
-                        << "-tolThr " << toleranceThrComputeNeighborhood << " "
-                        // << "-nbThreads " << nbCores << " "
-                        << "-nbThreads " << nbThreadsCN << " "
-                        << "-v " ;
-    std::string computeAtlasNeighborhoodCommand =
-                                      computeAtlasNeighborhoodCommandOss.str() ;
-    int isAtlasNeighborhoodFail = 0 ;
-    if ( countFilesDirectory( tmpNeighborhoodAtlasDir ) > 5 && !force )
-    {
-
-      if ( verbose > 1 )
-      {
-
-        std::cout << "WARNING : output directory of " << computeNeighborhoodFile
-                  << " : " <<  tmpNeighborhoodAtlasDir << " already exists with"
-                  << " more than 5 files and the -force flag was not used, "
-                  << "trying computations with existing directory"
-                  << std::endl ;
-
-      }
-
-    }
-    else
-    {
-
-      isAtlasNeighborhoodFail = run_sh_process(
-                                              computeAtlasNeighborhoodCommand ) ;
-
-    }
-
-    if ( isAtlasNeighborhoodFail )
-    {
-      std::cout << "ERROR : could not compute neighborhood of atlas bundles "
-                << "in full atlas, got exit code " << isAtlasNeighborhoodFail
-                                                                  << std::endl ;
-
-      // if ( is_dir( outputDirectory ) )
-      // {
-      //
-      //   rmdir( outputDirectory ) ;
-      //
-      // }
-      exit( 1 ) ;
-
-    }
+    computeNeighborhoodNative( fullAtlasFilename, atlasDirectory, tmpNeighborhoodAtlasDir, 10, 200, toleranceThrComputeNeighborhood, true, nbThreadsCN, verbose ) ;
 
     getNeighborhoodFilenames( tmpNeighborhoodAtlasDir,
                               atlasBundleDirectories,
@@ -2842,49 +2608,34 @@ int main( int argc, char* argv[] )
   std::cout << "#########################################################\n" ;
   const auto start_time_sbr = std::chrono::system_clock::now() ;
 
-  // Launching dipy service
-  std::cout << "Launching dipy service... " ;
-
-  std::ostringstream serverLogFilePathOss ;
-  serverLogFilePathOss << outputDirectory << "dipyServiceLog.txt" ;
-  std::string serverLogFilePath = serverLogFilePathOss.str() ;
-
-
-  std::ostringstream launchDipyServiceOss ;
-  launchDipyServiceOss << openDipyServerClientFile << " " ;
-  launchDipyServiceOss << "-lf " << serverLogFilePath << " " ;
-  std::string launchDipyService = launchDipyServiceOss.str() ;
-
-
-  boost::process::ipstream out ; // To not pipe output in main process
-  boost::process::ipstream err ; // To not pipe error in main process
-
-  boost::process::child c( launchDipyService.c_str(),
-                                            boost::process::std_out > out,
-                                            boost::process::std_err > err ) ;
-
-  std::cout << "" << std::flush ;
-
-  while ( !is_file( serverLogFilePath ) ){}
-
-  int portDipyServer = getPortNumberDipyService( serverLogFilePath ) ;
-
-  std::cout << "Using port " << portDipyServer << std::endl ;
-  std::cout << "" << std::flush ;
+  // Launching native projection (dipy service removed)
 
 
   std::vector<std::vector<int>> indecesInNeighborhoodsReconized( nbBundles ) ;
+
+
   std::vector<bool> keepClassicProjection( nbBundles ) ;
+
+
   std::vector<float> coveragesGeoLab( nbBundles, -1 ) ;
+
+
   std::vector<float> adjacenciesGeoLab( nbBundles, -1 )  ;
+
+
   std::vector<float> overlapsGeoLab( nbBundles, -1 ) ;
+
+
   std::vector<float> disimilaritiesGeoLab( nbBundles, -1 ) ;
 
-  int nbFibersTractogram = getNbFibers( movedTractogram ) ;
-  int nbBundlesProcessed = 1 ;
-  while ( c.running() )
-  {
 
+  int nbFibersTractogram = getNbFibers( movedTractogram ) ;
+
+
+  int nbBundlesProcessed = 1 ;
+
+
+  {
     omp_set_num_threads( nbThreads ) ;
     #pragma omp parallel for schedule(dynamic)
     for ( int i = 0 ; i < nbBundles ; i++ )
@@ -2952,7 +2703,6 @@ int main( int argc, char* argv[] )
                    adjacency_classic,
                    nbFibersClassic,
                    nbPointsPerFiber,
-                   portDipyServer,
                    keepClassic,
                    coverageGeoLab,
                    adjacencyGeoLab,
@@ -2981,14 +2731,7 @@ int main( int argc, char* argv[] )
 
     }
 
-    // Closing dipy service
-    std::cout << "\n" ;
-    closeDipyServer( portDipyServer ) ;
-    std::cout << "Done" << std::endl ;
-
-    break ;
-
-  }
+    }
 
   const std::chrono::duration< double > duration_sbr =
                           std::chrono::system_clock::now() - start_time_sbr ;

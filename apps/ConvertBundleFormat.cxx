@@ -1120,7 +1120,7 @@ void computeInverseVoxToRas( const std::vector<std::vector<float>>& vox_to_ras,
   computeInverseMatrix( subTransform, inverseSubTransform ) ;
 
   // Getting translation
-  std::vector<float> translation( 3, 0 ) ;
+  std::array<float, 3> translation{0, 0, 0} ;
   for ( int i = 0 ; i < 3 ; i++ )
   {
 
@@ -1129,7 +1129,7 @@ void computeInverseVoxToRas( const std::vector<std::vector<float>>& vox_to_ras,
   }
 
   // Compute inverseSubTransform.dot( - traslation )
-  std::vector<float> translation2( 3, 0 ) ;
+  std::array<float, 3> translation2{0, 0, 0} ;
   for ( int i = 0 ; i < 3 ; i++ )
   {
 

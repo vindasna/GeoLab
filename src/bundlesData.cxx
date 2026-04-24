@@ -32,6 +32,14 @@
 #include "bundlesData.h"
 #include "ioWrapper.h"
 
+#include <limits>
+#include <Eigen/SVD>
+
+
+#include <algorithm>
+
+
+
 
 ////////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////// Constructors /////////////////////////////////
@@ -1357,7 +1365,7 @@ void BundlesData::resampleFiberEquidistant(
 
   outputFiber.resize( 3 * nbPointsToResample, 0 ) ;
 
-  std::vector<float> pointToTranslate( 3, 0 ) ;
+  std::array<float, 3> pointToTranslate{0, 0, 0} ;
   for ( int i = 0 ; i < 3 ; i++ )
   {
 
@@ -1376,9 +1384,9 @@ void BundlesData::resampleFiberEquidistant(
     while ( translationDistance < stepSize )
     {
 
-      std::vector<float> translationVector( 3, 0 ) ;
-      std::vector<float> point1( 3, 0 ) ;
-      std::vector<float> point2( 3, 0 ) ;
+      std::array<float, 3> translationVector{0, 0, 0} ;
+      std::array<float, 3> point1{0, 0, 0} ;
+      std::array<float, 3> point2{0, 0, 0} ;
 
       for ( int i = 0 ; i < 3 ; i++)
       {
@@ -1443,7 +1451,7 @@ void BundlesData::computeMedialPointFiberTractogram(
                           const std::vector<float>& tractogramFibers,
                           int fiberIndex,
                           int nbPoints,
-                          std::vector<float>& medialPointFiberTractogram ) const
+                          std::array<float, 3>& medialPointFiberTractogram ) const
 {
 
   int64_t offsetTractogram = nbPoints * 3 * fiberIndex ;
@@ -1481,7 +1489,7 @@ void BundlesData::computeMedialPointFiberTractogram(
 // -------------------------------------------------------------------------- //
 void BundlesData::computeMedialPointFiberTractogram(
                           int fiberIndex,
-                          std::vector<float>& medialPointFiberTractogram ) const
+                          std::array<float, 3>& medialPointFiberTractogram ) const
 {
 
   computeMedialPointFiberTractogram( this->matrixTracks, fiberIndex,
@@ -1493,7 +1501,7 @@ void BundlesData::computeMedialPointFiberTractogram(
 // -------------------------------------------------------------------------- //
 void BundlesData::computeMedialPointFiberTractogram(
                           const std::vector<float>& fiber,
-                          std::vector<float>& medialPointFiberTractogram ) const
+                          std::array<float, 3>& medialPointFiberTractogram ) const
 {
 
   int nbPoints = ( int )( fiber.size() / 3 ) ;
@@ -1509,7 +1517,7 @@ int BundlesData::computeMedialPointFiberWithDistance(
                           const std::vector<float>& tractogramFibers,
                           int fiberIndex,
                           int nbPoints,
-                          std::vector<float>& medialPointFiberTractogram ) const
+                          std::array<float, 3>& medialPointFiberTractogram ) const
 {
 
   int64_t offsetTractogram = 3 * nbPoints * fiberIndex ;
@@ -1538,7 +1546,7 @@ int BundlesData::computeMedialPointFiberWithDistance(
 
   }
 
-  std::vector<float> translationVector( 3 , 0 ) ;
+  std::array<float, 3> translationVector{0, 0, 0} ;
   for ( int i = 0 ; i < 3 ; i++ )
   {
 
@@ -1596,7 +1604,7 @@ int BundlesData::computeMedialPointFiberWithDistance(
 //----------------------------------------------------------------------------//
 int BundlesData::computeMedialPointFiberWithDistance(
                           int fiberIndex,
-                          std::vector<float>& medialPointFiberTractogram ) const
+                          std::array<float, 3>& medialPointFiberTractogram ) const
 {
 
   int point = computeMedialPointFiberWithDistance( this->matrixTracks,
@@ -1611,7 +1619,7 @@ int BundlesData::computeMedialPointFiberWithDistance(
 //----------------------------------------------------------------------------//
 int BundlesData::computeMedialPointFiberWithDistance(
                           const std::vector<float>& fiber,
-                          std::vector<float>& medialPointFiberTractogram ) const
+                          std::array<float, 3>& medialPointFiberTractogram ) const
 {
 
   int nbPoints = ( int )( fiber.size() / 3 ) ;
@@ -1631,7 +1639,7 @@ void BundlesData::computeGravityCenterFiber(
                                   const std::vector<float>& tractogramFibers,
                                   int fiberIndex,
                                   int nbPoints,
-                                  std::vector<float>& gravityCenterFiber ) const
+                                  std::array<float, 3>& gravityCenterFiber ) const
 {
 
   int64_t offsetTractogram = 3 * nbPoints * fiberIndex ;
@@ -1649,10 +1657,10 @@ void BundlesData::computeGravityCenterFiber(
 
   float step = dis / sampling ;
 
-  std::vector<float> pointLeft( 3, 0 ) ;
-  std::vector<float> pointRight( 3 , 0 ) ;
-  std::vector<float> pointStep( 3, 0 ) ;
-  std::vector<float> direction( 3, 0 ) ;
+  std::array<float, 3> pointLeft{};
+  std::array<float, 3> pointRight{};
+  std::array<float, 3> pointStep{};
+  std::array<float, 3> direction{};
 
   int pointLeftIndex = 0 ;
   int pointRightIndex = 1 ;
@@ -1791,7 +1799,7 @@ void BundlesData::computeGravityCenterFiber(
 // -------------------------------------------------------------------------- //
 void BundlesData::computeGravityCenterFiber(
                                   int fiberIndex,
-                                  std::vector<float>& gravityCenterFiber ) const
+                                  std::array<float, 3>& gravityCenterFiber ) const
 {
 
   computeGravityCenterFiber( this->matrixTracks,
@@ -1803,7 +1811,7 @@ void BundlesData::computeGravityCenterFiber(
 // -------------------------------------------------------------------------- //
 void BundlesData::computeGravityCenterFiber(
                                   const std::vector<float>& fiber,
-                                  std::vector<float>& gravityCenterFiber ) const
+                                  std::array<float, 3>& gravityCenterFiber ) const
 {
 
   int fiberIndex = 0 ;
@@ -1820,10 +1828,10 @@ void BundlesData::computeGravityCenterFiber(
 ////////////////////////////////////////////////////////////////////////////////
 void BundlesData::computeNormalVectorFiberTractogram(
                            const std::vector<float>& tractogramFibers,
-                           const std::vector<float>& medialPointFiberTractogram,
+                           const std::array<float, 3>& medialPointFiberTractogram,
                            int fiberIndex,
                            int nbPoints,
-                           std::vector<float>& normalVector ) const
+                           std::array<float, 3>& normalVector ) const
 {
 
 
@@ -1842,7 +1850,7 @@ void BundlesData::computeNormalVectorFiberTractogram(
   }
 
 	// calculate centroid
-	std::vector<float> centroid{ coord.row( 0 ).mean(),
+	std::array<float, 3> centroid{ coord.row( 0 ).mean(),
                                coord.row( 1 ).mean(),
                                coord.row( 2 ).mean() } ;
 
@@ -1855,7 +1863,7 @@ void BundlesData::computeNormalVectorFiberTractogram(
 	//  http://math.stackexchange.com/questions/99299/best-fitting-plane-given-a-set-of-points
 	auto svd = coord.jacobiSvd( Eigen::ComputeThinU | Eigen::ComputeThinV ) ;
 	// Eigen::Vector3 plane_normal = svd.matrixU().rightCols<1>() ;
-	std::vector<float> plane_normal{ svd.matrixU().rightCols<1>()[ 0 ],
+	std::array<float, 3> plane_normal{ svd.matrixU().rightCols<1>()[ 0 ],
                                    svd.matrixU().rightCols<1>()[ 1 ],
                                    svd.matrixU().rightCols<1>()[ 2 ] } ;
   normalVector[ 0 ] = plane_normal[ 0 ] ;
@@ -1866,47 +1874,15 @@ void BundlesData::computeNormalVectorFiberTractogram(
 
 
 }
-// void BundlesData::computeNormalVectorFiberTractogram(
-//                            const std::vector<float>& tractogramFibers,
-//                            const std::vector<float>& medialPointFiberTractogram,
-//                            int fiberIndex,
-//                            int nbPoints,
-//                            std::vector<float>& normalVector ) const
-// {
-//
-//   int64_t offset = 3 * nbPoints * fiberIndex ;
-//
-//   std::vector<float> vector1( 3, 0 ) ;
-//   std::vector<float> vector2( 3, 0 ) ;
-//
-//   for ( int i = 0 ; i < 3 ; i++ )
-//   {
-//
-//     vector1[ i ] = tractogramFibers[ 3 * 0 + i + offset ] -
-//                                                medialPointFiberTractogram[ i ] ;
-//     vector2[ i ] = tractogramFibers[ 3 * ( nbPoints - 1 ) + i + offset ] -
-//                                                medialPointFiberTractogram[ i ] ;
-//
-//   }
-//
-//   normalizeVector( vector1 ) ;
-//   normalizeVector( vector2 ) ;
-//
-//   crossProduct( vector1, vector2, normalVector ) ;
-//
-//   normalizeVector( normalVector ) ;
-//
-//
-// }
 
 // -------------------------------------------------------------------------- //
 void BundlesData::computeNormalVectorFiberTractogram(
                                         int fiberIndex,
-                                        std::vector<float>& normalVector ) const
+                                        std::array<float, 3>& normalVector ) const
 {
 
   int nbPoints = this->pointsPerTrack[ fiberIndex ];
-  std::vector<float> medialPointFiberTractogram( 3, 0 ) ;
+  std::array<float, 3> medialPointFiberTractogram{0, 0, 0} ;
   // this->computeMedialPointFiberTractogram( fiberIndex,
   //                                          medialPointFiberTractogram ) ;
   int medialPointIndex = computeMedialPointFiberWithDistance(
@@ -1924,12 +1900,12 @@ void BundlesData::computeNormalVectorFiberTractogram(
 // -------------------------------------------------------------------------- //
 void BundlesData::computeNormalVectorFiberTractogram(
                                         const std::vector<float>& fiber,
-                                        std::vector<float>& normalVector ) const
+                                        std::array<float, 3>& normalVector ) const
 {
 
   int nbPoints = ( int )( fiber.size() / 3 ) ;
 
-  std::vector<float> medialPointFiberTractogram( 3, 0 ) ;
+  std::array<float, 3> medialPointFiberTractogram{0, 0, 0} ;
   // computeMedialPointFiberTractogram( fiber, medialPointFiberTractogram ) ;
   int medialPointIndex = computeMedialPointFiberWithDistance(
                                                   fiber,
@@ -1948,22 +1924,22 @@ void BundlesData::computeNormalVectorFiberTractogram(
 ////////////////////////////////////////////////////////////////////////////////
 void BundlesData::computeDirectionVectorFiberTractogram(
                            const std::vector<float>& tractogramFibers,
-                           const std::vector<float>& medialPointFiberTractogram,
-                           const std::vector<float>& normalVector,
+                           const std::array<float, 3>& medialPointFiberTractogram,
+                           const std::array<float, 3>& normalVector,
                            int fiberIndex,
                            int nbPoints,
-                           std::vector<float>& directionVector ) const
+                           std::array<float, 3>& directionVector ) const
 {
 
 
   int64_t offsetTractogram = 3 * nbPoints * fiberIndex ;
 
-  std::vector<float> point1( 3, 0 ) ;
-  std::vector<float> point2( 3, 0 ) ;
+  std::array<float, 3> point1{0, 0, 0} ;
+  std::array<float, 3> point2{0, 0, 0} ;
 
-  std::vector<float> vector1( 3, 0 ) ;
-  std::vector<float> vector2( 3, 0 ) ;
-  std::vector<float> vector3( 3, 0 ) ;
+  std::array<float, 3> vector1{0, 0, 0} ;
+  std::array<float, 3> vector2{0, 0, 0} ;
+  std::array<float, 3> vector3{0, 0, 0} ;
 
 
   for ( int i = 0 ; i < 3 ; i++ )
@@ -2000,13 +1976,13 @@ void BundlesData::computeDirectionVectorFiberTractogram(
 // -------------------------------------------------------------------------- //
 void BundlesData::computeDirectionVectorFiberTractogram(
                                      int fiberIndex,
-                                     const std::vector<float>& normalVector,
-                                     std::vector<float>& directionVector ) const
+                                     const std::array<float, 3>& normalVector,
+                                     std::array<float, 3>& directionVector ) const
 {
 
   int nbPoints = this->pointsPerTrack[ 0 ] ;
 
-  std::vector<float> medialPointFiberTractogram( 3, 0 ) ;
+  std::array<float, 3> medialPointFiberTractogram{0, 0, 0} ;
   // this->computeMedialPointFiberTractogram( fiberIndex,
   //                                          medialPointFiberTractogram ) ;
   this->computeMedialPointFiberWithDistance( fiberIndex,
@@ -2025,14 +2001,14 @@ void BundlesData::computeDirectionVectorFiberTractogram(
 // -------------------------------------------------------------------------- //
 void BundlesData::computeDirectionVectorFiberTractogram(
                                      const std::vector<float>& fiber,
-                                     const std::vector<float>& normalVector,
-                                     std::vector<float>& directionVector ) const
+                                     const std::array<float, 3>& normalVector,
+                                     std::array<float, 3>& directionVector ) const
 {
 
   int nbPoints = ( int )( fiber.size() / 3 ) ;
   int fiberIndex = 0 ;
 
-  std::vector<float> medialPointFiberTractogram( 3, 0 ) ;
+  std::array<float, 3> medialPointFiberTractogram{0, 0, 0} ;
   // this->computeMedialPointFiberTractogram( fiber,
   //                                          medialPointFiberTractogram ) ;
   int medialPointIndex = computeMedialPointFiberWithDistance( fiber,
@@ -2052,8 +2028,8 @@ void BundlesData::computeDirectionVectorFiberTractogram(
 float BundlesData::computeMDADBetweenTwoFibers(
                               const std::vector<float>& tractogramFibers_1,
                               const std::vector<float>& tractogramFibers_2,
-                              const std::vector<float>& medialPointTractFiber_1,
-                              const std::vector<float>& medialPointTractFiber_2,
+                              const std::array<float, 3>& medialPointTractFiber_1,
+                              const std::array<float, 3>& medialPointTractFiber_2,
                               int fiberIndex_1,
                               int fiberIndex_2,
                               int nbPoints ) const
@@ -2072,7 +2048,7 @@ float BundlesData::computeMDADBetweenTwoFibers(
   float dMDA = 0 ;
 
   ///////// Computing translation from tract 1 fiber to tract 2 fiber //////////
-  std::vector<float> translation( 3, 0 ) ;
+  std::array<float, 3> translation{0, 0, 0} ;
 
   for ( int i = 0 ; i < 3 ; i++ )
   {
@@ -2151,98 +2127,6 @@ float BundlesData::computeMDADBetweenTwoFibers(
   return dMDA ;
 
 }
-// float BundlesData::computeMDADBetweenTwoFibers(
-//                               const std::vector<float>& tractogramFibers_1,
-//                               const std::vector<float>& tractogramFibers_2,
-//                               const std::vector<float>& medialPointTractFiber_1,
-//                               const std::vector<float>& medialPointTractFiber_2,
-//                               int fiberIndex_1,
-//                               int fiberIndex_2,
-//                               int nbPoints )
-// {
-//
-//   float dMDA = 0 ;
-//
-//   int64_t offsetTractogram_1 = fiberIndex_1 * nbPoints * 3 ;
-//   int64_t offsetTractogram_2 = fiberIndex_2 * nbPoints * 3 ;
-//
-//   ///////// Computing translation from tract 1 fiber to tract 2 fiber //////////
-//   std::vector<float> translation( 3, 0 ) ;
-//
-//   for ( int i = 0 ; i < 3 ; i++ )
-//   {
-//
-//     translation[ i ] = medialPointTractFiber_1[ i ] -
-//                                                   medialPointTractFiber_2[ i ] ;
-//
-//   }
-//
-//   float tmpDirectDistance = 0 ;
-//   float tmpFlippedDistance = 0 ;
-//
-//   for ( int i = 0 ; i < 3 ; i++ )
-//   {
-//
-//     tmpDirectDistance += pow( tractogramFibers_1[
-//                                 i + 3 * 0 + offsetTractogram_1 ] -
-//                                 ( tractogramFibers_2[ i + 3 * 0 +
-//                                 offsetTractogram_2 ] + translation[ i ] ), 2 ) ;
-//
-//     tmpFlippedDistance += pow( tractogramFibers_1[
-//                                 i + 3 * 0 + offsetTractogram_1 ] -
-//                                 ( tractogramFibers_2[ i + 3 * ( nbPoints - 1 ) +
-//                                 offsetTractogram_2 ] + translation[ i ] ), 2 ) ;
-//
-//   }
-//
-//   bool isDirectSens = true ;
-//   if ( tmpFlippedDistance < tmpDirectDistance )
-//   {
-//
-//     isDirectSens = false ;
-//
-//   }
-//
-//   // Computing MDA when distance
-//   dMDA = 0 ;
-//
-//   for ( int point = 0 ; point < nbPoints ; point++ )
-//   {
-//
-//     int k = point ;
-//     if ( !isDirectSens )
-//     {
-//
-//       k = nbPoints - point - 1 ;
-//
-//     }
-//
-//     float tmpMDA = 0 ;
-//
-//     for ( int i = 0 ; i < 3 ; i++ )
-//     {
-//
-//       tmpMDA += pow( tractogramFibers_1[ i + 3 * point +
-//                      offsetTractogram_1 ] - ( tractogramFibers_2[
-//                      i + 3 * k + offsetTractogram_2 ] + translation[ i ] ),
-//                                                                            2 ) ;
-//
-//     }
-//
-//     tmpMDA = sqrt( tmpMDA ) ;
-//
-//     if ( tmpMDA > dMDA )
-//     {
-//
-//       dMDA = tmpMDA ;
-//
-//     }
-//
-//   }
-//
-//   return dMDA ;
-//
-// }
 
 //----------------------------------------------------------------------------//
 float BundlesData::computeMDADBetweenTwoFibers(
@@ -2256,7 +2140,7 @@ float BundlesData::computeMDADBetweenTwoFibers(
   ///////////// Searching the medial point of tractogram 1st fiber /////////////
   int64_t offsetTractogram_1 = fiberIndex_1 * nbPoints * 3 ;
 
-  std::vector<float> medialPointTractFiber_1( 3, 0 ) ;
+  std::array<float, 3> medialPointTractFiber_1{0, 0, 0} ;
   computeMedialPointFiberWithDistance( tractogramFibers_1,
                                        fiberIndex_1,
                                        nbPoints,
@@ -2266,7 +2150,7 @@ float BundlesData::computeMDADBetweenTwoFibers(
   ///////////// Searching the medial point of tractogram 2nd fiber /////////////
   int64_t offsetTractogram_2 = fiberIndex_2 * nbPoints * 3 ;
 
-  std::vector<float> medialPointTractFiber_2( 3, 0 ) ;
+  std::array<float, 3> medialPointTractFiber_2{0, 0, 0} ;
   computeMedialPointFiberWithDistance( tractogramFibers_2,
                                        fiberIndex_2,
                                        nbPoints,
@@ -2396,8 +2280,8 @@ float BundlesData::computeMDADBetweenTwoFibersAfterAlignement(
 float BundlesData::computeMDFBetweenTwoFibers(
                               const std::vector<float>& tractogramFibers_1,
                               const std::vector<float>& tractogramFibers_2,
-                              const std::vector<float>& medialPointTractFiber_1,
-                              const std::vector<float>& medialPointTractFiber_2,
+                              const std::array<float, 3>& medialPointTractFiber_1,
+                              const std::array<float, 3>& medialPointTractFiber_2,
                               int fiberIndex_1,
                               int fiberIndex_2,
                               int nbPoints ) const
@@ -2417,7 +2301,7 @@ float BundlesData::computeMDFBetweenTwoFibers(
   float dMDF = 0 ;
 
   ///////// Computing translation from tract 1 fiber to tract 2 fiber //////////
-  std::vector<float> translation( 3, 0 ) ;
+  std::array<float, 3> translation{0, 0, 0} ;
 
   for ( int i = 0 ; i < 3 ; i++ )
   {
@@ -2488,100 +2372,6 @@ float BundlesData::computeMDFBetweenTwoFibers(
 
 }
 
-// float BundlesData::computeMDFBetweenTwoFibers(
-//                               const std::vector<float>& tractogramFibers_1,
-//                               const std::vector<float>& tractogramFibers_2,
-//                               const std::vector<float>& medialPointTractFiber_1,
-//                               const std::vector<float>& medialPointTractFiber_2,
-//                               int fiberIndex_1,
-//                               int fiberIndex_2,
-//                               int nbPoints )
-// {
-//
-//   float dMDF = 0 ;
-//
-//   int64_t offsetTractogram_1 = fiberIndex_1 * nbPoints * 3 ;
-//   int64_t offsetTractogram_2 = fiberIndex_2 * nbPoints * 3 ;
-//
-//   ///////// Computing translation from tract 1 fiber to tract 2 fiber //////////
-//   std::vector<float> translation( 3, 0 ) ;
-//
-//   for ( int i = 0 ; i < 3 ; i++ )
-//   {
-//
-//     translation[ i ] = medialPointTractFiber_1[ i ] -
-//                                                   medialPointTractFiber_2[ i ] ;
-//
-//   }
-//
-//   float tmpDirectDistance = 0 ;
-//   float tmpFlippedDistance = 0 ;
-//
-//   for ( int i = 0 ; i < 3 ; i++ )
-//   {
-//
-//     tmpDirectDistance += pow( tractogramFibers_1[
-//                                 i + 3 * 0 + offsetTractogram_1 ] -
-//                                 ( tractogramFibers_2[ i + 3 * 0 +
-//                                 offsetTractogram_2 ] + translation[ i ] ), 2 ) ;
-//
-//     tmpFlippedDistance += pow( tractogramFibers_1[
-//                                 i + 3 * 0 + offsetTractogram_1 ] -
-//                                 ( tractogramFibers_2[ i + 3 * ( nbPoints - 1 ) +
-//                                 offsetTractogram_2 ] + translation[ i ] ), 2 ) ;
-//
-//   }
-//
-//   bool isDirectSens = true ;
-//   if ( tmpFlippedDistance < tmpDirectDistance )
-//   {
-//
-//     isDirectSens = false ;
-//
-//   }
-//
-//   // Computing MDA when distance
-//   dMDF = 0 ;
-//
-//   for ( int point = 0 ; point < nbPoints ; point++ )
-//   {
-//
-//     int k = point ;
-//     if ( !isDirectSens )
-//     {
-//
-//       k = nbPoints - point - 1 ;
-//
-//     }
-//
-//     float tmpMDF = 0 ;
-//
-//     for ( int i = 0 ; i < 3 ; i++ )
-//     {
-//
-//       // tmpMDF += pow( tractogramFibers_1[ i + 3 * point +
-//       //                offsetTractogram_1 ] - ( tractogramFibers_2[
-//       //                i + 3 * k + offsetTractogram_2 ] + translation[ i ] ),
-//       //                                                                      2 ) ;
-//       tmpMDF += pow( tractogramFibers_1[ i + 3 * point +
-//                      offsetTractogram_1 ] -  tractogramFibers_2[
-//                                          i + 3 * k + offsetTractogram_2 ], 2 ) ;
-//
-//     }
-//
-//     tmpMDF = sqrt( tmpMDF ) ;
-//
-//     dMDF += tmpMDF ;
-//
-//   }
-//
-//   dMDF /= nbPoints ;
-//
-//   return dMDF ;
-//
-//
-// }
-
 //----------------------------------------------------------------------------//
 float BundlesData::computeMDFBetweenTwoFibers(
                               const std::vector<float>& tractogramFibers_1,
@@ -2594,7 +2384,7 @@ float BundlesData::computeMDFBetweenTwoFibers(
   ///////////// Searching the medial point of tractogram 1st fiber /////////////
   int64_t offsetTractogram_1 = fiberIndex_1 * nbPoints * 3 ;
 
-  std::vector<float> medialPointTractFiber_1( 3, 0 ) ;
+  std::array<float, 3> medialPointTractFiber_1{0, 0, 0} ;
   computeMedialPointFiberWithDistance( tractogramFibers_1,
                                        fiberIndex_1,
                                        nbPoints,
@@ -2604,7 +2394,7 @@ float BundlesData::computeMDFBetweenTwoFibers(
   ///////////// Searching the medial point of tractogram 2nd fiber /////////////
   int64_t offsetTractogram_2 = fiberIndex_2 * nbPoints * 3 ;
 
-  std::vector<float> medialPointTractFiber_2( 3, 0 ) ;
+  std::array<float, 3> medialPointTractFiber_2{0, 0, 0} ;
   computeMedialPointFiberWithDistance( tractogramFibers_2,
                                        fiberIndex_2,
                                        nbPoints,
@@ -2869,7 +2659,7 @@ void BundlesData::computeNumberAdjacentFibersBundle1toBundle2(
     int64_t offsetTractogram_1 = fiberIndex1 * nbPoints * 3 ;
 
     // Searching the medial point of tractogram 1 fiber
-    std::vector<float> medialPointTractFiber1( 3, 0 ) ;
+    std::array<float, 3> medialPointTractFiber1{0, 0, 0} ;
     bundle1.computeMedialPointFiberWithDistance( fiberIndex1,
                                                  medialPointTractFiber1 ) ;
 
@@ -2884,13 +2674,13 @@ void BundlesData::computeNumberAdjacentFibersBundle1toBundle2(
       int64_t offsetTractogram_2 = fiberIndex2 * nbPoints * 3 ;
 
       // Searching the medial point of tractogram 2 fiber
-      std::vector<float> medialPointTractFiber2( 3, 0 ) ;
+      std::array<float, 3> medialPointTractFiber2{0, 0, 0} ;
       bundle2.computeMedialPointFiberWithDistance( fiberIndex2,
                                                    medialPointTractFiber2 ) ;
 
 
       // Computing translation from tract 1 fiber to tract 2 fiber
-      std::vector<float> translation( 3, 0 ) ;
+      std::array<float, 3> translation{0, 0, 0} ;
 
       for ( int i = 0 ; i < 3 ; i++ )
       {
@@ -3020,7 +2810,7 @@ void BundlesData::computeNumberAdjacentFibersBundle1toBundle2(
     int64_t offsetTractogram_1 = fiberIndex1 * nbPoints * 3 ;
 
     // Searching the medial point of tractogram 1 fiber
-    std::vector<float> medialPointTractFiber1( 3, 0 ) ;
+    std::array<float, 3> medialPointTractFiber1{0, 0, 0} ;
     this->computeMedialPointFiberWithDistance( bundle1, fiberIndex1, nbPoints,
                                                  medialPointTractFiber1 ) ;
 
@@ -3035,13 +2825,13 @@ void BundlesData::computeNumberAdjacentFibersBundle1toBundle2(
       int64_t offsetTractogram_2 = fiberIndex2 * nbPoints * 3 ;
 
       // Searching the medial point of tractogram 2 fiber
-      std::vector<float> medialPointTractFiber2( 3, 0 ) ;
+      std::array<float, 3> medialPointTractFiber2{0, 0, 0} ;
       this->computeMedialPointFiberWithDistance( bundle2, fiberIndex2, nbPoints,
                                                    medialPointTractFiber2 ) ;
 
 
       // Computing translation from tract 1 fiber to tract 2 fiber
-      std::vector<float> translation( 3, 0 ) ;
+      std::array<float, 3> translation{0, 0, 0} ;
 
       for ( int i = 0 ; i < 3 ; i++ )
       {
@@ -3242,8 +3032,8 @@ float BundlesData::bundlesAdjacency( const BundlesData& bundle1,
 
 ////////////////////////////////////////////////////////////////////////////////
 float BundlesData::computeAngleBetweenVectors(
-                                       const std::vector<float>& vector1,
-                                       const std::vector<float>& vector2 ) const
+                                       const std::array<float, 3>& vector1,
+                                       const std::array<float, 3>& vector2 ) const
 {
 
   float dotProduct = scalarProduct( vector1, vector2 ) ;
@@ -3259,13 +3049,13 @@ float BundlesData::computeAngleBetweenVectors(
 
 ////////////////////////////////////////////////////////////////////////////////
 float BundlesData::computeAngleBetweenPlanes(
-                                       const std::vector<float>& vector1,
-                                       const std::vector<float>& vector2 ) const
+                                       const std::array<float, 3>& vector1,
+                                       const std::array<float, 3>& vector2 ) const
 {
 
   float vector1DotVector2 = scalarProduct( vector1, vector2 ) ;
 
-  std::vector<float> correctedVector2( 3, 0 ) ;
+  std::array<float, 3> correctedVector2{0, 0, 0} ;
   if ( vector1DotVector2 < 0 )
   {
 
@@ -3373,8 +3163,8 @@ float BundlesData::computeAngleBetweenPlanes(
 
 ////////////////////////////////////////////////////////////////////////////////
 float BundlesData::computeAngleBetweenDirections(
-                                       const std::vector<float>& vector1,
-                                       const std::vector<float>& vector2 ) const
+                                       const std::array<float, 3>& vector1,
+                                       const std::array<float, 3>& vector2 ) const
 {
 
   float angle = computeAngleBetweenVectors( vector1, vector2 ) ;
@@ -3438,9 +3228,9 @@ float BundlesData::computeAngleBetweenDirections(
 
 ////////////////////////////////////////////////////////////////////////////////
 void BundlesData::projectVectorToPlane(
-                                     const std::vector<float>& normalToPlane,
-                                     const std::vector<float>& inputVector,
-                                     std::vector<float>& projectedVector ) const
+                                     const std::array<float, 3>& normalToPlane,
+                                     const std::array<float, 3>& inputVector,
+                                     std::array<float, 3>& projectedVector ) const
 {
 
   // Normalisation of normal vector
@@ -3448,7 +3238,7 @@ void BundlesData::projectVectorToPlane(
                                  pow( normalToPlane[ 1 ], 2 ) +
                                  pow( normalToPlane[ 2 ], 2 ) ) ;
 
-  std::vector<float> unitNormalVector( 3, 0 ) ;
+  std::array<float, 3> unitNormalVector{0, 0, 0} ;
   if ( normalVectorNorm == 1 )
   {
 
@@ -3490,16 +3280,16 @@ void BundlesData::projectVectorToPlane(
 
 ////////////////////////////////////////////////////////////////////////////////
 void BundlesData::computeRotationMatrixFromVectorAndAngle(
-                                      const std::vector<float>& vector,
+                                      const std::array<float, 3>& vector,
                                       float angle, // in rad
-                                      std::vector<float>& rotationMatrix ) const
+                                      std::array<float, 9>& rotationMatrix ) const
 {
 
   /////////////////////// Normalisation of normal vector ///////////////////////
   float vectorNorm = sqrt( pow( vector[ 0 ], 2 ) + pow( vector[ 1 ], 2 ) +
                                                        pow( vector[ 2 ], 2 ) ) ;
 
-  std::vector<float> unitVector( 3, 0 ) ;
+  std::array<float, 3> unitVector{0, 0, 0} ;
   if ( vectorNorm == 1 )
   {
 
@@ -3569,9 +3359,9 @@ void BundlesData::computeRotationMatrixFromVectorAndAngle(
 
 ////////////////////////////////////////////////////////////////////////////////
 void BundlesData::applyRotationMatrixToVector(
-                                       const std::vector<float>& vector,
-                                       const std::vector<float>& rotationMatrix,
-                                       std::vector<float>& rotatedVector ) const
+                                       const std::array<float, 3>& vector,
+                                       const std::array<float, 9>& rotationMatrix,
+                                       std::array<float, 3>& rotatedVector ) const
 {
 
   for ( int i = 0 ; i < 3 ; i++ )
@@ -3588,8 +3378,8 @@ void BundlesData::applyRotationMatrixToVector(
 ////////////////////////////////////////////////////////////////////////////////
 void BundlesData::applyRotationMatrixToFiber(
                                      const std::vector<float>& fiber,
-                                     const std::vector<float>& rotationMatrix,
-                                     const std::vector<float>& medialPointFiber,
+                                     const std::array<float, 9>& rotationMatrix,
+                                     const std::array<float, 3>& medialPointFiber,
                                      int nbPoints,
                                      std::vector<float>& rotatedFiber ) const
 {
@@ -3597,7 +3387,7 @@ void BundlesData::applyRotationMatrixToFiber(
   for ( int point = 0 ; point < nbPoints ; point++ )
   {
 
-    std::vector<float> pointFiber( 3, 0 ) ;
+    std::array<float, 3> pointFiber{0, 0, 0} ;
     for ( int i = 0 ; i < 3 ; i++ )
     {
 
@@ -3605,7 +3395,7 @@ void BundlesData::applyRotationMatrixToFiber(
 
     }
 
-    std::vector<float> rotatedPointFiber( 3, 0 ) ;
+    std::array<float, 3> rotatedPointFiber{0, 0, 0} ;
     applyRotationMatrixToVector( pointFiber,
                                  rotationMatrix,
                                  rotatedPointFiber ) ;
@@ -3625,13 +3415,13 @@ void BundlesData::applyRotationMatrixToFiber(
 // -------------------------------------------------------------------------- //
 void BundlesData::applyRotationMatrixToFiber(
                                        const BundlesData& inputBundlesData,
-                                       const std::vector<float>& rotationMatrix,
+                                       const std::array<float, 9>& rotationMatrix,
                                        int fiberIndex,
                                        int nbPoints,
                                        std::vector<float>& rotatedFiber ) const
 {
 
-  std::vector<float> medialPointFiber( 3, 0 ) ;
+  std::array<float, 3> medialPointFiber{0, 0, 0} ;
   // inputBundlesData.computeMedialPointFiberTractogram(
   //                                               fiberIndex, medialPointFiber ) ;
   inputBundlesData.computeMedialPointFiberWithDistance(
@@ -3641,7 +3431,7 @@ void BundlesData::applyRotationMatrixToFiber(
   for ( int point = 0 ; point < nbPoints ; point++ )
   {
 
-    std::vector<float> pointFiber( 3, 0 ) ;
+    std::array<float, 3> pointFiber{0, 0, 0} ;
     for ( int i = 0 ; i < 3 ; i++ )
     {
 
@@ -3650,7 +3440,7 @@ void BundlesData::applyRotationMatrixToFiber(
 
     }
 
-    std::vector<float> rotatedPointFiber( 3, 0 ) ;
+    std::array<float, 3> rotatedPointFiber{0, 0, 0} ;
     applyRotationMatrixToVector( pointFiber,
                                  rotationMatrix,
                                  rotatedPointFiber ) ;
@@ -3670,13 +3460,13 @@ void BundlesData::applyRotationMatrixToFiber(
 // -------------------------------------------------------------------------- //
 void BundlesData::applyRotationMatrixToFiber(
                                      const std::vector<float>& tractogramFibers,
-                                     const std::vector<float>& rotationMatrix,
+                                     const std::array<float, 9>& rotationMatrix,
                                      int fiberIndex,
                                      int nbPoints,
                                      std::vector<float>& rotatedFiber ) const
 {
 
-  std::vector<float> medialPointFiber( 3, 0 ) ;
+  std::array<float, 3> medialPointFiber{0, 0, 0} ;
   // computeMedialPointFiberTractogram( tractogramFibers,
   //                                    fiberIndex,
   //                                    nbPoints,
@@ -3690,7 +3480,7 @@ void BundlesData::applyRotationMatrixToFiber(
   for ( int point = 0 ; point < nbPoints ; point++ )
   {
 
-    std::vector<float> pointFiber( 3, 0 ) ;
+    std::array<float, 3> pointFiber{0, 0, 0} ;
     for ( int i = 0 ; i < 3 ; i++ )
     {
 
@@ -3699,7 +3489,7 @@ void BundlesData::applyRotationMatrixToFiber(
 
     }
 
-    std::vector<float> rotatedPointFiber( 3, 0 ) ;
+    std::array<float, 3> rotatedPointFiber{0, 0, 0} ;
     applyRotationMatrixToVector( pointFiber,
                                  rotationMatrix,
                                  rotatedPointFiber ) ;
@@ -3718,7 +3508,7 @@ void BundlesData::applyRotationMatrixToFiber(
 
 // -------------------------------------------------------------------------- //
 void BundlesData::applyRotationMatrixToFiber(
-                                       const std::vector<float>& rotationMatrix,
+                                       const std::array<float, 9>& rotationMatrix,
                                        int fiberIndex,
                                        int nbPoints,
                                        std::vector<float>& rotatedFiber ) const
@@ -3733,19 +3523,19 @@ void BundlesData::applyRotationMatrixToFiber(
 // -------------------------------------------------------------------------- //
 void BundlesData::applyRotationMatrixToFiber(
                                        const std::vector<float>& fiber,
-                                       const std::vector<float>& rotationMatrix,
+                                       const std::array<float, 9>& rotationMatrix,
                                        int nbPoints,
                                        std::vector<float>& rotatedFiber ) const
 {
 
-  std::vector<float> medialPointFiber( 3, 0 ) ;
+  std::array<float, 3> medialPointFiber{0, 0, 0} ;
   // computeMedialPointFiberTractogram( fiber, medialPointFiber ) ;
   computeMedialPointFiberWithDistance( fiber, medialPointFiber ) ;
 
   for ( int point = 0 ; point < nbPoints ; point++ )
   {
 
-    std::vector<float> pointFiber( 3, 0 ) ;
+    std::array<float, 3> pointFiber{0, 0, 0} ;
     for ( int i = 0 ; i < 3 ; i++ )
     {
 
@@ -3753,7 +3543,7 @@ void BundlesData::applyRotationMatrixToFiber(
 
     }
 
-    std::vector<float> rotatedPointFiber( 3, 0 ) ;
+    std::array<float, 3> rotatedPointFiber{0, 0, 0} ;
     applyRotationMatrixToVector( pointFiber,
                                  rotationMatrix,
                                  rotatedPointFiber ) ;
@@ -3772,18 +3562,18 @@ void BundlesData::applyRotationMatrixToFiber(
 
 ////////////////////////////////////////////////////////////////////////////////
 void BundlesData::putFibersInSamePlane(
-                               const std::vector<float>& normalVector1,
-                               const std::vector<float>& normalVector2,
+                               const std::array<float, 3>& normalVector1,
+                               const std::array<float, 3>& normalVector2,
                                const std::vector<float>& tractogramFibers2,
                                int fiberIndex2,
                                int nbPoints,
                                std::vector<float>& fiber2ToPlane1,
-                               std::vector<float>& newNormalVectorFiber2 ) const
+                               std::array<float, 3>& newNormalVectorFiber2 ) const
 {
 
   float vector1DotVector2 = scalarProduct( normalVector1, normalVector2 ) ;
 
-  std::vector<float> correctedNormalVector2( 3, 0 ) ;
+  std::array<float, 3> correctedNormalVector2{0, 0, 0} ;
   if ( vector1DotVector2 < 0 )
   {
 
@@ -3842,10 +3632,10 @@ void BundlesData::putFibersInSamePlane(
 
   angleNormaleVector *= M_PI / 180 ;
 
-  std::vector<float> rotationAxisSamePlane( 3, 0 );
+  std::array<float, 3> rotationAxisSamePlane{0, 0, 0};
   crossProduct( normalVector1, correctedNormalVector2, rotationAxisSamePlane ) ;
 
-  std::vector<float> rotationMatrixSamePlane( 9, 0 ) ;
+  std::array<float, 9> rotationMatrixSamePlane{0} ;
   computeRotationMatrixFromVectorAndAngle( rotationAxisSamePlane,
                                            angleNormaleVector,
                                            rotationMatrixSamePlane ) ;
@@ -3867,7 +3657,7 @@ void BundlesData::putFibersInSamePlane(
   if ( residualAnglePlanes > 1 )
   {
 
-    std::vector<float> rotationMatrixSamePlaneTmp( 9, 0 );
+    std::array<float, 9> rotationMatrixSamePlaneTmp{0};
     computeRotationMatrixFromVectorAndAngle( rotationAxisSamePlane,
                                              - angleNormaleVector,
                                              rotationMatrixSamePlaneTmp ) ;
@@ -3878,7 +3668,7 @@ void BundlesData::putFibersInSamePlane(
                                 nbPoints,
                                 fiber2ToPlane1Tmp ) ;
 
-    std::vector<float> newNormalVectorTmp( 3, 0 ) ;
+    std::array<float, 3> newNormalVectorTmp{0, 0, 0} ;
 
     applyRotationMatrixToVector( correctedNormalVector2,
                                  rotationMatrixSamePlaneTmp,
@@ -3917,12 +3707,12 @@ void BundlesData::putFibersInSamePlane(
 
 // -------------------------------------------------------------------------- //
 void BundlesData::putFibersInSamePlane(
-                               const std::vector<float>& normalVector1,
-                               const std::vector<float>& normalVector2,
+                               const std::array<float, 3>& normalVector1,
+                               const std::array<float, 3>& normalVector2,
                                const std::vector<float>& fiber2,
                                int nbPoints,
                                std::vector<float>& fiber2ToPlane1,
-                               std::vector<float>& newNormalVectorFiber2 ) const
+                               std::array<float, 3>& newNormalVectorFiber2 ) const
 {
 
   int fiberIndex2 = 0 ;
@@ -3939,15 +3729,15 @@ void BundlesData::putFibersInSamePlane(
 
 ////////////////////////////////////////////////////////////////////////////////
 void BundlesData::putFiberInPlaneXY(
-                                const std::vector<float>& normalVector,
+                                const std::array<float, 3>& normalVector,
                                 const std::vector<float>& tractogramFibers,
                                 int fiberIndex,
                                 int nbPoints,
                                 std::vector<float>& fiberToPlaneXY,
-                                std::vector<float>& newNormalVectorFiber ) const
+                                std::array<float, 3>& newNormalVectorFiber ) const
 {
 
-  std::vector<float> zAxisVector{ 0, 0, 1 } ;
+  std::array<float, 3> zAxisVector{ 0, 0, 1 } ;
 
   putFibersInSamePlane( zAxisVector,
                         normalVector,
@@ -3961,14 +3751,14 @@ void BundlesData::putFiberInPlaneXY(
 
 //----------------------------------------------------------------------------//
 void BundlesData::putFiberInPlaneXY(
-                                const std::vector<float>& normalVector,
+                                const std::array<float, 3>& normalVector,
                                 const std::vector<float>& fiber,
                                 int nbPoints,
                                 std::vector<float>& fiberToPlaneXY,
-                                std::vector<float>& newNormalVectorFiber ) const
+                                std::array<float, 3>& newNormalVectorFiber ) const
 {
 
-  std::vector<float> zAxisVector{ 0, 0, 1 } ;
+  std::array<float, 3> zAxisVector{ 0, 0, 1 } ;
 
   putFibersInSamePlane( zAxisVector,
                         normalVector,
@@ -3981,15 +3771,15 @@ void BundlesData::putFiberInPlaneXY(
 
 ////////////////////////////////////////////////////////////////////////////////
 void BundlesData::putFibersInSameDirection(
-                                  const std::vector<float>& normalVector1,
-                                  const std::vector<float>& normalVector2,
-                                  const std::vector<float>& directionVector1,
+                                  const std::array<float, 3>& normalVector1,
+                                  const std::array<float, 3>& normalVector2,
+                                  const std::array<float, 3>& directionVector1,
                                   const std::vector<float>& fiber2,
                                   int nbPoints,
                                   std::vector<float>& fiber2ToDirection1 ) const
 {
 
-  std::vector<float> medialPointFiber2( 3, 0 ) ;
+  std::array<float, 3> medialPointFiber2{};
   // computeMedialPointFiberTractogram( fiber2, medialPointFiber2 ) ;
   computeMedialPointFiberWithDistance( fiber2, medialPointFiber2 ) ;
 
@@ -4005,7 +3795,7 @@ void BundlesData::putFibersInSameDirection(
   //
   // }
 
-  std::vector<float> projectedDirectionVectorFiber2( 3, 0 ) ;
+  std::array<float, 3> projectedDirectionVectorFiber2{};
   computeDirectionVectorFiberTractogram( fiber2,
                                          normalVector2,
                                          projectedDirectionVectorFiber2 ) ;
@@ -4024,11 +3814,11 @@ void BundlesData::putFibersInSameDirection(
 
   angleDirectionVectors *= M_PI / 180 ;
 
-  std::vector<float> rotationAxisSameDirection( 3, 0 ) ;
+  std::array<float, 3> rotationAxisSameDirection{};
   crossProduct( directionVector1, projectedDirectionVectorFiber2,
                                                    rotationAxisSameDirection ) ;
 
-  std::vector<float> rotationMatrixSameDirection( 9, 0 ) ;
+  std::array<float, 9> rotationMatrixSameDirection{0} ;
   computeRotationMatrixFromVectorAndAngle( rotationAxisSameDirection,
                                            angleDirectionVectors,
                                            rotationMatrixSameDirection) ;
@@ -4039,7 +3829,7 @@ void BundlesData::putFibersInSameDirection(
                               fiber2ToDirection1 ) ;
 
 
-  std::vector<float> newDirectionVector( 3, 0 ) ;
+  std::array<float, 3> newDirectionVector{};
   computeDirectionVectorFiberTractogram( fiber2ToDirection1, normalVector1,
                                                           newDirectionVector ) ;
 
@@ -4050,7 +3840,7 @@ void BundlesData::putFibersInSameDirection(
   if ( residualAngleDirections > 3 )
   {
 
-    std::vector<float> rotationMatrixSameDirectionTmp( 9, 0 ) ;
+    std::array<float, 9> rotationMatrixSameDirectionTmp{0} ;
     computeRotationMatrixFromVectorAndAngle( rotationAxisSameDirection,
                                              - angleDirectionVectors,
                                              rotationMatrixSameDirectionTmp ) ;
@@ -4060,7 +3850,7 @@ void BundlesData::putFibersInSameDirection(
                                 nbPoints,
                                 fiber2ToDirection1Tmp ) ;
 
-    std::vector<float> newDirectionVectorTmp( 3, 0 ) ;
+    std::array<float, 3> newDirectionVectorTmp{};
     computeDirectionVectorFiberTractogram( fiber2ToDirection1Tmp,
                                         normalVector1, newDirectionVectorTmp ) ;
 
@@ -4085,19 +3875,19 @@ void BundlesData::putFibersInSameDirection(
 ////////////////////////////////////////////////////////////////////////////////
 void BundlesData::registerFiber(
                                const std::vector<float>& tractogramFibers2,
-                               const std::vector<float>& normalVector1,
-                               const std::vector<float>& normalVector2,
-                               const std::vector<float>& directionVector1,
-                               const std::vector<float>& medialPointFiber1,
-                               const std::vector<float>& medialPointFiber2,
+                               const std::array<float, 3>& normalVector1,
+                               const std::array<float, 3>& normalVector2,
+                               const std::array<float, 3>& directionVector1,
+                               const std::array<float, 3>& medialPointFiber1,
+                               const std::array<float, 3>& medialPointFiber2,
                                int fiberIndexTractogram2,
                                int nbPoints,
                                std::vector<float>& fiber2Tofiber1,
-                               std::vector<float>& newNormalVectorFiber2 ) const
+                               std::array<float, 3>& newNormalVectorFiber2 ) const
 {
 
   // Compute translation
-  std::vector<float> translation( 3, 0 ) ;
+  std::array<float, 3> translation{0, 0, 0} ;
   for ( int i = 0 ; i < 3 ; i++ )
   {
 
@@ -4132,7 +3922,7 @@ void BundlesData::registerFiber(
 
 
   // Computing roation matrix to put fiber 2 in same plane as fiber 1
-  std::vector<float> normalVectorSameDirectionTranslated2( 3, 0 ) ;
+  std::array<float, 3> normalVectorSameDirectionTranslated2{0, 0, 0} ;
   computeNormalVectorFiberTractogram( sameDirectionTranslatedFiber2,
                                       normalVectorSameDirectionTranslated2 ) ;
   putFibersInSamePlane( normalVector1,
@@ -4141,24 +3931,6 @@ void BundlesData::registerFiber(
                         nbPoints,
                         fiber2Tofiber1,
                         newNormalVectorFiber2 ) ;
-
-  // // Computing residual angles
-  // std::vector<float> directionMovedFiber2( 3, 0 ) ;
-  // computeDirectionVectorFiberTractogram( fiber2Tofiber1,
-  //                                        newNormalVectorFiber2,
-  //                                        directionMovedFiber2 ) ;
-  //
-  // float angleNormaleVectorMoved = computeAngleBetweenPlanes(
-  //                                                    normalVector1,
-  //                                                    newNormalVectorFiber2 ) ;
-  //
-  // float angleDirectionVectorsMoved = computeAngleBetweenDirections(
-  //                                                     directionVector1,
-  //                                                     directionMovedFiber2 ) ;
-  //
-  // std::cout << "Residual angles : \n   Angle between planes : "
-  //           << angleNormaleVectorMoved << "\n   Angle between direction : "
-  //           << angleDirectionVectorsMoved << std::endl ;
 
 
 }
@@ -4171,34 +3943,31 @@ void BundlesData::registerFiber(
                                int fiberIndexTractogram2,
                                int nbPoints,
                                std::vector<float>& fiber2Tofiber1,
-                               std::vector<float>& newNormalVectorFiber2 ) const
+                               std::array<float, 3>& newNormalVectorFiber2 ) const
 {
 
-  std::vector<float> medialPointFiber1( 3, 0 ) ;
+  std::array<float, 3> medialPointFiber1{0, 0, 0} ;
   // computeMedialPointFiberTractogram( tractogramFibers1, fiberIndexTractogram1,
   //                                                nbPoints, medialPointFiber1 ) ;
   int medialPoint1Index = computeMedialPointFiberWithDistance( tractogramFibers1,
                           fiberIndexTractogram1, nbPoints, medialPointFiber1 ) ;
-  std::vector<float> normalVector1( 3, 0 ) ;
+  std::array<float, 3> normalVector1{0, 0, 0} ;
   computeNormalVectorFiberTractogram( tractogramFibers1, medialPointFiber1,
                               fiberIndexTractogram1, nbPoints, normalVector1 ) ;
-  // computeNormalVectorFiberTractogram( tractogramFibers1, medialPointFiber1,
-  //          medialPoint1Index, fiberIndexTractogram1, nbPoints, normalVector1 ) ;
-  std::vector<float> directionVector1( 3, 0 ) ;
+                              
+  std::array<float, 3> directionVector1{0, 0, 0} ;
   computeDirectionVectorFiberTractogram( tractogramFibers1, medialPointFiber1,
                                          normalVector1, fiberIndexTractogram1,
                                                   nbPoints, directionVector1 ) ;
 
-  std::vector<float> medialPointFiber2( 3, 0 ) ;
+  std::array<float, 3> medialPointFiber2{0, 0, 0} ;
   // computeMedialPointFiberTractogram( tractogramFibers2, fiberIndexTractogram2,
   //                                                nbPoints, medialPointFiber2 ) ;
   int medialPoint2Index = computeMedialPointFiberWithDistance( tractogramFibers2,
                           fiberIndexTractogram2, nbPoints, medialPointFiber2 ) ;
-  std::vector<float> normalVector2( 3, 0 ) ;
+  std::array<float, 3> normalVector2{0, 0, 0} ;
   computeNormalVectorFiberTractogram( tractogramFibers2, medialPointFiber2,
                               fiberIndexTractogram2, nbPoints, normalVector2 ) ;
-  // computeNormalVectorFiberTractogram( tractogramFibers2, medialPointFiber2,
-  //          medialPoint2Index, fiberIndexTractogram2, nbPoints, normalVector2 ) ;
 
 
   registerFiber( tractogramFibers2,
@@ -4217,14 +3986,14 @@ void BundlesData::registerFiber(
 // -------------------------------------------------------------------------- //
 void BundlesData::registerFiber(
                                const std::vector<float>& fiber2,
-                               const std::vector<float>& normalVector1,
-                               const std::vector<float>& normalVector2,
-                               const std::vector<float>& directionVector1,
-                               const std::vector<float>& medialPointFiber1,
-                               const std::vector<float>& medialPointFiber2,
+                               const std::array<float, 3>& normalVector1,
+                               const std::array<float, 3>& normalVector2,
+                               const std::array<float, 3>& directionVector1,
+                               const std::array<float, 3>& medialPointFiber1,
+                               const std::array<float, 3>& medialPointFiber2,
                                int nbPoints,
                                std::vector<float>& fiber2Tofiber1,
-                               std::vector<float>& newNormalVectorFiber2 ) const
+                               std::array<float, 3>& newNormalVectorFiber2 ) const
 {
 
   int fiberIndexTractogram2 = 0 ;
@@ -4248,22 +4017,22 @@ void BundlesData::registerFiber(
                                const std::vector<float>& fiber2,
                                int nbPoints,
                                std::vector<float>& fiber2Tofiber1,
-                               std::vector<float>& newNormalVectorFiber2 ) const
+                               std::array<float, 3>& newNormalVectorFiber2 ) const
 {
 
-  std::vector<float> medialPointFiber1( 3, 0 ) ;
+  std::array<float, 3> medialPointFiber1{0, 0, 0} ;
   // computeMedialPointFiberTractogram( fiber1, medialPointFiber1 ) ;
   computeMedialPointFiberWithDistance( fiber1, medialPointFiber1 ) ;
-  std::vector<float> normalVector1( 3, 0 ) ;
+  std::array<float, 3> normalVector1{0, 0, 0} ;
   computeNormalVectorFiberTractogram( fiber1, normalVector1 ) ;
-  std::vector<float> directionVector1( 3, 0 ) ;
+  std::array<float, 3> directionVector1{0, 0, 0} ;
   computeDirectionVectorFiberTractogram( fiber1, normalVector1,
                                                             directionVector1 ) ;
 
-  std::vector<float> medialPointFiber2( 3, 0 ) ;
+  std::array<float, 3> medialPointFiber2{0, 0, 0} ;
   // computeMedialPointFiberTractogram( fiber2, medialPointFiber2 ) ;
   computeMedialPointFiberWithDistance( fiber2, medialPointFiber2 ) ;
-  std::vector<float> normalVector2( 3, 0 ) ;
+  std::array<float, 3> normalVector2{0, 0, 0} ;
   computeNormalVectorFiberTractogram( fiber2, normalVector2 ) ;
 
   registerFiber( fiber2,
@@ -4282,17 +4051,17 @@ void BundlesData::registerFiber(
 ////////////////////////////////////////////////////////////////////////////////
 void BundlesData::registerFiberToPlaneXYAndDirectionX(
                                const std::vector<float>& tractogramFibers,
-                               const std::vector<float>& normalVector,
-                               const std::vector<float>& medialPointFiber,
+                               const std::array<float, 3>& normalVector,
+                               const std::array<float, 3>& medialPointFiber,
                                int fiberIndexTractogram,
                                int nbPoints,
                                std::vector<float>& fiberToPlaneXYAndDirectionX,
-                               std::vector<float>& newNormalVectorFiber ) const
+                               std::array<float, 3>& newNormalVectorFiber ) const
 {
 
-  std::vector<float> xAxisVector{ 1, 0, 0 } ;
-  std::vector<float> zAxisVector{ 0, 0, 1 } ;
-  std::vector<float> origin{ 0, 0, 0 } ;
+  std::array<float, 3> xAxisVector{ 1, 0, 0 } ;
+  std::array<float, 3> zAxisVector{ 0, 0, 1 } ;
+  std::array<float, 3> origin{ 0, 0, 0 } ;
 
   registerFiber( tractogramFibers,
                  zAxisVector,
@@ -4310,11 +4079,11 @@ void BundlesData::registerFiberToPlaneXYAndDirectionX(
 // -------------------------------------------------------------------------- //
 void BundlesData::registerFiberToPlaneXYAndDirectionX(
                                const std::vector<float>& fiber,
-                               const std::vector<float>& normalVector,
-                               const std::vector<float>& medialPointFiber,
+                               const std::array<float, 3>& normalVector,
+                               const std::array<float, 3>& medialPointFiber,
                                int nbPoints,
                                std::vector<float>& fiberToPlaneXYAndDirectionX,
-                               std::vector<float>& newNormalVectorFiber ) const
+                               std::array<float, 3>& newNormalVectorFiber ) const
 {
 
   int fiberIndexTractogram = 0 ;
@@ -4361,17 +4130,17 @@ void BundlesData::getFiberWithVectors(
                                     std::vector<float>& fiberWithVectors ) const
 {
 
-  std::vector<float> medialPointReferenceFiber( 3, 0 ) ;
+  std::array<float, 3> medialPointReferenceFiber{0, 0, 0} ;
   // computeMedialPointFiberTractogram( referenceFiber,
   //                                                  medialPointReferenceFiber ) ;
   computeMedialPointFiberWithDistance( referenceFiber,
                                                    medialPointReferenceFiber ) ;
 
-  std::vector<float> medialPointFiber( 3, 0 ) ;
+  std::array<float, 3> medialPointFiber{0, 0, 0} ;
   // computeMedialPointFiberTractogram( fiber, medialPointFiber ) ;
   computeMedialPointFiberWithDistance( fiber, medialPointFiber ) ;
 
-  std::vector<float> translation( 3, 0 ) ;
+  std::array<float, 3> translation{0, 0, 0} ;
   for ( int i = 0 ; i < 3 ; i++ )
   {
 
@@ -4393,10 +4162,10 @@ void BundlesData::getFiberWithVectors(
   }
 
 
-  std::vector<float> normalVector( 3, 0 ) ;
+  std::array<float, 3> normalVector{0, 0, 0} ;
   computeNormalVectorFiberTractogram( fiber, normalVector ) ;
 
-  std::vector<float> directionVector( 3, 0 ) ;
+  std::array<float, 3> directionVector{0, 0, 0} ;
   computeDirectionVectorFiberTractogram( fiber, normalVector,
                                                              directionVector ) ;
 
@@ -4471,9 +4240,9 @@ void BundlesData::getMatrixAndVectorForLeastSquares(
 ////////////////////////////////////////////////////////////////////////////////
 
 ////////////////////////////////////////////////////////////////////////////////
-void BundlesData::vectorFromPoints( const std::vector<float>& point1,
-                                    const std::vector<float>& point2,
-                                    std::vector<float>& vector ) const
+void BundlesData::vectorFromPoints( const std::array<float, 3>& point1,
+                                    const std::array<float, 3>& point2,
+                                    std::array<float, 3>& vector ) const
 {
 
   for ( int i = 0 ; i < 3 ; i++ )
@@ -4486,8 +4255,8 @@ void BundlesData::vectorFromPoints( const std::vector<float>& point1,
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-float BundlesData::scalarProduct( const std::vector<float>& vector1,
-                                  const std::vector<float>& vector2 ) const
+float BundlesData::scalarProduct( const std::array<float, 3>& vector1,
+                                  const std::array<float, 3>& vector2 ) const
 {
 
   float result = 0 ;
@@ -4503,7 +4272,7 @@ float BundlesData::scalarProduct( const std::vector<float>& vector1,
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-float BundlesData::normVector( const std::vector<float>& vector ) const
+float BundlesData::normVector( const std::array<float, 3>& vector ) const
 {
 
   float norm = scalarProduct( vector, vector ) ;
@@ -4514,7 +4283,7 @@ float BundlesData::normVector( const std::vector<float>& vector ) const
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-void BundlesData::normalizeVector( std::vector<float>& vector ) const
+void BundlesData::normalizeVector( std::array<float, 3>& vector ) const
 {
 
   float norm = normVector( vector ) ;
@@ -4530,10 +4299,10 @@ void BundlesData::normalizeVector( std::vector<float>& vector ) const
 
 ////////////////////////////////////////////////////////////////////////////////
 void BundlesData::translatePoint(
-                             const std::vector<float>& point,
-                             const std::vector<float>& unitaryTranslationVector,
+                             const std::array<float, 3>& point,
+                             const std::array<float, 3>& unitaryTranslationVector,
                              float translationDistance,
-                             std::vector<float>& translatedPoint ) const
+                             std::array<float, 3>& translatedPoint ) const
 {
 
   for ( int i = 0 ; i < 3 ; i++ )
@@ -4547,9 +4316,9 @@ void BundlesData::translatePoint(
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-void BundlesData::translatePoint( const std::vector<float>& point,
-                                  const std::vector<float>& translationVector,
-                                  std::vector<float>& translatedPoint ) const
+void BundlesData::translatePoint( const std::array<float, 3>& point,
+                                  const std::array<float, 3>& translationVector,
+                                  std::array<float, 3>& translatedPoint ) const
 {
 
   translatePoint( point, translationVector, 1.0, translatedPoint ) ;
@@ -4557,9 +4326,9 @@ void BundlesData::translatePoint( const std::vector<float>& point,
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-void BundlesData::crossProduct( const std::vector<float>& vector1,
-                                const std::vector<float>& vector2,
-                                std::vector<float>& result ) const
+void BundlesData::crossProduct( const std::array<float, 3>& vector1,
+                                const std::array<float, 3>& vector2,
+                                std::array<float, 3>& result ) const
 {
 
   result[ 0 ] = vector1[ 1 ] * vector2[ 2 ] - vector1[ 2 ] * vector2[ 1 ] ;
@@ -4952,4 +4721,655 @@ void BundlesData::resampleFiberWithNan( std::vector<float>& tractogramFibers,
 
   }
 
+}
+
+// ############################################################################# //
+// #################################### SLR #################################### //
+// ############################################################################# //
+
+// Helper structure to store matching results
+struct BundleMatch {
+    int targetIdx;
+    bool isFlipped;
+    float distance;
+};
+
+// 1. Minimum Direct-Flip (MDF) Distance with Flip Detection
+BundleMatch computeMDF_ICP(const std::vector<float>& trackA, int offsetA, 
+                           const std::vector<float>& trackB, int offsetB, 
+                           int nbPoints, int targetIndex)
+{
+    float distDirect = 0.0f;
+    float distFlipped = 0.0f;
+
+    for (int i = 0; i < nbPoints; ++i)
+    {
+        // Direct distance
+        float dx = trackA[offsetA + 3 * i + 0] - trackB[offsetB + 3 * i + 0];
+        float dy = trackA[offsetA + 3 * i + 1] - trackB[offsetB + 3 * i + 1];
+        float dz = trackA[offsetA + 3 * i + 2] - trackB[offsetB + 3 * i + 2];
+        distDirect += std::sqrt(dx*dx + dy*dy + dz*dz);
+
+        // Flipped distance
+        int flippedIdx = nbPoints - 1 - i;
+        float fdx = trackA[offsetA + 3 * i + 0] - trackB[offsetB + 3 * flippedIdx + 0];
+        float fdy = trackA[offsetA + 3 * i + 1] - trackB[offsetB + 3 * flippedIdx + 1];
+        float fdz = trackA[offsetA + 3 * i + 2] - trackB[offsetB + 3 * flippedIdx + 2];
+        distFlipped += std::sqrt(fdx*fdx + fdy*fdy + fdz*fdz);
+    }
+
+    distDirect /= nbPoints;
+    distFlipped /= nbPoints;
+
+    BundleMatch match;
+    match.targetIdx = targetIndex;
+    if (distDirect <= distFlipped) {
+        match.distance = distDirect;
+        match.isFlipped = false;
+    } else {
+        match.distance = distFlipped;
+        match.isFlipped = true;
+    }
+    return match;
+}
+
+// 2. Kabsch Algorithm using Eigen (Computes Optimal Affine/Rigid Matrix)
+Eigen::Matrix4f computeKabsch(const Eigen::MatrixXf& moving_pts, const Eigen::MatrixXf& target_pts) 
+{
+    // Compute centroids
+    Eigen::Vector3f centroid_m = moving_pts.rowwise().mean();
+    Eigen::Vector3f centroid_t = target_pts.rowwise().mean();
+
+    // Center the points
+    Eigen::MatrixXf centered_m = moving_pts.colwise() - centroid_m;
+    Eigen::MatrixXf centered_t = target_pts.colwise() - centroid_t;
+
+    // Covariance matrix: $H = A B^T$
+    Eigen::Matrix3f H = centered_m * centered_t.transpose();
+
+    // SVD: $H = U \Sigma V^T$
+    Eigen::JacobiSVD<Eigen::Matrix3f> svd(H, Eigen::ComputeFullU | Eigen::ComputeFullV);
+    Eigen::Matrix3f U = svd.matrixU();
+    Eigen::Matrix3f V = svd.matrixV();
+
+    // Rotation: $R = V U^T$
+    Eigen::Matrix3f R = V * U.transpose();
+
+    // Correct for reflection (if determinant is negative)
+    if (R.determinant() < 0) {
+        V.col(2) *= -1.0f;
+        R = V * U.transpose();
+    }
+
+    // Translation: $t = c_t - R c_m$
+    Eigen::Vector3f t = centroid_t - R * centroid_m;
+
+    // Build 4x4 Transformation Matrix
+    Eigen::Matrix4f T = Eigen::Matrix4f::Identity();
+    T.block<3,3>(0,0) = R;
+    T.block<3,1>(0,3) = t;
+
+    return T;
+}
+
+// 3. Main SLR Registration Method
+void BundlesData::registerTo(const BundlesData& target, int iterations)
+{
+    if (this->curves_count == 0 || target.curves_count == 0) return;
+
+    int numPoints = this->pointsPerTrack[0];
+    
+    // Ensure all streamlines have the same number of points for valid MDF calculation
+    for(int pts : this->pointsPerTrack) {
+        if (pts != numPoints) throw std::invalid_argument("All moving streamlines must have the same number of points.");
+    }
+    for(int pts : target.pointsPerTrack) {
+        if (pts != numPoints) throw std::invalid_argument("All target streamlines must have the same number of points.");
+    }
+
+    int numMoving = this->curves_count;
+    int numTarget = target.curves_count;
+
+    // Precompute offsets to avoid repetitive array math
+    std::vector<int> offsetMoving(numMoving, 0);
+    for (int i = 1; i < numMoving; ++i) offsetMoving[i] = offsetMoving[i-1] + 3 * this->pointsPerTrack[i-1];
+
+    std::vector<int> offsetTarget(numTarget, 0);
+    for (int i = 1; i < numTarget; ++i) offsetTarget[i] = offsetTarget[i-1] + 3 * target.pointsPerTrack[i-1];
+
+    for (int iter = 0; iter < iterations; ++iter)
+    {
+        std::vector<BundleMatch> matches(numMoving);
+
+        // --- STEP A: MATCHING (OpenMP Parallelized) ---
+        #pragma omp parallel for schedule(dynamic)
+        for (int i = 0; i < numMoving; ++i)
+        {
+            BundleMatch bestMatch;
+            bestMatch.distance = std::numeric_limits<float>::max();
+
+            for (int j = 0; j < numTarget; ++j)
+            {
+                BundleMatch currentMatch = computeMDF_ICP(
+                    this->matrixTracks, offsetMoving[i],
+                    target.matrixTracks, offsetTarget[j],
+                    numPoints, j
+                );
+
+                if (currentMatch.distance < bestMatch.distance) {
+                    bestMatch = currentMatch;
+                }
+            }
+            matches[i] = bestMatch;
+        }
+
+        // --- STEP B: BUILD MATRICES FOR KABSCH (OpenMP Parallelized) ---
+        Eigen::MatrixXf moving_pts(3, numMoving * numPoints);
+        Eigen::MatrixXf target_pts(3, numMoving * numPoints);
+
+        #pragma omp parallel for
+        for (int i = 0; i < numMoving; ++i) 
+        {
+            int tgtIdx = matches[i].targetIdx;
+            bool flipped = matches[i].isFlipped;
+
+            for (int p = 0; p < numPoints; ++p) 
+            {
+                int colIdx = i * numPoints + p;
+
+                // Moving points
+                moving_pts(0, colIdx) = this->matrixTracks[offsetMoving[i] + 3*p + 0];
+                moving_pts(1, colIdx) = this->matrixTracks[offsetMoving[i] + 3*p + 1];
+                moving_pts(2, colIdx) = this->matrixTracks[offsetMoving[i] + 3*p + 2];
+
+                // Target points (reverse order if the streamline match was flipped)
+                int tgtP = flipped ? (numPoints - 1 - p) : p;
+                target_pts(0, colIdx) = target.matrixTracks[offsetTarget[tgtIdx] + 3*tgtP + 0];
+                target_pts(1, colIdx) = target.matrixTracks[offsetTarget[tgtIdx] + 3*tgtP + 1];
+                target_pts(2, colIdx) = target.matrixTracks[offsetTarget[tgtIdx] + 3*tgtP + 2];
+            }
+        }
+
+        // --- STEP C: COMPUTE TRANSFORMATION ---
+        Eigen::Matrix4f T = computeKabsch(moving_pts, target_pts);
+
+        // --- STEP D: APPLY TRANSFORMATION (OpenMP Parallelized) ---
+        int64_t totalPoints = this->matrixTracks.size() / 3;
+        
+        #pragma omp parallel for
+        for (int64_t i = 0; i < totalPoints; ++i) 
+        {
+            Eigen::Vector4f pt(this->matrixTracks[3*i], this->matrixTracks[3*i+1], this->matrixTracks[3*i+2], 1.0f);
+            Eigen::Vector4f transformed = T * pt;
+            
+            this->matrixTracks[3*i + 0] = transformed.x();
+            this->matrixTracks[3*i + 1] = transformed.y();
+            this->matrixTracks[3*i + 2] = transformed.z();
+        }
+        
+        std::cout << "Iteration " << iter + 1 << " complete." << std::endl;
+    }
+}
+
+
+
+// Computes optimal Affine transformation (Rotation, Translation, Scaling, Shearing)
+Eigen::Matrix4f computeAffine(const Eigen::MatrixXf& moving_pts, const Eigen::MatrixXf& target_pts) 
+{
+    int numPoints = moving_pts.cols();
+
+    // Convert moving points to homogeneous coordinates (4 x N) by adding a row of 1s
+    Eigen::MatrixXf P_moving_homog(4, numPoints);
+    P_moving_homog.topRows(3) = moving_pts;
+    P_moving_homog.row(3).setOnes();
+
+    // We want to find a 3x4 matrix M such that: M * P_moving_homog ≈ target_pts
+    // To solve using Eigen's linear solvers, we transpose: P_moving_homog^T * M^T = target_pts^T
+    // Solve for M^T using QR decomposition for numerical stability
+    Eigen::MatrixXf M_T = P_moving_homog.transpose().colPivHouseholderQr().solve(target_pts.transpose());
+    
+    // Transpose back to get our 3x4 Affine matrix M
+    Eigen::MatrixXf M = M_T.transpose();
+
+    // Build the final 4x4 Transformation Matrix
+    Eigen::Matrix4f T = Eigen::Matrix4f::Identity();
+    T.block<3,4>(0,0) = M;
+
+    return T;
+}
+
+
+// ############################################################################# //
+// ########################### QuickBundles Parallel ########################### //
+// ############################################################################# //
+
+
+
+// Structure to represent a QuickBundles Cluster
+
+
+// Returns {distance, is_flipped}
+std::pair<float, bool> computeMDF_QB(const std::vector<float>& trackA, int offsetA, 
+                                     const std::vector<float>& trackB, int offsetB, 
+                                     int nbPoints)
+{
+    float distDirect = 0.0f;
+    float distFlipped = 0.0f;
+
+    for (int i = 0; i < nbPoints; ++i)
+    {
+        // Direct
+        float dx = trackA[offsetA + 3 * i + 0] - trackB[offsetB + 3 * i + 0];
+        float dy = trackA[offsetA + 3 * i + 1] - trackB[offsetB + 3 * i + 1];
+        float dz = trackA[offsetA + 3 * i + 2] - trackB[offsetB + 3 * i + 2];
+        distDirect += std::sqrt(dx*dx + dy*dy + dz*dz);
+
+        // Flipped
+        int flippedIdx = nbPoints - 1 - i;
+        float fdx = trackA[offsetA + 3 * i + 0] - trackB[offsetB + 3 * flippedIdx + 0];
+        float fdy = trackA[offsetA + 3 * i + 1] - trackB[offsetB + 3 * flippedIdx + 1];
+        float fdz = trackA[offsetA + 3 * i + 2] - trackB[offsetB + 3 * flippedIdx + 2];
+        distFlipped += std::sqrt(fdx*fdx + fdy*fdy + fdz*fdz);
+    }
+
+    distDirect /= nbPoints;
+    distFlipped /= nbPoints;
+
+    if (distDirect <= distFlipped) {
+        return {distDirect, false};
+    } else {
+        return {distFlipped, true};
+    }
+}
+
+
+void updateCentroid(Cluster& cluster, const std::vector<float>& track, int offset, int nbPoints, bool isFlipped)
+{
+    float n = static_cast<float>(cluster.count);
+    
+    for (int i = 0; i < nbPoints; ++i)
+    {
+        int trackIdx = isFlipped ? (nbPoints - 1 - i) : i;
+        
+        for (int d = 0; d < 3; ++d) {
+            float currentVal = cluster.centroid[3 * i + d];
+            float newVal = track[offset + 3 * trackIdx + d];
+            
+            // Incremental average: C_new = (C_old * N + incoming) / (N + 1)
+            cluster.centroid[3 * i + d] = (currentVal * n + newVal) / (n + 1.0f);
+        }
+    }
+    cluster.count++;
+}
+
+
+std::vector<Cluster> BundlesData::computeQuickBundles(float distance_threshold)
+{
+    if (this->curves_count == 0) return {};
+
+    int numPoints = this->pointsPerTrack[0];
+    int numCurves = this->curves_count;
+
+    // Precompute offsets for speed
+    std::vector<int> offsets(numCurves, 0);
+    for (int i = 1; i < numCurves; ++i) {
+        offsets[i] = offsets[i-1] + 3 * this->pointsPerTrack[i-1];
+    }
+
+    std::vector<Cluster> global_clusters;
+
+    for (int i = 0; i < numCurves; ++i)
+    {
+        float minDist = std::numeric_limits<float>::max();
+        int bestClusterIdx = -1;
+        bool bestIsFlipped = false;
+
+        // Find closest global cluster
+        for (size_t c = 0; c < global_clusters.size(); ++c)
+        {
+            auto [dist, isFlipped] = computeMDF_QB(
+                this->matrixTracks, offsets[i],
+                global_clusters[c].centroid, 0, // offset is 0 for centroid
+                numPoints
+            );
+
+            if (dist < minDist) {
+                minDist = dist;
+                bestClusterIdx = c;
+                bestIsFlipped = isFlipped;
+            }
+        }
+
+        // Update existing or create new cluster
+        if (minDist <= distance_threshold && bestClusterIdx != -1)
+        {
+            updateCentroid(global_clusters[bestClusterIdx], this->matrixTracks, offsets[i], numPoints, bestIsFlipped);
+            global_clusters[bestClusterIdx].indices.push_back(i);
+        }
+        else
+        {
+            Cluster newCluster;
+            newCluster.centroid.assign(
+                this->matrixTracks.begin() + offsets[i], 
+                this->matrixTracks.begin() + offsets[i] + 3 * numPoints
+            );
+            newCluster.count = 1;
+            newCluster.indices.push_back(i);
+            global_clusters.push_back(newCluster);
+        }
+    }
+
+    return global_clusters;
+}
+
+
+
+
+// ############################################################################# //
+// ################# Fast registration using QuickBundles + SLR ################ //
+// ############################################################################# //
+
+
+
+
+// Helper: Resamples a single streamline to exactly N equidistant points
+std::vector<float> resampleStreamline(const std::vector<float>& track, int offset, int origPoints, int targetPoints)
+{
+    std::vector<float> resampled(targetPoints * 3, 0.0f);
+    if (origPoints <= 1) return resampled; // Edge case: degenerate streamline
+
+    // 1. Calculate cumulative distances
+    std::vector<float> cumDist(origPoints, 0.0f);
+    float totalLength = 0.0f;
+    for (int i = 1; i < origPoints; ++i) {
+        float dx = track[offset + 3*i + 0] - track[offset + 3*(i-1) + 0];
+        float dy = track[offset + 3*i + 1] - track[offset + 3*(i-1) + 1];
+        float dz = track[offset + 3*i + 2] - track[offset + 3*(i-1) + 2];
+        float dist = std::sqrt(dx*dx + dy*dy + dz*dz);
+        totalLength += dist;
+        cumDist[i] = totalLength;
+    }
+
+    // 2. Interpolate new points
+    float step = totalLength / (targetPoints - 1);
+    
+    // First point is always exactly the same
+    resampled[0] = track[offset + 0];
+    resampled[1] = track[offset + 1];
+    resampled[2] = track[offset + 2];
+
+    int origIdx = 1;
+    for (int i = 1; i < targetPoints - 1; ++i) {
+        float targetDist = i * step;
+        
+        while (origIdx < origPoints && cumDist[origIdx] < targetDist) {
+            origIdx++;
+        }
+        
+        float d1 = cumDist[origIdx - 1];
+        float d2 = cumDist[origIdx];
+        float t = (targetDist - d1) / (d2 - d1); // Interpolation factor
+
+        for (int d = 0; d < 3; ++d) {
+            float p1 = track[offset + 3*(origIdx-1) + d];
+            float p2 = track[offset + 3*origIdx + d];
+            resampled[3*i + d] = p1 + t * (p2 - p1);
+        }
+    }
+
+    // Last point is exactly the same
+    resampled[3*(targetPoints-1) + 0] = track[offset + 3*(origPoints-1) + 0];
+    resampled[3*(targetPoints-1) + 1] = track[offset + 3*(origPoints-1) + 1];
+    resampled[3*(targetPoints-1) + 2] = track[offset + 3*(origPoints-1) + 2];
+
+    return resampled;
+}
+
+// Resamples the entire tractogram in parallel
+void BundlesData::resampleAll(int targetPoints)
+{
+    int numCurves = this->curves_count;
+    std::vector<int> offsets(numCurves, 0);
+    for (int i = 1; i < numCurves; ++i) {
+        offsets[i] = offsets[i-1] + 3 * this->pointsPerTrack[i-1];
+    }
+
+    std::vector<float> newMatrixTracks(numCurves * targetPoints * 3);
+
+    #pragma omp parallel for schedule(dynamic)
+    for (int i = 0; i < numCurves; ++i) {
+        std::vector<float> resampled = resampleStreamline(this->matrixTracks, offsets[i], this->pointsPerTrack[i], targetPoints);
+        for (int p = 0; p < targetPoints * 3; ++p) {
+            newMatrixTracks[i * targetPoints * 3 + p] = resampled[p];
+        }
+    }
+
+    // Update class properties
+    this->matrixTracks = std::move(newMatrixTracks);
+    this->pointsPerTrack.assign(numCurves, targetPoints);
+}
+
+
+
+
+
+Eigen::Matrix4f BundlesData::registerFast(BundlesData& target, 
+                                          TransformType regType, 
+                                          float qbThreshold, 
+                                          int iterations, 
+                                          float outlierRejectionPct,
+                                          BundlesData* outOriginalMovingCentroids,
+                                          BundlesData* outMovingCentroids,
+                                          BundlesData* outTargetCentroids)
+{
+    const int N_POINTS = 15;
+
+    // --- STEP 1: Create Copies & Resample ---
+    std::cout << "Resampling tractograms to " << N_POINTS << " points..." << std::endl;
+    BundlesData movingCopy = *this;       
+    BundlesData targetCopy = target;
+    
+    movingCopy.resampleAll(N_POINTS);
+    targetCopy.resampleAll(N_POINTS);
+
+    // --- STEP 2: Compute QuickBundles Centroids ---
+    std::cout << "Computing QuickBundles clusters (Threshold: " << qbThreshold << "mm)..." << std::endl;
+    std::vector<Cluster> movingClusters = movingCopy.computeQuickBundles(qbThreshold);
+    std::vector<Cluster> targetClusters = targetCopy.computeQuickBundles(qbThreshold);
+
+    int numMovingCentroids = movingClusters.size();
+    int numTargetCentroids = targetClusters.size();
+
+    std::cout << "Reduced moving tractogram to " << numMovingCentroids << " centroids." << std::endl;
+    std::cout << "Reduced target tractogram to " << numTargetCentroids << " centroids." << std::endl;
+
+    if (numMovingCentroids == 0 || numTargetCentroids == 0) {
+        std::cerr << "Warning: Clustering resulted in 0 centroids. Aborting registration." << std::endl;
+        return Eigen::Matrix4f::Identity(); 
+    }
+
+    // Determine how many matches to keep based on the outlier rejection percentage
+    outlierRejectionPct = std::max(0.0f, std::min(0.99f, outlierRejectionPct));
+    int numKeep = static_cast<int>(numMovingCentroids * (1.0f - outlierRejectionPct));
+    if (numKeep < 1) numKeep = 1; // Safeguard
+
+    // Flatten centroid coordinates for OpenMP compatibility
+    std::vector<float> movingCentroidsFlat(numMovingCentroids * N_POINTS * 3);
+    for(int i = 0; i < numMovingCentroids; ++i) {
+        std::copy(movingClusters[i].centroid.begin(), movingClusters[i].centroid.end(), movingCentroidsFlat.begin() + i * N_POINTS * 3);
+    }
+
+    std::vector<float> targetCentroidsFlat(numTargetCentroids * N_POINTS * 3);
+    for(int i = 0; i < numTargetCentroids; ++i) {
+        std::copy(targetClusters[i].centroid.begin(), targetClusters[i].centroid.end(), targetCentroidsFlat.begin() + i * N_POINTS * 3);
+    }
+
+    // Save copy of ORIGINAL moving centroids BEFORE CoM and ICP loop
+    std::vector<float> originalMovingCentroidsFlat = movingCentroidsFlat;
+
+    // --- STEP 2.5: Initial Center of Mass (CoM) Alignment ---
+    Eigen::Vector3f moving_CoM = Eigen::Vector3f::Zero();
+    Eigen::Vector3f target_CoM = Eigen::Vector3f::Zero();
+
+    int totalMovingPoints = numMovingCentroids * N_POINTS;
+    int totalTargetPoints = numTargetCentroids * N_POINTS;
+
+    for (int i = 0; i < totalMovingPoints; ++i) {
+        moving_CoM.x() += movingCentroidsFlat[3 * i + 0];
+        moving_CoM.y() += movingCentroidsFlat[3 * i + 1];
+        moving_CoM.z() += movingCentroidsFlat[3 * i + 2];
+    }
+    moving_CoM /= static_cast<float>(totalMovingPoints);
+
+    for (int i = 0; i < totalTargetPoints; ++i) {
+        target_CoM.x() += targetCentroidsFlat[3 * i + 0];
+        target_CoM.y() += targetCentroidsFlat[3 * i + 1];
+        target_CoM.z() += targetCentroidsFlat[3 * i + 2];
+    }
+    target_CoM /= static_cast<float>(totalTargetPoints);
+
+    Eigen::Vector3f translation_CoM = target_CoM - moving_CoM;
+    std::cout << "Applying initial CoM translation: [" 
+              << translation_CoM.x() << ", " 
+              << translation_CoM.y() << ", " 
+              << translation_CoM.z() << "]" << std::endl;
+
+    // Track our final cumulative transformation matrix (Initialized with CoM shift)
+    Eigen::Matrix4f AccumulatedTransform = Eigen::Matrix4f::Identity();
+    AccumulatedTransform.block<3,1>(0,3) = translation_CoM;
+
+    // Apply the initial CoM translation to our moving centroids BEFORE starting ICP
+    #pragma omp parallel for
+    for (int i = 0; i < totalMovingPoints; ++i) {
+        movingCentroidsFlat[3 * i + 0] += translation_CoM.x();
+        movingCentroidsFlat[3 * i + 1] += translation_CoM.y();
+        movingCentroidsFlat[3 * i + 2] += translation_CoM.z();
+    }
+
+
+    std::string typeStr = (regType == TransformType::RIGID) ? "Rigid" : "Affine";
+    std::cout << "Starting " << typeStr << " ICP registration (keeping top " 
+              << (1.0f - outlierRejectionPct) * 100 << "% of matches)..." << std::endl;
+    
+    // --- STEP 3: Centroid-Based ICP Loop ---
+    for (int iter = 0; iter < iterations; ++iter)
+    {
+        std::vector<BundleMatch> matches(numMovingCentroids);
+
+        // 3A. Matching (OpenMP Parallelized)
+        #pragma omp parallel for schedule(dynamic)
+        for (int i = 0; i < numMovingCentroids; ++i)
+        {
+            BundleMatch bestMatch;
+            bestMatch.distance = std::numeric_limits<float>::max();
+
+            for (int j = 0; j < numTargetCentroids; ++j)
+            {
+                BundleMatch currentMatch = computeMDF_ICP(
+                    movingCentroidsFlat, i * N_POINTS * 3,
+                    targetCentroidsFlat, j * N_POINTS * 3,
+                    N_POINTS, j
+                );
+
+                if (currentMatch.distance < bestMatch.distance) {
+                    bestMatch = currentMatch;
+                }
+            }
+            matches[i] = bestMatch;
+        }
+
+        // 3B. Sort matches by distance for Outlier Rejection
+        std::vector<int> sortedIndices(numMovingCentroids);
+        std::iota(sortedIndices.begin(), sortedIndices.end(), 0);
+        std::sort(sortedIndices.begin(), sortedIndices.end(), [&matches](int a, int b) {
+            return matches[a].distance < matches[b].distance;
+        });
+
+        // 3C. Build Matrices from Best Matches
+        Eigen::MatrixXf P_moving(3, numKeep * N_POINTS);
+        Eigen::MatrixXf P_target(3, numKeep * N_POINTS);
+
+        #pragma omp parallel for
+        for (int k = 0; k < numKeep; ++k) 
+        {
+            int originalIdx = sortedIndices[k]; 
+            int tgtIdx = matches[originalIdx].targetIdx;
+            bool flipped = matches[originalIdx].isFlipped;
+
+            for (int p = 0; p < N_POINTS; ++p) 
+            {
+                int colIdx = k * N_POINTS + p;
+
+                P_moving(0, colIdx) = movingCentroidsFlat[originalIdx * N_POINTS * 3 + 3*p + 0];
+                P_moving(1, colIdx) = movingCentroidsFlat[originalIdx * N_POINTS * 3 + 3*p + 1];
+                P_moving(2, colIdx) = movingCentroidsFlat[originalIdx * N_POINTS * 3 + 3*p + 2];
+
+                int tgtP = flipped ? (N_POINTS - 1 - p) : p;
+                P_target(0, colIdx) = targetCentroidsFlat[tgtIdx * N_POINTS * 3 + 3*tgtP + 0];
+                P_target(1, colIdx) = targetCentroidsFlat[tgtIdx * N_POINTS * 3 + 3*tgtP + 1];
+                P_target(2, colIdx) = targetCentroidsFlat[tgtIdx * N_POINTS * 3 + 3*tgtP + 2];
+            }
+        }
+
+        // 3D. Compute Transform
+        Eigen::Matrix4f T_iter;
+        if (regType == TransformType::RIGID) {
+            T_iter = computeKabsch(P_moving, P_target);
+        } else {
+            T_iter = computeAffine(P_moving, P_target);
+        }
+
+        AccumulatedTransform = T_iter * AccumulatedTransform;
+
+        // 3E. Apply Transform to Moving Centroids for the next iteration
+        #pragma omp parallel for
+        for (int i = 0; i < numMovingCentroids * N_POINTS; ++i) 
+        {
+            Eigen::Vector4f pt(movingCentroidsFlat[3*i], movingCentroidsFlat[3*i+1], movingCentroidsFlat[3*i+2], 1.0f);
+            Eigen::Vector4f transformed = T_iter * pt;
+            
+            movingCentroidsFlat[3*i + 0] = transformed.x();
+            movingCentroidsFlat[3*i + 1] = transformed.y();
+            movingCentroidsFlat[3*i + 2] = transformed.z();
+        }
+    }
+
+    // --- STEP 4: Apply Final Transformation to the ORIGINAL Data ---
+    std::cout << "Registration complete. Applying final transform to original tractogram..." << std::endl;
+    int64_t totalOriginalPoints = this->matrixTracks.size() / 3;
+    
+    #pragma omp parallel for
+    for (int64_t i = 0; i < totalOriginalPoints; ++i) 
+    {
+        Eigen::Vector4f pt(this->matrixTracks[3*i], this->matrixTracks[3*i+1], this->matrixTracks[3*i+2], 1.0f);
+        Eigen::Vector4f transformed = AccumulatedTransform * pt;
+        
+        this->matrixTracks[3*i + 0] = transformed.x();
+        this->matrixTracks[3*i + 1] = transformed.y();
+        this->matrixTracks[3*i + 2] = transformed.z();
+    }
+
+    // --- STEP 5: Export Centroids (Optional) ---
+    if (outOriginalMovingCentroids != nullptr)
+    {
+        outOriginalMovingCentroids->curves_count = numMovingCentroids;
+        outOriginalMovingCentroids->pointsPerTrack.assign(numMovingCentroids, N_POINTS);
+        outOriginalMovingCentroids->matrixTracks = originalMovingCentroidsFlat; 
+    }
+
+    if (outMovingCentroids != nullptr)
+    {
+        outMovingCentroids->curves_count = numMovingCentroids;
+        outMovingCentroids->pointsPerTrack.assign(numMovingCentroids, N_POINTS);
+        outMovingCentroids->matrixTracks = movingCentroidsFlat; 
+    }
+
+    if (outTargetCentroids != nullptr)
+    {
+        outTargetCentroids->curves_count = numTargetCentroids;
+        outTargetCentroids->pointsPerTrack.assign(numTargetCentroids, N_POINTS);
+        outTargetCentroids->matrixTracks = targetCentroidsFlat; 
+    }
+
+    return AccumulatedTransform;
 }

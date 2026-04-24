@@ -1,0 +1,2 @@
+/usr/bin/ar qc ../lib/libAtlasBundles.a CMakeFiles/AtlasBundles.dir/AtlasBundles.cxx.o
+/usr/bin/ranlib ../lib/libAtlasBundles.a

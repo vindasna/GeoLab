@@ -229,9 +229,9 @@ int main( int argc, char* argv[] )
   BundlesMinf outputBundleInfo( inputBundleInfo ) ;
   outputBundleInfo.curves_count = 2 * nbCurves ;
 
-  std::vector<float> medialPointReferenceFiber( 3, 0 ) ;
-  std::vector<float> normalVectorReference{ 0, 0, 1 } ;
-  std::vector<float> directionVectorReference{ 1, 0, 0 } ;
+  std::array<float, 3> medialPointReferenceFiber{0, 0, 0} ;
+  std::array<float, 3> normalVectorReference{ 0, 0, 1 } ;
+  std::array<float, 3> directionVectorReference{ 1, 0, 0 } ;
 
   for ( int fiber = 0 ; fiber < nbCurves ; fiber++ )
   {
@@ -240,15 +240,15 @@ int main( int argc, char* argv[] )
     inputBundlesData.getFiberFromTractogram( inputBundlesData.matrixTracks,
                                              fiber, nbPoints, movingFiber ) ;
 
-    std::vector<float> normalVectorMoving( 3, 0 ) ;
+    std::array<float, 3> normalVectorMoving{0, 0, 0} ;
     inputBundlesData.computeNormalVectorFiberTractogram( movingFiber,
                                                          normalVectorMoving ) ;
 
-    std::vector<float> medialPointMoving( 3, 0 ) ;
+    std::array<float, 3> medialPointMoving{0, 0, 0} ;
     inputBundlesData.computeMedialPointFiberWithDistance( movingFiber,
                                                           medialPointMoving ) ;
     std::vector<float> registeredFiber( 3 * nbPoints, 0 ) ;
-    std::vector<float> normalVectorRegistered( 3, 0 ) ;
+    std::array<float, 3> normalVectorRegistered{0, 0, 0} ;
     inputBundlesData.registerFiberToPlaneXYAndDirectionX(
                                     movingFiber,
                                     normalVectorMoving,
@@ -258,7 +258,7 @@ int main( int argc, char* argv[] )
                                     normalVectorRegistered ) ;
 
 
-    std::vector<float> directionVectorRegistered( 3, 0 ) ;
+    std::array<float, 3> directionVectorRegistered{0, 0, 0} ;
     inputBundlesData.computeDirectionVectorFiberTractogram( registeredFiber,
                            normalVectorRegistered, directionVectorRegistered ) ;
 

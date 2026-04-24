@@ -1,4 +1,5 @@
 #!${PYTHON_BINARY}
+#!/usr/bin/env python3
 
 import os, sys, shutil
 
@@ -121,9 +122,9 @@ def get_cmd_line_args():
         action='store_true', default=False,
         help="Use flag if labels come from SupWMA" )
     parser.add_argument(
-        "-rbx", "--rbx",
+        "-bundleseg", "--bundleseg",
         action='store_true', default=False,
-        help="Use flag if labels come from RecoBundlesX" )
+        help="Use flag if labels come from BundleSeg (.json)" )
     parser.add_argument(
         "-v", "--verbose",
         type=int, choices=[0, 1, 2], default=1,
@@ -253,8 +254,10 @@ def getLabelFromBundleName( bundlesDict, bundleName ) :
     # print( f"Bundles names in bundlesDict : " )
     # for label in bundlesDict.keys() :
     #     print( f"\'{bundlesDict[ label ]}\'" )
-    sys.exit( 1 )
-
+    # sys.exit( 1 )
+    
+    raise Exception( f"Error in getLabelFromBundleName() : \'{bundleName}\' not found in "
+                     f"bundlesDict" )
 
 def saveScoresPerBundle( sensitivities,
                          specificities,
@@ -381,10 +384,18 @@ def readConfusionMatrix( path ) :
 
 
 def comparePredictionToTrue( realLabelsPath, realDictPath, predictedLabelsPath,
-                  predictedDictPath, outDir, isSupWMA = False, isRBX = False, 
+                  predictedDictPath, outDir, isSupWMA = False, isBundleseg = False, 
                                                                force = False ) :
-    if isSupWMA and isRBX :
-        print( f"ERROR : isSupWMA and isRBX both True at the same time" )
+    # WARNING : In the case of BundleSeg there is only one ouput file (.json)
+    #           so the predictedLabelsPath and predictedDictPath must be the
+    #           same as the information for both the labels and the labels
+    #           names is in the same file. Only the variable 
+    #           predictedLabelsPath is use to read the results
+
+
+
+    if isSupWMA and isBundleseg :
+        print( f"ERROR : isSupWMA and isBundleseg both True at the same time" )
         sys.exit( 1 )
     confusionMatrixSavingPath = os.path.join( outDir, f"confusionMatrix.tsv" )
 
@@ -403,13 +414,19 @@ def comparePredictionToTrue( realLabelsPath, realDictPath, predictedLabelsPath,
         print( "Done\nReading predicted labels... ", end = "" )
         if ( isSupWMA ) :
             predictedLabels = readLabelsSupWMA( predictedLabelsPath )
-        elif isRBX :
+        elif isBundleseg :
             nbStreamlines = len( realLabels )
-            predictedDict, predictedLabels = readRecoBundlesX( predictedLabelsPath, nbStreamlines )
+            # predictedDict, predictedLabels = readRecoBundlesX( predictedLabelsPath, nbStreamlines )
+            if predictedLabelsPath != predictedDictPath :
+                raise Exception( "When using BundleSeg results, there is only one ouput file (.json)"
+                                 "so the predictedLabelsPath and predictedDictPath MUST be the"
+                                 "same as the information for both the labels and the labels"
+                                 "names is in the same file." )
+            predictedLabels, predictedDict  = readBundleSegResultsJson( predictedLabelsPath, nbStreamlines )
         else :
             predictedLabels = readLabels( predictedLabelsPath )
         print( "Done\nReading predicted labels dictionary... ", end = "" )
-        if not isRBX :
+        if not isBundleseg :
             predictedDict = readDict( predictedDictPath )
         print( "Done" )
         nbRealLabels = len( realLabels )
@@ -442,30 +459,36 @@ def comparePredictionToTrue( realLabelsPath, realDictPath, predictedLabelsPath,
 
         ##################################################################################################################
         # Putting missing labels in dictionaries
-        """
+        
         if len( realDict.keys() ) > len( predictedDict.keys() ) :
-            for _key in realDict :
+            for _key in realDict.keys() :
                 if realDict[ _key ] not in predictedDict.values() :
                     predictedDict[ len( predictedDict.keys() ) ] = realDict[
                                                                           _key ]
         else :
-            for _key in predictedDict :
+            for _key in predictedDict.keys() :
                 if predictedDict[ _key ] == "unlabeledFibers" :
                     continue
                 else :
                     if predictedDict[ _key ] not in realDict.values() :
                         realDict[ len( realDict.keys() ) ] = predictedDict[
                                                                           _key ]
-        """
+        
+
         
         # Getting only labels in SGT
         tmpNewPredictedDict = {}
         for tmpKey in predictedDict.keys() :
             tmpPredictedBundleName = predictedDict[ tmpKey ]
-            tmpRealLabel = getLabelFromBundleName( realDict, tmpPredictedBundleName )
-            if tmpRealLabel :
+            if tmpPredictedBundleName != "unlabeledFibers" :
+                tmpRealLabel = getLabelFromBundleName( realDict, tmpPredictedBundleName )
+            else :
+                tmpRealLabel = float( "nan" )
+
+            if tmpRealLabel == tmpRealLabel :
                 tmpNewPredictedDict[ tmpKey ] = predictedDict[ tmpKey ]
         
+
         # Rebuild labels and dict to start bundle label at 0 and end at the number of labels bundles
         print( "Rebuilding predicted dictionnary... " )
         newPredictedLabelsDict = {}
@@ -766,6 +789,45 @@ def computeJaccard( confusion_matrix_model, index_class ) :
 
 
 
+def readBundleSegResultsJson( inPath, nbStreamlines = float( "nan" ) ) :
+    # inPath : input to the .json output of bundleseg
+    # nbStreamlines : if used, it will complete the labels for streamlines
+    #                 going up to nbStreamlines. If the index is not in 
+    #                 the output dictionnary then it completes with -1
+    #                 which is the label for 'unlabeled' streamlines.
+    #                 If not used, it deduced the number of streamlines
+    #                 as the maximum index streamline labeled.
+    with open( inPath, "r" ) as f :
+        tmpResults = json.load( f )
+    
+    outLabelsDict = {}
+    outLabelsNamesDict = {}
+    tmpLabelNumberForNameDict = 0
+    for tmpBundleName in tmpResults.keys() :
+        if tmpBundleName not in outLabelsNamesDict.values() :
+            outLabelsNamesDict[ tmpLabelNumberForNameDict ] = tmpBundleName
+            tmpLabelNumberForNameDict += 1
+
+        tmpLabelValueForBundleName = getLabelFromBundleName( outLabelsNamesDict, tmpBundleName )
+        for tmpStreamlineIndex in tmpResults[ tmpBundleName ][ "indices" ] :
+            if tmpStreamlineIndex not in outLabelsDict.keys( ) :
+                outLabelsDict[ tmpStreamlineIndex ] = [ tmpLabelValueForBundleName ]
+            else :
+                outLabelsDict[ tmpStreamlineIndex ].append( tmpLabelValueForBundleName )
+    
+    # Completing for streamlines with no label
+    if nbStreamlines != nbStreamlines :
+        nbStreamlines = int( np.max( list( outLabelsDict.keys() ) ) )
+    for tmpStreamlineIndex in range( nbStreamlines ) :
+        if tmpStreamlineIndex not in outLabelsDict.keys() :
+            outLabelsDict[ tmpStreamlineIndex ] = [ -1 ]
+
+
+    return( outLabelsDict, outLabelsNamesDict )
+
+    
+
+
 ################################################################################
 ################################################################################
 ################################################################################
@@ -782,9 +844,9 @@ def main() :
     trueLabelsPath = inputs[ "true_labels" ]
     trueDictPath = inputs[ "true_dictionary" ]
     isSupWMA = inputs[ "supWMA" ]
-    isRBX = inputs[ "rbx" ]
+    isBundleseg = inputs[ "bundleseg" ]
 
-    if ( isSupWMA or ( not isSupWMA and not isRBX ) ) and not os.path.isfile( predictedDictPath ) :
+    if ( isSupWMA or ( not isSupWMA and not isBundleseg ) ) and not os.path.isfile( predictedDictPath ) :
         print( f"ERROR : -pd must be given for SupWMA or GeoLab" )
         sys.exit( 1 )
 
@@ -806,7 +868,7 @@ def main() :
 
 
     comparePredictionToTrue( trueLabelsPath, trueDictPath, predictedLabelsPath,
-                                    predictedDictPath, outDir, isSupWMA, isRBX, force )
+                                    predictedDictPath, outDir, isSupWMA, isBundleseg, force )
 
 
 if __name__ == "__main__":

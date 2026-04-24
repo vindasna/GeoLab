@@ -1,0 +1,2 @@
+/usr/bin/ar qc ../lib/libBundlesData.a CMakeFiles/BundlesData.dir/bundlesData.cxx.o
+/usr/bin/ranlib ../lib/libBundlesData.a

@@ -1,0 +1,32 @@
+Starting verification of all apps...
+SUCCESS: alignFibers
+SUCCESS: alignFibersInBundle
+FAILED: alignFibersInBundleToPlaneXY
+/volatile/Git/GeoLab/apps/alignFibersInBundleToPlaneXY.cxx:273:32: error: cannot convert ‘std::vector<float>’ to ‘const std::array<float, 3>&’
+/volatile/Git/GeoLab/apps/alignFibersInBundleToPlaneXY.cxx:286:26: error: cannot convert ‘std::vector<float>’ to ‘const std::array<float, 3>&’
+FAILED: analyseAtlasBundle
+/volatile/Git/GeoLab/apps/analyseAtlasBundle.cxx:1085:37: error: invalid initialization of reference of type ‘const std::vector<float>&’ from expression of type ‘std::array<float, 3>’
+SUCCESS: applyPredictedLabels
+SUCCESS: applyTransformBundle
+SUCCESS: compareBundlesToAtlas
+SUCCESS: computeAdjacency
+FAILED: computeCenterAtlasBundles
+/volatile/Git/GeoLab/apps/computeCenterAtlasBundles.cxx:79:56: error: no matching function for call to ‘BundlesData::computeMedialPointFiberWithDistance(int&, std::vector<float>&)’
+/volatile/Git/GeoLab/apps/computeCenterAtlasBundles.cxx:203:54: error: no matching function for call to ‘BundlesData::computeMedialPointFiberWithDistance(std::vector<float>&, std::vector<float>&)’
+SUCCESS: computeCentroids
+SUCCESS: computeCoverage
+FAILED: computeNeighborhood
+/volatile/Git/GeoLab/apps/computeNeighborhood.cxx:653:60: error: no matching function for call to ‘BundlesData::computeMedialPointFiberWithDistance(int&, std::vector<float>&)’
+SUCCESS: computeOverlap
+SUCCESS: convertAtlasFormat
+SUCCESS: ConvertBundleFormat
+SUCCESS: correctBundlesNan
+SUCCESS: createMinf
+SUCCESS: fuseAtlas
+FAILED: getFeaturesFibersAtlas
+/volatile/Git/GeoLab/apps/getFeaturesFibersAtlas.cxx:182:56: error: no matching function for call to ‘BundlesData::computeMedialPointFiberWithDistance(int&, std::vector<float>&) const’
+/volatile/Git/GeoLab/apps/getFeaturesFibersAtlas.cxx:202:61: error: cannot convert ‘std::vector<float>’ to ‘const std::array<float, 3>&’
+/volatile/Git/GeoLab/apps/getFeaturesFibersAtlas.cxx:207:55: error: no matching function for call to ‘BundlesData::computeNormalVectorFiberTractogram(const std::vector<float>&, std::vector<float>&, int&, int&, std::vector<float>&) const’
+/volatile/Git/GeoLab/apps/getFeaturesFibersAtlas.cxx:215:51: error: cannot convert ‘std::vector<float>’ to ‘const std::array<float, 3>&’
+/volatile/Git/GeoLab/apps/getFeaturesFibersAtlas.cxx:221:58: error: no matching function for call to ‘BundlesData::computeDirectionVectorFiberTractogram(const std::vector<float>&, std::vector<float>&, std::vector<float>&, int&, int&, std::vector<float>&) const’
+/volatile/Git/GeoLab/apps/getFeaturesFibersAtlas.cxx:229:55: error: cannot convert ‘std::vector<float>’ to ‘const std::array<float, 3>&’

@@ -17,6 +17,7 @@
 #include <fstream>
 #include <sstream>
 #include <vector>
+#include <array>
 #include <numeric>
 #include <chrono>
 #include <omp.h>
@@ -31,6 +32,17 @@
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
+
+enum class TransformType {
+    RIGID,
+    AFFINE
+};
+
+struct Cluster {
+    std::vector<float> centroid; // Flattened array of 3 * numPoints
+    int count;                   // Number of streamlines in this cluster
+    std::vector<int> indices;    // Original indices of the streamlines
+};
 
 class BundlesData
 {
@@ -108,73 +120,73 @@ class BundlesData
                         const std::vector<float>& tractogramFibers,
                         int fiberIndex,
                         int nbPoints,
-                        std::vector<float>& medialPointFiberTractogram ) const ;
+                        std::array<float, 3>& medialPointFiberTractogram ) const ;
   void computeMedialPointFiberTractogram(
                         int fiberIndex,
-                        std::vector<float>& medialPointFiberTractogram ) const ;
+                        std::array<float, 3>& medialPointFiberTractogram ) const ;
   void computeMedialPointFiberTractogram(
                         const std::vector<float>& fiber,
-                        std::vector<float>& medialPointFiberTractogram ) const ;
+                        std::array<float, 3>& medialPointFiberTractogram ) const ;
 
   int computeMedialPointFiberWithDistance(
                         const std::vector<float>& tractogramFibers,
                         int fiberIndex,
                         int nbPoints,
-                        std::vector<float>& medialPointFiberTractogram ) const ;
+                        std::array<float, 3>& medialPointFiberTractogram ) const ;
   int computeMedialPointFiberWithDistance(
                         int fiberIndex,
-                        std::vector<float>& medialPointFiberTractogram ) const ;
+                        std::array<float, 3>& medialPointFiberTractogram ) const ;
   int computeMedialPointFiberWithDistance(
                         const std::vector<float>& fiber,
-                        std::vector<float>& medialPointFiberTractogram ) const ;
+                        std::array<float, 3>& medialPointFiberTractogram ) const ;
 
   void computeGravityCenterFiber(
                               const std::vector<float>& tractogramFibers,
                               int fiberIndex,
                               int nbPoints,
-                              std::vector<float>& gravityCenterFiber ) const ;
+                              std::array<float, 3>& gravityCenterFiber ) const ;
   void computeGravityCenterFiber(
                               int fiberIndex,
-                              std::vector<float>& gravityCenterFiber ) const ;
+                              std::array<float, 3>& gravityCenterFiber ) const ;
   void computeGravityCenterFiber(
                               const std::vector<float>& fiber,
-                              std::vector<float>& gravityCenterFiber ) const ;
+                              std::array<float, 3>& gravityCenterFiber ) const ;
 
 
   void computeNormalVectorFiberTractogram(
                            const std::vector<float>& tractogramFibers,
-                           const std::vector<float>& medialPointFiberTractogram,
+                           const std::array<float, 3>& medialPointFiberTractogram,
                            int fiberIndex,
                            int nbPoints,
-                           std::vector<float>& normalVector ) const ;
+                           std::array<float, 3>& normalVector ) const ;
   void computeNormalVectorFiberTractogram(
                                       int fiberIndex,
-                                      std::vector<float>& normalVector ) const ;
+                                      std::array<float, 3>& normalVector ) const ;
   void computeNormalVectorFiberTractogram(
                                       const std::vector<float>& fiber,
-                                      std::vector<float>& normalVector ) const ;
+                                      std::array<float, 3>& normalVector ) const ;
 
   void computeDirectionVectorFiberTractogram(
                            const std::vector<float>& tractogramFibers,
-                           const std::vector<float>& medialPointFiberTractogram,
-                           const std::vector<float>& normalVector,
+                           const std::array<float, 3>& medialPointFiberTractogram,
+                           const std::array<float, 3>& normalVector,
                            int fiberIndex,
                            int nbPoints,
-                           std::vector<float>& directionVector ) const ;
+                           std::array<float, 3>& directionVector ) const ;
   void computeDirectionVectorFiberTractogram(
                                    int fiberIndex,
-                                   const std::vector<float>& normalVector,
-                                   std::vector<float>& directionVector ) const ;
+                                   const std::array<float, 3>& normalVector,
+                                   std::array<float, 3>& directionVector ) const ;
   void computeDirectionVectorFiberTractogram(
                                    const std::vector<float>& fiber,
-                                   const std::vector<float>& normalVector,
-                                   std::vector<float>& directionVector ) const ;
+                                   const std::array<float, 3>& normalVector,
+                                   std::array<float, 3>& directionVector ) const ;
 
   float computeMDADBetweenTwoFibers(
                               const std::vector<float>& tractogramFibers_1,
                               const std::vector<float>& tractogramFibers_2,
-                              const std::vector<float>& medialPointTractFiber_1,
-                              const std::vector<float>& medialPointTractFiber_2,
+                              const std::array<float, 3>& medialPointTractFiber_1,
+                              const std::array<float, 3>& medialPointTractFiber_2,
                               int fiberIndex_1,
                               int fiberIndex_2,
                               int nbPoints ) const ;
@@ -198,8 +210,8 @@ class BundlesData
   float computeMDFBetweenTwoFibers(
                               const std::vector<float>& tractogramFibers_1,
                               const std::vector<float>& tractogramFibers_2,
-                              const std::vector<float>& medialPointTractFiber_1,
-                              const std::vector<float>& medialPointTractFiber_2,
+                              const std::array<float, 3>& medialPointTractFiber_1,
+                              const std::array<float, 3>& medialPointTractFiber_2,
                               int fiberIndex_1,
                               int fiberIndex_2,
                               int nbPoints ) const ;
@@ -259,136 +271,136 @@ class BundlesData
                           const BundlesData& bundle2,
                           float threshold ) const ;
 
-  float computeAngleBetweenVectors( const std::vector<float>& vector1,
-                                    const std::vector<float>& vector2 ) const ;
+  float computeAngleBetweenVectors( const std::array<float, 3>& vector1,
+                                    const std::array<float, 3>& vector2 ) const ;
 
-  float computeAngleBetweenPlanes( const std::vector<float>& vector1,
-                                   const std::vector<float>& vector2 ) const ;
+  float computeAngleBetweenPlanes( const std::array<float, 3>& vector1,
+                                   const std::array<float, 3>& vector2 ) const ;
 
   float computeAngleBetweenDirections(
-                                     const std::vector<float>& vector1,
-                                     const std::vector<float>& vector2 ) const ;
+                                     const std::array<float, 3>& vector1,
+                                     const std::array<float, 3>& vector2 ) const ;
 
 
-  void projectVectorToPlane( const std::vector<float>& normalToPlane,
-                             const std::vector<float>& inputVector,
-                             std::vector<float>& projectedVector ) const ;
+  void projectVectorToPlane( const std::array<float, 3>& normalToPlane,
+                             const std::array<float, 3>& inputVector,
+                             std::array<float, 3>& projectedVector ) const ;
 
   void computeRotationMatrixFromVectorAndAngle(
-                                    const std::vector<float>& vector,
+                                    const std::array<float, 3>& vector,
                                     float angle, // in radians
-                                    std::vector<float>& rotationMatrix ) const ;
+                                    std::array<float, 9>& rotationMatrix ) const ;
 
-  void applyRotationMatrixToVector( const std::vector<float>& vector,
-                                    const std::vector<float>& rotationMatrix,
-                                    std::vector<float>& rotatedVector ) const ;
+  void applyRotationMatrixToVector( const std::array<float, 3>& vector,
+                                    const std::array<float, 9>& rotationMatrix,
+                                    std::array<float, 3>& rotatedVector ) const ;
 
   void applyRotationMatrixToFiber( const std::vector<float>& fiber,
-                                   const std::vector<float>& rotationMatrix,
-                                   const std::vector<float>& medialPointFiber,
+                                   const std::array<float, 9>& rotationMatrix,
+                                   const std::array<float, 3>& medialPointFiber,
                                    int nbPoints,
                                    std::vector<float>& rotatedFiber ) const ;
   void applyRotationMatrixToFiber( const BundlesData& inputBundlesData,
-                                   const std::vector<float>& rotationMatrix,
+                                   const std::array<float, 9>& rotationMatrix,
                                    int fiberIndex,
                                    int nbPoints,
                                    std::vector<float>& rotatedFiber ) const ;
   void applyRotationMatrixToFiber( const std::vector<float>& tractogramFibers,
-                                   const std::vector<float>& rotationMatrix,
+                                   const std::array<float, 9>& rotationMatrix,
                                    int fiberIndex,
                                    int nbPoints,
                                    std::vector<float>& rotatedFiber ) const ;
-  void applyRotationMatrixToFiber( const std::vector<float>& rotationMatrix,
+  void applyRotationMatrixToFiber( const std::array<float, 9>& rotationMatrix,
                                    int fiberIndex,
                                    int nbPoints,
                                    std::vector<float>& rotatedFiber ) const ;
   void applyRotationMatrixToFiber( const std::vector<float>& fiber,
-                                   const std::vector<float>& rotationMatrix,
+                                   const std::array<float, 9>& rotationMatrix,
                                    int nbPoints,
                                    std::vector<float>& rotatedFiber ) const ;
 
-  void putFibersInSamePlane( const std::vector<float>& normalVector1,
-                             const std::vector<float>& normalVector2,
+  void putFibersInSamePlane( const std::array<float, 3>& normalVector1,
+                             const std::array<float, 3>& normalVector2,
                              const std::vector<float>& tractogramFibers2,
                              int fiberIndex2,
                              int nbPoints,
                              std::vector<float>& fiber2ToPlane1,
-                             std::vector<float>& newNormalVectorFiber2 ) const ;
-  void putFibersInSamePlane( const std::vector<float>& normalVector1,
-                             const std::vector<float>& normalVector2,
+                             std::array<float, 3>& newNormalVectorFiber2 ) const ;
+  void putFibersInSamePlane( const std::array<float, 3>& normalVector1,
+                             const std::array<float, 3>& normalVector2,
                              const std::vector<float>& fiber2,
                              int nbPoints,
                              std::vector<float>& fiber2ToPlane1,
-                             std::vector<float>& newNormalVectorFiber2 ) const ;
+                             std::array<float, 3>& newNormalVectorFiber2 ) const ;
 
-  void putFiberInPlaneXY( const std::vector<float>& normalVector,
+  void putFiberInPlaneXY( const std::array<float, 3>& normalVector,
                           const std::vector<float>& tractogramFibers,
                           int fiberIndex,
                           int nbPoints,
                           std::vector<float>& fiberToPlaneXY,
-                          std::vector<float>& newNormalVectorFiber ) const ;
-  void putFiberInPlaneXY( const std::vector<float>& normalVector,
+                          std::array<float, 3>& newNormalVectorFiber ) const ;
+  void putFiberInPlaneXY( const std::array<float, 3>& normalVector,
                           const std::vector<float>& fiber,
                           int nbPoints,
                           std::vector<float>& fiberToPlaneXY,
-                          std::vector<float>& newNormalVectorFiber ) const ;
+                          std::array<float, 3>& newNormalVectorFiber ) const ;
 
   void putFibersInSameDirection(
-                                const std::vector<float>& normalVector1,
-                                const std::vector<float>& normalVector2,
-                                const std::vector<float>& directionVector1,
+                                const std::array<float, 3>& normalVector1,
+                                const std::array<float, 3>& normalVector2,
+                                const std::array<float, 3>& directionVector1,
                                 const std::vector<float>& fiber2,
                                 int nbPoints,
                                 std::vector<float>& fiber2ToDirection1 ) const ;
 
   void registerFiber( const std::vector<float>& tractogramFibers2,
-                      const std::vector<float>& normalVector1,
-                      const std::vector<float>& normalVector2,
-                      const std::vector<float>& directionVector1,
-                      const std::vector<float>& medialPointFiber1,
-                      const std::vector<float>& medialPointFiber2,
+                      const std::array<float, 3>& normalVector1,
+                      const std::array<float, 3>& normalVector2,
+                      const std::array<float, 3>& directionVector1,
+                      const std::array<float, 3>& medialPointFiber1,
+                      const std::array<float, 3>& medialPointFiber2,
                       int fiberIndexTractogram2,
                       int nbPoints,
                       std::vector<float>& fiber2Tofiber1,
-                      std::vector<float>& newNormalVectorFiber2 ) const ;
+                      std::array<float, 3>& newNormalVectorFiber2 ) const ;
   void registerFiber( const std::vector<float>& tractogramFibers1,
                       const std::vector<float>& tractogramFibers2,
                       int fiberIndexTractogram1,
                       int fiberIndexTractogram2,
                       int nbPoints,
                       std::vector<float>& fiber2Tofiber1,
-                      std::vector<float>& newNormalVectorFiber2 ) const ;
+                      std::array<float, 3>& newNormalVectorFiber2 ) const ;
   void registerFiber( const std::vector<float>& fiber2,
-                      const std::vector<float>& normalVector1,
-                      const std::vector<float>& normalVector2,
-                      const std::vector<float>& directionVector1,
-                      const std::vector<float>& medialPointFiber1,
-                      const std::vector<float>& medialPointFiber2,
+                      const std::array<float, 3>& normalVector1,
+                      const std::array<float, 3>& normalVector2,
+                      const std::array<float, 3>& directionVector1,
+                      const std::array<float, 3>& medialPointFiber1,
+                      const std::array<float, 3>& medialPointFiber2,
                       int nbPoints,
                       std::vector<float>& fiber2Tofiber1,
-                      std::vector<float>& newNormalVectorFiber2 ) const ;
+                      std::array<float, 3>& newNormalVectorFiber2 ) const ;
   void registerFiber( const std::vector<float>& fiber1,
                       const std::vector<float>& fiber2,
                       int nbPoints,
                       std::vector<float>& fiber2Tofiber1,
-                      std::vector<float>& newNormalVectorFiber2 ) const ;
+                      std::array<float, 3>& newNormalVectorFiber2 ) const ;
 
 
   void registerFiberToPlaneXYAndDirectionX(
                               const std::vector<float>& tractogramFibers,
-                              const std::vector<float>& normalVector,
-                              const std::vector<float>& medialPointFiber,
+                              const std::array<float, 3>& normalVector,
+                              const std::array<float, 3>& medialPointFiber,
                               int fiberIndexTractogram,
                               int nbPoints,
                               std::vector<float>& fiberToPlaneXYAndDirectionX,
-                              std::vector<float>& newNormalVectorFiber ) const ;
+                              std::array<float, 3>& newNormalVectorFiber ) const ;
   void registerFiberToPlaneXYAndDirectionX(
                               const std::vector<float>& fiber,
-                              const std::vector<float>& normalVector,
-                              const std::vector<float>& medialPointFiber,
+                              const std::array<float, 3>& normalVector,
+                              const std::array<float, 3>& medialPointFiber,
                               int nbPoints,
                               std::vector<float>& fiberToPlaneXYAndDirectionX,
-                              std::vector<float>& newNormalVectorFiber ) const ;
+                              std::array<float, 3>& newNormalVectorFiber ) const ;
 
   void getFiberFromTractogram( const std::vector<float>& tractogramFibers,
                                int fiberIndex,
@@ -418,28 +430,28 @@ class BundlesData
   ///////// Algebra functions /////////
 
   // Point1 is the point where the vector is pointing to
-  void vectorFromPoints( const std::vector<float>& point1,
-                         const std::vector<float>& point2,
-                         std::vector<float>& vector ) const ;
+  void vectorFromPoints( const std::array<float, 3>& point1,
+                         const std::array<float, 3>& point2,
+                         std::array<float, 3>& vector ) const ;
 
-  float scalarProduct( const std::vector<float>& vector1,
-                       const std::vector<float>& vector2 ) const ;
+  float scalarProduct( const std::array<float, 3>& vector1,
+                       const std::array<float, 3>& vector2 ) const ;
 
-  float normVector( const std::vector<float>& vector ) const ;
+  float normVector( const std::array<float, 3>& vector ) const ;
 
-  void normalizeVector( std::vector<float>& vector ) const ;
+  void normalizeVector( std::array<float, 3>& vector ) const ;
 
-  void translatePoint( const std::vector<float>& point,
-                       const std::vector<float>& unitaryTranslationVector,
+  void translatePoint( const std::array<float, 3>& point,
+                       const std::array<float, 3>& unitaryTranslationVector,
                        float translationDistance,
-                       std::vector<float>& translatedPoint ) const ;
-  void translatePoint( const std::vector<float>& point,
-                       const std::vector<float>& translationVector,
-                       std::vector<float>& translatedPoint ) const ;
+                       std::array<float, 3>& translatedPoint ) const ;
+  void translatePoint( const std::array<float, 3>& point,
+                       const std::array<float, 3>& translationVector,
+                       std::array<float, 3>& translatedPoint ) const ;
 
-  void crossProduct( const std::vector<float>& vector1,
-                     const std::vector<float>& vector2,
-                     std::vector<float>& result ) const ;
+  void crossProduct( const std::array<float, 3>& vector1,
+                     const std::array<float, 3>& vector2,
+                     std::array<float, 3>& result ) const ;
 
   int checkIfFiberPointCanBeResampled(
                                      const std::vector<float>& tractogramFibers,
@@ -450,5 +462,21 @@ class BundlesData
                              int fiberIndex,
                              int nbPoints ) const ;
 
+
+
+  void registerTo(const BundlesData& target, int iterations = 10);
+
+  std::vector<Cluster> computeQuickBundles(float distance_threshold);
+
+
+  void resampleAll(int targetPoints);
+  Eigen::Matrix4f registerFast(BundlesData& target, 
+                                  TransformType regType = TransformType::RIGID, 
+                                  float qbThreshold = 10.0f, 
+                                  int iterations = 10, 
+                                  float outlierRejectionPct = 0.20f,
+                                  BundlesData* outOriginalMovingCentroids = nullptr,
+                                  BundlesData* outMovingCentroids = nullptr,
+                                  BundlesData* outTargetCentroids = nullptr);
 
 } ;

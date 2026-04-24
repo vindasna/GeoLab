@@ -1,0 +1,2 @@
+/usr/bin/ar qc ../lib/libRecognizedBundles.a CMakeFiles/RecognizedBundles.dir/RecognizedBundles.cxx.o
+/usr/bin/ranlib ../lib/libRecognizedBundles.a

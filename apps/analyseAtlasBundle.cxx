@@ -71,7 +71,7 @@ void computeCenterAtlasBundleFibers(
   {
 
     // Searching the medial point of atlas fiber
-    std::vector<float> medialPointAtlasBundleFiber( 3, 0 ) ;
+    std::array<float, 3> medialPointAtlasBundleFiber{0, 0, 0} ;
     atlasBundleData.computeMedialPointFiberWithDistance(
                                                  atlasBundleFiberIndex,
                                                  medialPointAtlasBundleFiber ) ;
@@ -96,7 +96,7 @@ void computeAverageFiberBundle(
                         const std::vector<float>& medialPointsAtlasBundleFibers,
                         int nbPoints,
                         std::vector<float>& averageFiber,
-                        std::vector<float>& medialPointAtlasBundle )
+                        std::array<float, 3>& medialPointAtlasBundle )
 {
 
   int nbFibersAtlasBundle = atlasBundleData.curves_count ;
@@ -111,7 +111,7 @@ void computeAverageFiberBundle(
 
 
 
-  std::vector<float> centerReferenceFiber( 3, 0 ) ;
+  std::array<float, 3> centerReferenceFiber{0, 0, 0} ;
   for ( int i = 0 ; i < 3 ; i++ )
   {
 
@@ -128,7 +128,7 @@ void computeAverageFiberBundle(
 
     int offsetAtlas = 3 * nbPoints * atlasBundleFiberIndex ;
 
-    std::vector<float> translation( 3, 0 ) ;
+    std::array<float, 3> translation{0, 0, 0} ;
     for ( int i = 0 ; i < 3 ; i++ )
     {
 
@@ -209,7 +209,7 @@ void computeAverageFiberBundle(
 void computeGravityCenterAtlasBundle(
                                   BundlesData& atlasBundleData,
                                   int nbPoints,
-                                  std::vector<float>& gravityCenterAtlasBundle )
+                                  std::array<float, 3>& gravityCenterAtlasBundle )
 {
 
   int nbFibersAtlasBundle = atlasBundleData.curves_count ;
@@ -257,7 +257,7 @@ void computeGravityCenterAtlasBundle(
 //----------------------------------------------------------------------------//
 void computeDistancesToCenterBundle(
                         const std::vector<float>& medialPointsAtlasBundleFibers,
-                        const std::vector<float>& medialPointAtlasBundle,
+                        const std::array<float, 3>& medialPointAtlasBundle,
                         int nbFibersAtlasBundle,
                         std::vector<float>& distancesToCenterAtlasBundle )
 {
@@ -304,7 +304,7 @@ void computeNormalVectorFibersAtlasBundle(
                                                       atlasBundleFiberIndex++ )
   {
 
-    std::vector<float> normalVector( 3, 0 ) ;
+    std::array<float, 3> normalVector{0, 0, 0} ;
     atlasBundleData.computeNormalVectorFiberTractogram( atlasBundleFiberIndex,
                                                         normalVector ) ;
 
@@ -337,7 +337,7 @@ void computeDistancesBetweenMedialPointsBundle(
                                                     atlasBundleFiberIndex_1++ )
   {
 
-    std::vector<float> medialPointFiber1( 3, 0 ) ;
+    std::array<float, 3> medialPointFiber1{0, 0, 0} ;
     for ( int i = 0 ; i < 3 ; i++ )
     {
 
@@ -357,7 +357,7 @@ void computeDistancesBetweenMedialPointsBundle(
         if ( atlasBundleFiberIndex_2 != atlasBundleFiberIndex_1 )
         {
 
-          std::vector<float> medialPointFiber2( 3, 0 ) ;
+          std::array<float, 3> medialPointFiber2{0, 0, 0} ;
           for ( int i = 0 ; i < 3 ; i++ )
           {
 
@@ -417,7 +417,7 @@ void computeAnglesBundle( BundlesData& atlasBundleData,
                                                     atlasBundleFiberIndex_1++ )
   {
 
-    std::vector<float> normalVectorBundleFiber_1( 3, 0 ) ;
+    std::array<float, 3> normalVectorBundleFiber_1{0, 0, 0} ;
     for ( int i = 0 ; i < 3 ; i++ )
     {
 
@@ -437,7 +437,7 @@ void computeAnglesBundle( BundlesData& atlasBundleData,
         if ( atlasBundleFiberIndex_2 != atlasBundleFiberIndex_1 )
         {
 
-          std::vector<float> normalVectorBundleFiber_2( 3, 0 ) ;
+          std::array<float, 3> normalVectorBundleFiber_2{0, 0, 0} ;
           for ( int i = 0 ; i < 3 ; i++ )
           {
 
@@ -496,7 +496,7 @@ void computeDirectionAnglesBundle(
                                                     atlasBundleFiberIndex_1++ )
   {
 
-    std::vector<float> normalVector1( 3, 0 ) ;
+    std::array<float, 3> normalVector1{0, 0, 0} ;
     for ( int i =0 ; i < 3 ; i++ )
     {
 
@@ -511,7 +511,7 @@ void computeDirectionAnglesBundle(
                                             nbPoints,
                                             fiber1 ) ;
 
-    std::vector<float> directionVectorFiber1( 3, 0 ) ;
+    std::array<float, 3> directionVectorFiber1{0, 0, 0} ;
     atlasBundleData.computeDirectionVectorFiberTractogram(
                                                        fiber1,
                                                        normalVector1,
@@ -529,7 +529,7 @@ void computeDirectionAnglesBundle(
         if ( atlasBundleFiberIndex_2 != atlasBundleFiberIndex_1 )
         {
 
-          std::vector<float> normalVector2( 3, 0 ) ;
+          std::array<float, 3> normalVector2{0, 0, 0} ;
           for ( int i =0 ; i < 3 ; i++ )
           {
 
@@ -544,7 +544,7 @@ void computeDirectionAnglesBundle(
                                                   nbPoints,
                                                   fiber2 ) ;
 
-          std::vector<float> directionVectorFiber2( 3, 0 ) ;
+          std::array<float, 3> directionVectorFiber2{0, 0, 0} ;
           atlasBundleData.computeDirectionVectorFiberTractogram(
                                                        fiber2,
                                                        normalVector2,
@@ -602,11 +602,11 @@ void computeShapeAnglesBundle(
 
     int offsetAtlas = 3 * nbPoints * atlasBundleFiberIndex ;
 
-    std::vector<float> point1( 3, 0 ) ;
-    std::vector<float> point2( 3, 0 ) ;
+    std::array<float, 3> point1{0, 0, 0} ;
+    std::array<float, 3> point2{0, 0, 0} ;
 
-    std::vector<float> vector1( 3, 0 ) ;
-    std::vector<float> vector2( 3, 0 ) ;
+    std::array<float, 3> vector1{0, 0, 0} ;
+    std::array<float, 3> vector2{0, 0, 0} ;
     for ( int i = 0 ; i < 3 ; i++ )
     {
 
@@ -652,7 +652,7 @@ void computeAverageDisimilarity(
                                                     atlasBundleFiberIndex_1++ )
   {
 
-    std::vector<float> normalVector1( 3 , 0 ) ;
+    std::array<float, 3> normalVector1{0, 0, 0} ;
     for ( int i = 0 ; i < 3 ; i++ )
     {
 
@@ -661,7 +661,7 @@ void computeAverageDisimilarity(
 
     }
 
-    std::vector<float> medialPoint1( 3, 0 ) ;
+    std::array<float, 3> medialPoint1{0, 0, 0} ;
     for ( int i = 0 ; i < 3 ; i++ )
     {
 
@@ -671,7 +671,7 @@ void computeAverageDisimilarity(
     }
 
     std::vector<float> fiber1( 3 * nbPoints, 0 ) ;
-    std::vector<float> newNormalVectorFiber1( 3, 0 ) ;
+    std::array<float, 3> newNormalVectorFiber1{0, 0, 0} ;
     atlasBundleData.registerFiberToPlaneXYAndDirectionX(
                             atlasBundleData.matrixTracks,
                             normalVector1,
@@ -690,7 +690,7 @@ void computeAverageDisimilarity(
                                                      atlasBundleFiberIndex_2++ )
       {
 
-        std::vector<float> normalVector2( 3 , 0 ) ;
+        std::array<float, 3> normalVector2{0, 0, 0} ;
         for ( int i = 0 ; i < 3 ; i++ )
         {
 
@@ -699,7 +699,7 @@ void computeAverageDisimilarity(
 
         }
 
-        std::vector<float> medialPoint2( 3, 0 ) ;
+        std::array<float, 3> medialPoint2{0, 0, 0} ;
         for ( int i = 0 ; i < 3 ; i++ )
         {
 
@@ -709,7 +709,7 @@ void computeAverageDisimilarity(
         }
 
         std::vector<float> fiber2( 3 * nbPoints, 0 ) ;
-        std::vector<float> newNormalVectorFiber2( 3, 0 ) ;
+        std::array<float, 3> newNormalVectorFiber2{0, 0, 0} ;
         atlasBundleData.registerFiberToPlaneXYAndDirectionX(
                                 atlasBundleData.matrixTracks,
                                 normalVector2,
@@ -722,7 +722,7 @@ void computeAverageDisimilarity(
 
 
         // Computing MDA distance
-        std::vector<float> origin( 3, 0 ) ;
+        std::array<float, 3> origin{0, 0, 0} ;
         float dMDA = atlasBundleData.computeMDADBetweenTwoFibersAfterAlignement( 
                                                                   fiber1,
                                                                   fiber2,
@@ -769,7 +769,7 @@ void computeAverageDisimilarityMDF(
                                                     atlasBundleFiberIndex_1++ )
   {
 
-    std::vector<float> medialPoint1( 3, 0 ) ;
+    std::array<float, 3> medialPoint1{0, 0, 0} ;
     for ( int i = 0 ; i < 3 ; i++ )
     {
 
@@ -786,7 +786,7 @@ void computeAverageDisimilarityMDF(
                                                      atlasBundleFiberIndex_2++ )
       {
 
-        std::vector<float> medialPoint2( 3, 0 ) ;
+        std::array<float, 3> medialPoint2{0, 0, 0} ;
         for ( int i = 0 ; i < 3 ; i++ )
         {
 
@@ -1065,7 +1065,7 @@ int main( int argc, char* argv[] )
 
     // Compute average atlas bundle fiber
     std::vector<float> averageFiber( 3 * nbPoints, 0 ) ;
-    std::vector<float> medialPointAtlasBundle( 3, 0 ) ;
+    std::array<float, 3> medialPointAtlasBundle{0, 0, 0} ;
     computeAverageFiberBundle( atlasBundleData,
                                medialPointsAtlasBundleFibers,
                                nbPoints,
@@ -1073,7 +1073,7 @@ int main( int argc, char* argv[] )
                                medialPointAtlasBundle ) ;
 
 
-    std::vector<float> gravityCenterAtlasBundle( 3, 0 ) ;
+    std::array<float, 3> gravityCenterAtlasBundle{0, 0, 0} ;
     computeGravityCenterAtlasBundle( atlasBundleData,
                                      nbPoints,
                                      gravityCenterAtlasBundle ) ;

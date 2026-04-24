@@ -1,0 +1,2 @@
+/usr/bin/ar qc ../lib/libNiftiImage.a CMakeFiles/NiftiImage.dir/niftiImage.cxx.o
+/usr/bin/ranlib ../lib/libNiftiImage.a

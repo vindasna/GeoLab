@@ -171,12 +171,16 @@ def main() :
         fsl2ants_command = "fslToAnts.py"
 
     force = inputs[ "force" ]
+    
 
-
+    tmpCounter = 0
     tmpDir = os.path.join( os.path.dirname( transform_path ),
-                                                       "tmpDirApplyFlirtToTck" )
-    if not os.path.isdir( tmpDir ) :
-        os.mkdir( tmpDir )
+                                                       f"tmpDirApplyFlirtToTck_{tmpCounter}" )
+    while os.path.isdir( tmpDir ) :
+        tmpCounter += 1
+        tmpDir = os.path.join( os.path.dirname( transform_path ),
+                                                       f"tmpDirApplyFlirtToTck_{tmpCounter}" )
+    os.mkdir( tmpDir )
     ################# Converting fsl transforms to ANTs format #################
     if verbose :
         print( "Converting fsl transforms to ANTs format... " )

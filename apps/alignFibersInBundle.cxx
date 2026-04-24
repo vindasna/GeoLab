@@ -234,16 +234,16 @@ int main( int argc, char* argv[] )
   inputBundlesData.getFiberFromTractogram( inputBundlesData.matrixTracks,
                                                  0, nbPoints, referenceFiber ) ;
 
-  std::vector<float> normalVectorReference( 3, 0 ) ;
+  std::array<float, 3> normalVectorReference{0, 0, 0} ;
   inputBundlesData.computeNormalVectorFiberTractogram( referenceFiber,
                                                        normalVectorReference ) ;
 
-  std::vector<float> medialPointReferenceFiber( 3 , 0 ) ;
+  std::array<float, 3> medialPointReferenceFiber{0, 0, 0} ;
   int pointReference = inputBundlesData.computeMedialPointFiberWithDistance(
                                                    referenceFiber,
                                                    medialPointReferenceFiber ) ;
 
-  std::vector<float> directionVectorReference( 3, 0 ) ;
+  std::array<float, 3> directionVectorReference{0, 0, 0} ;
   inputBundlesData.computeDirectionVectorFiberTractogram( referenceFiber,
                              normalVectorReference, directionVectorReference ) ;
 
@@ -278,14 +278,14 @@ int main( int argc, char* argv[] )
     inputBundlesData.getFiberFromTractogram( inputBundlesData.matrixTracks,
                                              fiber, nbPoints, movingFiber ) ;
     std::vector<float> registeredFiber( 3 * nbPoints, 0 ) ;
-    std::vector<float> normalVectorRegistered( 3, 0 ) ;
+    std::array<float, 3> normalVectorRegistered{0, 0, 0} ;
     inputBundlesData.registerFiber( referenceFiber,
                                     movingFiber,
                                     nbPoints,
                                     registeredFiber,
                                     normalVectorRegistered ) ;
 
-    std::vector<float> directionVectorRegistered( 3, 0 ) ;
+    std::array<float, 3> directionVectorRegistered{0, 0, 0} ;
     inputBundlesData.computeDirectionVectorFiberTractogram( registeredFiber,
                            normalVectorRegistered, directionVectorRegistered ) ;
     // inputBundlesData.computeDirectionVectorFiberTractogram(
