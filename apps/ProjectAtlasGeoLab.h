@@ -79,7 +79,7 @@ float toleranceMaxDirectionAngle = 0.0 ;
 float toleranceMinShapeAngle = 0.0 ;
 float toleranceMaxShapeAngle = 0.0 ;
 float toleranceLenght = 0.0 ;
-float toleranceDistanceBetweenMedialPoints = -0.9 ;
+float toleranceDistanceBetweenMedialPoints = -0.7 ;
 
 float toleranceThrComputeNeighborhood = 0.0 ;
 

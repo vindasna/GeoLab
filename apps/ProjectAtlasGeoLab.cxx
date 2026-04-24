@@ -666,7 +666,7 @@ int main( int argc, char* argv[] )
               << "[-tolThrCN] : tolerance for computeNeighborhood threshold "
               << "(default = 0.0) \n"
               << "[-tolDBMP] : Tolerance for distance between medial points "
-              << "(for advanced users, default = -0.9) \n"
+              << "(for advanced users, default = -0.7) \n"
               << "[-thrAdj] : keep bundle with adjacency greater than given "
               << " value (default : 0 -> keep all bundles ) \n"
               << "[-minNbFibers] : Minimum number of fiber to consider a bundle"
